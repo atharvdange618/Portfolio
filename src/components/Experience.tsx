@@ -1,6 +1,16 @@
 import { ExternalLink, Calendar } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Experience = () => {
+  const [downloads, setDownloads] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("https://api.npmjs.org/downloads/point/last-week/reiatsu")
+      .then((res) => res.json())
+      .then((data) => setDownloads(data.downloads))
+      .catch(() => setDownloads(null));
+  }, []);
+
   const experiences = [
     {
       title: "Junior Software Engineer",
@@ -44,7 +54,11 @@ const Experience = () => {
       highlights: [
         "Built production-ready web framework from scratch using Node.js core modules",
         "Zero-dependency architecture for optimal performance",
-        "245+ weekly npm downloads and growing adoption",
+        `${
+          downloads
+            ? `${downloads}+ weekly npm downloads and growing adoption`
+            : "Loading downloads..."
+        }`,
         "Comprehensive TypeScript support with built-in routing and middleware",
       ],
     },

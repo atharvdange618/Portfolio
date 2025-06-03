@@ -1,6 +1,19 @@
 import { Github, Linkedin, Mail, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Hero = () => {
+  const [downloads, setDownloads] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("https://api.npmjs.org/downloads/point/last-week/reiatsu")
+      .then((res) => res.json())
+      .then((data) => setDownloads(data.downloads))
+      .catch(() => setDownloads(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const animatedDownloads = useCountUp(downloads);
   return (
     <section
       id="hero"
@@ -65,9 +78,17 @@ const Hero = () => {
               </h3>
             </div>
             <p className="text-gray-700 mb-4">
-              Production-ready TypeScript web framework with 245+ weekly npm
-              downloads
+              Production-ready TypeScript web framework with{" "}
+              {loading ? (
+                <span className="inline-block w-6 h-4 bg-gray-300 animate-pulse rounded-sm align-middle ease-out" />
+              ) : downloads !== null ? (
+                <strong>{animatedDownloads?.toLocaleString()}</strong>
+              ) : (
+                "—"
+              )}{" "}
+              weekly npm downloads
             </p>
+
             <a
               href="https://www.npmjs.com/package/reiatsu"
               target="_blank"
@@ -85,3 +106,28 @@ const Hero = () => {
 };
 
 export default Hero;
+
+function useCountUp(target: number | null, duration = 1000) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (target === null) return;
+
+    const startTime = performance.now();
+
+    const animate = (time: number) => {
+      const elapsed = time - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const value = Math.floor(progress * target);
+      setCount(value);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [target, duration]);
+
+  return target === null ? null : count;
+}

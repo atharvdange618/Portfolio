@@ -1,4 +1,5 @@
 import { Github, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Projects = () => {
   type Project = {
@@ -11,6 +12,15 @@ const Projects = () => {
     stats?: string;
   };
 
+  const [downloads, setDownloads] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("https://api.npmjs.org/downloads/point/last-week/reiatsu")
+      .then((res) => res.json())
+      .then((data) => setDownloads(data.downloads))
+      .catch(() => setDownloads(null));
+  }, []);
+
   const projects: Project[] = [
     {
       title: "Reiatsu Framework",
@@ -20,7 +30,9 @@ const Projects = () => {
       github: "https://github.com/atharvdange618/reiatsu",
       live: "https://www.npmjs.com/package/reiatsu",
       featured: true,
-      stats: "245+ weekly downloads",
+      stats: `${
+        downloads ? `${downloads}+ weekly downloads` : "Loading downloads..."
+      }`,
     },
     {
       title: "Full-Stack Practice Repository (Webd)",
