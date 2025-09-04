@@ -13,7 +13,7 @@ const Experience = () => {
 
   const experiences = [
     {
-      title: "Junior Software Engineer",
+      title: "Software Engineer",
       company: "Smartscripts Private Limited",
       location: "Pune, India",
       period: "March 2024 – Present",
