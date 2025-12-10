@@ -6,17 +6,17 @@ const About = () => {
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
             About Me
           </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-300 to-purple-300 mx-auto rounded"></div>
+          <div className="w-24 h-1 bg-linear-to-r from-blue-300 to-purple-300 mx-auto rounded"></div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <p className="text-lg text-gray-700 leading-relaxed">
               I'm a passionate full-stack engineer who believes in building
-              software that makes a difference. With over 1.5 years of
+              software that makes a difference. With nearly 2 years of
               professional experience, I've had the privilege of working on
-              diverse projects ranging from booking platforms to digital card
-              systems.
+              diverse projects ranging from booking platforms and CRM systems to
+              mobile applications and analytics platforms.
             </p>
             <p className="text-lg text-gray-700 leading-relaxed">
               My journey into framework development began with a vision to
@@ -25,7 +25,9 @@ const About = () => {
                 Reiatsu Framework
               </span>{" "}
               - a production-ready TypeScript web framework that has gained
-              traction in the developer community.
+              traction in the developer community. Beyond frameworks, I've built
+              privacy-focused analytics platforms, intelligent mobile apps with
+              React Native, and powerful developer tools.
             </p>
             <p className="text-lg text-gray-700 leading-relaxed">
               When I'm not coding, you can find me watching movies or exploring
@@ -42,7 +44,7 @@ const About = () => {
               <div className="flex items-center gap-3">
                 <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
                 <span className="text-gray-700">
-                  1.5+ years professional experience
+                  Nearly 2 years professional experience
                 </span>
               </div>
               <div className="flex items-center gap-3">

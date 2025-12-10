@@ -10,8 +10,10 @@ const Skills = () => {
       skills: [
         { name: "React.js" },
         { name: "Next.js" },
+        { name: "React Native" },
         { name: "TypeScript" },
         { name: "JavaScript" },
+        { name: "Expo" },
       ],
     },
     {
@@ -22,8 +24,11 @@ const Skills = () => {
       skills: [
         { name: "Node.js" },
         { name: "Express.js" },
+        { name: "Fastify" },
+        { name: "Hono" },
+        { name: "Bun" },
         { name: "RESTful APIs" },
-        { name: "WebSockets" },
+        { name: "Puppeteer" },
       ],
     },
     {
@@ -36,6 +41,8 @@ const Skills = () => {
         { name: "Prisma" },
         { name: "MongoDB" },
         { name: "Mongoose" },
+        { name: "SQLite" },
+        { name: "Redis" },
       ],
     },
     {
@@ -47,6 +54,8 @@ const Skills = () => {
         { name: "Git & GitHub" },
         { name: "Postman" },
         { name: "Vercel" },
+        { name: "BullMQ" },
+        { name: "Cloudinary" },
         { name: "VSCode" },
       ],
     },
@@ -71,6 +80,8 @@ const Skills = () => {
         { name: "TanStack Query" },
         { name: "React Router" },
         { name: "TanStack Router" },
+        { name: "React Native Reanimated" },
+        { name: "React Native Skia" },
       ],
     },
   ];
@@ -82,7 +93,7 @@ const Skills = () => {
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
             Technical Skills & Expertise
           </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-300 to-purple-300 mx-auto rounded"></div>
+          <div className="w-24 h-1 bg-linear-to-r from-blue-300 to-purple-300 mx-auto rounded"></div>
           <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
             A comprehensive overview of my technical skills, organized by domain
             and experience level

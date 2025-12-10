@@ -34,7 +34,7 @@ const Header = () => {
         <div className="flex justify-between items-center py-4">
           <div
             onClick={() => window.scrollTo(0, 0)}
-            className="text-xl font-bold bg-gradient-to-r from-blue-300 to-blue-600 bg-clip-text text-transparent cursor-pointer"
+            className="text-xl font-bold bg-linear-to-r from-blue-300 to-blue-600 bg-clip-text text-transparent cursor-pointer"
           >
             Atharv Dange
           </div>

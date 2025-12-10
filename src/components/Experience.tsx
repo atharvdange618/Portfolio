@@ -16,7 +16,7 @@ const Experience = () => {
       title: "Software Engineer",
       company: "Smartscripts Private Limited",
       location: "Pune, India",
-      period: "March 2024 – Present",
+      period: "March 2024 – Present (Nearly 2 years)",
       type: "Professional",
       highlights: [
         "Lead architectural decisions in a 10-person company",
@@ -24,6 +24,7 @@ const Experience = () => {
         "Smart Booking System - Led frontend development for vendor booking platform",
         "mCards.in - Architected frontend for 2.5K+ monthly active users",
         "Smart Meta Tools - Developed utility platform for 1-2K+ daily active users",
+        "In-house CRM - Building comprehensive CRM system with geo-fencing features for location-based client management and territory tracking",
       ],
       projects: [
         {
@@ -40,8 +41,14 @@ const Experience = () => {
         {
           name: "Smart Meta Tools",
           description:
-            "Developed a comprehensive utility platform for 1-2K+ daily active users",
+            "Comprehensive utility platform for 1-2K+ daily active users",
           link: "https://smartmeta.net/smart-tools",
+        },
+        {
+          name: "In-house CRM",
+          description:
+            "CRM system with geo-fencing for territory and client management",
+          link: "#",
         },
       ],
     },
@@ -71,7 +78,7 @@ const Experience = () => {
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
             Experience
           </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-300 to-purple-300 mx-auto rounded"></div>
+          <div className="w-24 h-1 bg-linear-to-r from-blue-300 to-purple-300 mx-auto rounded"></div>
         </div>
 
         <div className="space-y-8">

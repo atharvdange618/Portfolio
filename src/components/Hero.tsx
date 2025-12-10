@@ -35,9 +35,11 @@ const Hero = () => {
 
         <div className="animate-fade-in delay-300">
           <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Full-stack engineer with 1.5+ years of professional experience. I
-            build scalable web applications and maintain open-source frameworks
-            with growing adoption across the developer community.
+            Full-stack engineer with nearly 2 years of professional experience
+            specializing in backend architecture and framework development. I
+            build production-grade web applications, mobile apps, and maintain
+            open-source frameworks with growing adoption across the developer
+            community.
           </p>
         </div>
 

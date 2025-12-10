@@ -25,7 +25,7 @@ const Projects = () => {
     {
       title: "Reiatsu Framework",
       description:
-        "Production-ready TypeScript web framework built with Node.js core modules. Features zero-dependency architecture, built-in routing, middleware support, and comprehensive TypeScript integration. This project has deepened my understanding of Node.js internals, framework architecture, and developer experience design. ",
+        "Production-ready TypeScript web framework built with Node.js core modules. Features zero-dependency architecture, built-in routing, middleware support, and comprehensive TypeScript integration. Demonstrates deep understanding of Node.js internals and framework architecture.",
       tech: ["TypeScript", "Node.js", "Zero Dependencies"],
       github: "https://github.com/atharvdange618/reiatsu",
       live: "https://www.npmjs.com/package/reiatsu",
@@ -35,36 +35,43 @@ const Projects = () => {
       }`,
     },
     {
-      title: "Full-Stack Practice Repository (Webd)",
+      title: "Telemetry",
       description:
-        "Comprehensive two-year collection showcasing progressive expertise across frontend, backend, and DevOps technologies. A complete learning journey documented in code.",
-      tech: ["React", "Next.js", "Node.js", "Docker", "Redis"],
-      github: "https://github.com/atharvdange618",
+        "Privacy-first, cookieless analytics platform with real-time dashboards, multi-site management, goal tracking, and world map visualizations. Built with modern backend technologies and beautiful React frontend.",
+      tech: ["Fastify", "React", "Prisma", "PostgreSQL", "BullMQ", "Redis"],
+      github: "https://github.com/atharvdange618/Telemetry",
+      live: "https://usetelemetry.vercel.app",
       featured: true,
     },
     {
-      title: "Webpage Thumbnail Generator",
+      title: "ArcHive",
       description:
-        "Node.js service utilizing Puppeteer and Open Graph scraping to generate optimized webpage thumbnails with configurable dimensions and high-DPI output.",
-      tech: ["Node.js", "Puppeteer", "Open Graph"],
-      github: "https://github.com/atharvdange618/Webpage-Thumbnail-Generator",
-      live: "https://webpage-thumbnail-generator.onrender.com",
+        "Personal digital sanctuary for thoughts, links, and code snippets. Features intelligent content processing, automated screenshot generation, NLP-based tagging, and full-text search. Cross-platform with mobile apps for iOS & Android.",
+      tech: ["Hono", "Bun", "MongoDB", "Expo", "Puppeteer", "Cloudinary"],
+      github: "https://github.com/atharvdange618/ArcHive",
+      featured: true,
+    },
+    {
+      title: "Minty",
+      description:
+        "Smart expense tracking mobile app with automatic SMS parsing from 50+ banks and UPI apps. Features intelligent transaction detection, category auto-classification, advanced analytics with charts, and 100% offline-first architecture.",
+      tech: ["React Native", "TypeScript", "SQLite", "Expo"],
+      github: "https://github.com/atharvdange618/Minty",
+    },
+    {
+      title: "Recon",
+      description:
+        "Tactical bug tracking intelligence system with stunning visual timelines rendered using Skia graphics. Features real-time dashboard, deadline intelligence, comprehensive metadata capture, and offline-first SQLite architecture.",
+      tech: ["React Native", "TypeScript", "SQLite", "React Native Skia"],
+      github: "https://github.com/atharvdange618/Recon",
     },
     {
       title: "XML Sitemap Generator",
       description:
-        "Next.js application that intelligently crawls SSR and CSR pages to generate standards-compliant XML sitemaps, supporting up to 1000 URLs with real-time feedback.",
-      tech: ["Next.js", "Web Crawling", "XML"],
+        "Modern web application that intelligently crawls websites to generate SEO-optimized XML sitemaps. Handles both SSR and CSR pages, respects robots.txt, and provides real-time progress tracking via Server-Sent Events.",
+      tech: ["Next.js", "Puppeteer", "Web Crawling", "SSE"],
       github: "https://github.com/atharvdange618/xml-sitemap-generator",
       live: "https://xml-sitemap-generator.vercel.app",
-    },
-    {
-      title: "Recipe Finder App",
-      description:
-        "The Recipe Finder App is a web application designed to help users search for and explore various recipes. The application provides detailed information on recipes, including cuisine types and health labels, and allows users to watch recipe videos on YouTube.",
-      tech: ["React", "EDAMAM API"],
-      github: "https://github.com/atharvdange618/Recipe-finder-app",
-      live: "https://recipe-finder-for-mom.netlify.app",
     },
   ];
 
@@ -146,7 +153,7 @@ const Projects = () => {
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
             Featured Projects
           </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-300 to-purple-300 mx-auto rounded mb-8"></div>
+          <div className="w-24 h-1 bg-linear-to-r from-blue-300 to-purple-300 mx-auto rounded mb-8"></div>
         </div>
 
         {/* Render Active Layout */}

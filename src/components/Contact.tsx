@@ -48,7 +48,7 @@ const Contact = () => {
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
             Get In Touch
           </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-300 to-purple-300 mx-auto rounded"></div>
+          <div className="w-24 h-1 bg-linear-to-r from-blue-300 to-purple-300 mx-auto rounded"></div>
           <p className="text-gray-700 mt-6 max-w-2xl mx-auto">
             I'm always open to discussing new opportunities, collaborations, or
             just having a chat about technology. Feel free to reach out!

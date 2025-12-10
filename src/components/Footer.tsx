@@ -6,7 +6,7 @@ const Footer = () => {
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
-            <div className="text-xl font-bold bg-gradient-to-r from-blue-300 to-blue-600 bg-clip-text text-transparent mb-2">
+            <div className="text-xl font-bold bg-linear-to-r from-blue-300 to-blue-600 bg-clip-text text-transparent mb-2">
               Atharv Dange
             </div>
             <p className="text-gray-700 font-medium">
