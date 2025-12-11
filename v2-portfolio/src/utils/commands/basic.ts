@@ -14,7 +14,8 @@ export const helpCommand: CommandDefinition = {
     const output = `\x1b[1;36mAvailable Commands:\x1b[0m
 
   \x1b[1;32mhelp\x1b[0m              Show this help message
-  \x1b[1;32mls\x1b[0m                List available sections
+  \x1b[1;32mcd\x1b[0m <dir>          Change directory
+  \x1b[1;32mls\x1b[0m                List directory contents
   \x1b[1;32mcat\x1b[0m <file>        View section content
   \x1b[1;32mpwd\x1b[0m               Print current directory
   \x1b[1;32mclear\x1b[0m             Clear the terminal screen
@@ -29,49 +30,12 @@ export const helpCommand: CommandDefinition = {
   \x1b[1;32mwhoami\x1b[0m            Display user information
   \x1b[1;32mneofetch\x1b[0m          Show system information
 
+  \x1b[1;33mEaster Eggs:\x1b[0m
+  \x1b[1;32mcowsay\x1b[0m, \x1b[1;32msl\x1b[0m, \x1b[1;32mmatrix\x1b[0m, \x1b[1;32mfortune\x1b[0m, \x1b[1;32msudo\x1b[0m, \x1b[1;32mvim\x1b[0m, \x1b[1;32mrm\x1b[0m
+
 \x1b[2mTip: Press Tab for auto-completion. Use ↑/↓ arrows for command history.\x1b[0m
 `;
     return { output };
-  },
-};
-
-// ls command
-export const lsCommand: CommandDefinition = {
-  name: "ls",
-  description: "List available sections",
-  aliases: ["dir"],
-  execute: (context: CommandContext): CommandResponse => {
-    const detailed = context.flags.l || context.flags.la || context.flags.all;
-
-    if (detailed) {
-      const output = `
-\x1b[1;36mtotal 6\x1b[0m
-drwxr-xr-x  atharv  staff    4096  Dec 11 00:00  \x1b[1;34m.\x1b[0m
-drwxr-xr-x  atharv  staff    4096  Dec 11 00:00  \x1b[1;34m..\x1b[0m
--rw-r--r--  atharv  staff    2048  Dec 11 00:00  \x1b[0mabout.md\x1b[0m
-drwxr-xr-x  atharv  staff    4096  Dec 11 00:00  \x1b[1;34mprojects\x1b[0m
-drwxr-xr-x  atharv  staff    4096  Dec 11 00:00  \x1b[1;34mexperience\x1b[0m
--rw-r--r--  atharv  staff    1024  Dec 11 00:00  \x1b[0mskills.json\x1b[0m
--rwxr-xr-x  atharv  staff    512   Dec 11 00:00  \x1b[1;32mcontact.sh\x1b[0m
-drwxr-xr-x  atharv  staff    4096  Dec 11 00:00  \x1b[1;34m.github\x1b[0m
-`;
-      return { output };
-    }
-
-    const output = `
-\x1b[1;34mabout.md\x1b[0m       \x1b[1;34mprojects/\x1b[0m      \x1b[1;34mexperience/\x1b[0m    
-\x1b[1;34mskills.json\x1b[0m    \x1b[1;32mcontact.sh\x1b[0m     \x1b[1;34m.github/\x1b[0m
-`;
-    return { output };
-  },
-};
-
-// pwd command
-export const pwdCommand: CommandDefinition = {
-  name: "pwd",
-  description: "Print working directory",
-  execute: (): CommandResponse => {
-    return { output: "/home/atharv/portfolio\n" };
   },
 };
 
@@ -216,8 +180,6 @@ export const historyCommand: CommandDefinition = {
 
 export const basicCommands = [
   helpCommand,
-  lsCommand,
-  pwdCommand,
   whoamiCommand,
   catCommand,
   echoCommand,

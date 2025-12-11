@@ -147,7 +147,7 @@ export const matrixCommand: CommandDefinition = {
   execute: async (): Promise<CommandResponse> => {
     const chars = "ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ0123456789:・.=*+-<>";
     const width = 180;
-    const height = 20;
+    const height = 40;
     let output = "\n";
 
     // Generate random vertical "streams" of rain
@@ -228,6 +228,76 @@ export const fortuneCommand: CommandDefinition = {
     const output = `\n  \x1b[1;36m"${fortune}"\x1b[0m\n`;
 
     return { output };
+  },
+};
+
+// sudo command - Permission denied easter egg
+// Note: This is actually handled in Terminal.tsx to re-execute commands
+export const sudoCommand: CommandDefinition = {
+  name: "sudo",
+  description: "Execute a command as superuser",
+  usage: "sudo <command>",
+  execute: async (): Promise<CommandResponse> => {
+    // This is intercepted in Terminal.tsx before it reaches here
+    return { output: "" };
+  },
+};
+
+// vim/vi command - Trap users in vim
+// Note: This command is handled directly in Terminal.tsx for viewport control
+export const vimCommand: CommandDefinition = {
+  name: "vim",
+  description: "Vi IMproved - enhanced vi editor",
+  aliases: ["vi"],
+  execute: async (): Promise<CommandResponse> => {
+    // This is intercepted in Terminal.tsx before it reaches here
+    return { output: "" };
+  },
+};
+
+// rm command - Fake deletion
+export const rmCommand: CommandDefinition = {
+  name: "rm",
+  description: "Remove files or directories",
+  usage: "rm [options] <file>",
+  execute: async (context: CommandContext): Promise<CommandResponse> => {
+    const rawInput = context.rawInput.toLowerCase();
+    const hasRFlag = context.flags["r"] || context.flags["rf"];
+    const hasFFlag = context.flags["f"];
+    const hasRecursive = hasRFlag || rawInput.includes("-r");
+    const hasForce = hasFFlag || rawInput.includes("-f");
+    const hasRoot = context.args.some(
+      (arg) => arg === "/" || arg === "/*" || arg === "~" || arg === "~/*"
+    );
+    const hasNoPreserve = rawInput.includes("--no-preserve-root");
+
+    // Check for dangerous commands
+    if ((hasRecursive && hasForce && hasRoot) || hasNoPreserve) {
+      let output = "\x1b[1;31m";
+      output += "⚠️  WARNING: Deleting system files...\n\n";
+      output += "Deleting: /bin\n";
+      output += "Deleting: /etc\n";
+      output += "Deleting: /home\n";
+      output += "Deleting: /usr\n";
+      output += "Deleting: /var\n";
+      output += "Deleting: /sys\n";
+      output += "Deleting: /proc\n";
+      output += "Deleting: /dev\n";
+      output +=
+        "\n[\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100%\n\n";
+      output += "\x1b[0m";
+      output += "\x1b[1;32mJust kidding! 😄\x1b[0m\n";
+      output += "I'm not letting you delete my portfolio that easily!\n";
+      output += "This is a safe space. Try 'help' for actual commands.\n";
+      return { output };
+    }
+
+    // For any other rm command
+    const target = context.args.join(" ") || "(no file specified)";
+    return {
+      output: `\x1b[1;31mrm:\x1b[0m cannot remove '${target}': Permission denied (this is a portfolio, not a real filesystem!)\n`,
+      exitCode: 1,
+    };
   },
 };
 
