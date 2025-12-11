@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://atharvdange.vercel.app"),
   title: "Atharv Dange - Full Stack Developer & Software Engineer",
   description:
     "Portfolio of Atharv Dange (@atharvdange618) - Full Stack Developer specializing in TypeScript, React, Next.js, and Node.js. Creator of Reiatsu framework, Telemetry analytics, and innovative web applications.",
@@ -114,6 +116,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );
