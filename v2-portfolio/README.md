@@ -52,6 +52,9 @@ This portfolio reimagines the traditional portfolio website as a terminal user i
 - `git log --oneline` - Compact timeline view
 - `npm list` - View all skills
 - `npm info <skill>` - View skill details
+- `gh user` - View GitHub stats (live API) ✨
+- `gh repos` - View all repositories with stars (live) ✨
+- `gh repo <name>` - View specific repository details (live) ✨
 
 ### Utilities
 
@@ -94,13 +97,13 @@ This portfolio reimagines the traditional portfolio website as a terminal user i
 - Command history and keyboard shortcuts
 - Welcome screen and responsive layout
 
-**Phase 2: Enhanced Features & Polish** 🔄 In Progress (40%)
+**Phase 2: Enhanced Features & Polish** 🔄 In Progress (65%)
 
-- Tab completion _(next)_
-- Cat command for content _(next)_
-- Live API integration _(next)_
-- Easter egg commands
-- Mobile optimization
+- Tab completion ✅
+- Cat command for content ✅
+- Live GitHub API ✅
+- Easter egg commands *(next)*
+- Mobile optimization *(next)*
 
 **Phase 3: Advanced Features** 📅 Planned
 

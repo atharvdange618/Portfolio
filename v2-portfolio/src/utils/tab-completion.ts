@@ -90,6 +90,14 @@ export class TabCompletion {
         // Complete subcommand (log)
         return this.completeGitSubcommand(lastArg);
 
+      case "gh":
+        // gh user|repos|repo <name>
+        if (args[0] === "repo" || args[0] === "repository") {
+          return this.completeRepoNames(lastArg);
+        }
+        // Complete subcommand (user, repos, repo)
+        return this.completeGhSubcommand(lastArg);
+
       case "ls":
       case "dir":
         // No argument completion for ls
@@ -178,6 +186,53 @@ export class TabCompletion {
   private completeGitSubcommand(partial: string): CompletionResult {
     const subcommands = ["log"];
     const matches = subcommands.filter((sub) => sub.startsWith(partial));
+
+    if (matches.length === 0) {
+      return { completions: [], commonPrefix: partial };
+    }
+
+    const commonPrefix = this.findCommonPrefix(matches);
+    return { completions: matches, commonPrefix };
+  }
+
+  /**
+   * Complete gh subcommands
+   */
+  private completeGhSubcommand(partial: string): CompletionResult {
+    const subcommands = [
+      "user",
+      "profile",
+      "repos",
+      "repositories",
+      "repo",
+      "repository",
+    ];
+    const matches = subcommands.filter((sub) => sub.startsWith(partial));
+
+    if (matches.length === 0) {
+      return { completions: [], commonPrefix: partial };
+    }
+
+    const commonPrefix = this.findCommonPrefix(matches);
+    return { completions: matches, commonPrefix };
+  }
+
+  /**
+   * Complete repository names for gh repo
+   */
+  private completeRepoNames(partial: string): CompletionResult {
+    const repos = [
+      "reiatsu",
+      "telemetry",
+      "Archive",
+      "Minty",
+      "Recon",
+      "xml-sitemap-generator",
+    ];
+
+    const matches = repos.filter((repo) =>
+      repo.toLowerCase().startsWith(partial.toLowerCase())
+    );
 
     if (matches.length === 0) {
       return { completions: [], commonPrefix: partial };

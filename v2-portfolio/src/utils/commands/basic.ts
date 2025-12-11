@@ -24,6 +24,7 @@ export const helpCommand: CommandDefinition = {
   \x1b[1;32msystemctl\x1b[0m status  View running projects/services
   \x1b[1;32mgit\x1b[0m log           View experience timeline
   \x1b[1;32mnpm\x1b[0m list          View skills and packages
+  \x1b[1;32mgh\x1b[0m user           View GitHub stats (live)
 
   \x1b[1;32mwhoami\x1b[0m            Display user information
   \x1b[1;32mneofetch\x1b[0m          Show system information

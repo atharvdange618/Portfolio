@@ -39,6 +39,7 @@ export async function fetchRepoStats(username: string, repo: string) {
       openIssues: data.open_issues_count,
       language: data.language,
       updatedAt: data.updated_at,
+      description: data.description,
     };
   } catch (error) {
     console.error("Error fetching repo stats:", error);

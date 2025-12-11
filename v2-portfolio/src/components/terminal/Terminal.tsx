@@ -11,6 +11,13 @@ import { basicCommands } from "@/utils/commands/basic";
 import { systemctlCommand } from "@/utils/commands/systemctl";
 import { gitCommand } from "@/utils/commands/git";
 import { npmCommand } from "@/utils/commands/npm";
+import { ghCommand } from "@/utils/commands/gh";
+import {
+  cowsayCommand,
+  slCommand,
+  matrixCommand,
+  fortuneCommand,
+} from "@/utils/commands/easter-eggs";
 import { useTerminalStore } from "@/store/terminal-store";
 
 const PROMPT = "\x1b[1;32matharv@portfolio\x1b[0m:\x1b[1;34m~\x1b[0m$ ";
@@ -76,6 +83,11 @@ const Terminal = () => {
     registry.register(systemctlCommand);
     registry.register(gitCommand);
     registry.register(npmCommand);
+    registry.register(ghCommand);
+    registry.register(cowsayCommand);
+    registry.register(slCommand);
+    registry.register(matrixCommand);
+    registry.register(fortuneCommand);
     commandRegistryRef.current = registry;
 
     // Initialize tab completion
@@ -296,6 +308,12 @@ const Terminal = () => {
     }
 
     try {
+      // Show loading indicator for async commands that fetch data
+      const asyncCommands = ["gh", "curl"];
+      if (asyncCommands.includes(commandName)) {
+        term.writeln("\x1b[1;36mFetching data...\x1b[0m");
+      }
+
       const result = await command.execute(context);
       if (result.output) {
         term.writeln(result.output);
