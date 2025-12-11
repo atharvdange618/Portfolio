@@ -84,7 +84,7 @@ export const experiences: Experience[] = [
     hash: "a7f3c21",
     title: "Software Engineer",
     company: "SmartScripts Pvt. Ltd.",
-    period: "Jul 2024 - Present",
+    period: "March 2024 - Present",
     description:
       "Full-stack development with MERN/PERN stack, React Native/Expo mobile apps, production deployment, and client interactions",
     icon: "💼",
