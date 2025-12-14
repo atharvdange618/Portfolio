@@ -29,7 +29,7 @@ function formatNeofetch(): string {
   return `
     ${c.cyan}       ______       ${c.reset}   ${c.cyan}atharv${c.reset}@${c.cyan}portfolio${c.reset}
     ${c.cyan}      /  __  \\      ${c.reset}   ---------------------------
-    ${c.cyan}     /  /  \\  \\     ${c.reset}   ${c.yellow}OS${c.reset}:        Portfolio v2.0
+    ${c.cyan}     /  /  \\  \\     ${c.reset}   ${c.yellow}OS${c.reset}:        Portfolio
     ${c.cyan}    /  /____\\  \\    ${c.reset}   ${c.yellow}Host${c.reset}:      atharvdange.dev
     ${c.cyan}   /  ______    \\   ${c.reset}   ${c.yellow}Kernel${c.reset}:    Next.js 16.0.8
     ${c.cyan}  /__/      \\____\\  ${c.reset}   ${c.yellow}Uptime${c.reset}:    4 years (since Jan 2021)
