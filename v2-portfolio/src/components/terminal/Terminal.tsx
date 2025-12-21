@@ -23,7 +23,9 @@ import {
 } from "@/utils/commands/easter-eggs";
 import { useTerminalStore } from "@/store/terminal-store";
 import { useFileSystemStore } from "@/store/filesystem-store";
+import { useThemeStore } from "@/store/theme-store";
 import { cdCommand, lsCommand, pwdCommand } from "@/utils/commands/navigation";
+import { themeCommand } from "@/utils/commands/theme";
 
 const getPrompt = () => {
   const { getAbsolutePath } = useFileSystemStore.getState();
@@ -89,6 +91,8 @@ const Terminal = () => {
 
   const [isReady, setIsReady] = useState(false);
   const { addToHistory } = useTerminalStore();
+  const currentTheme = useThemeStore((state) => state.currentTheme);
+  const getTheme = useThemeStore((state) => state.getTheme);
 
   useEffect(() => {
     if (!terminalRef.current || xtermRef.current) return;
@@ -116,6 +120,9 @@ const Terminal = () => {
     registry.register(sudoCommand);
     registry.register(rmCommand);
     registry.register(vimCommand);
+
+    // Register Theme Command
+    registry.register(themeCommand);
 
     commandRegistryRef.current = registry;
     tabCompletionRef.current = new TabCompletion(registry);
@@ -169,6 +176,14 @@ const Terminal = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Apply theme changes dynamically
+  useEffect(() => {
+    if (!xtermRef.current) return;
+
+    const theme = getTheme();
+    xtermRef.current.options.theme = theme.theme;
+  }, [currentTheme, getTheme]);
 
   const handleVimInput = (term: XTerm, data: string) => {
     const code = data.charCodeAt(0);
@@ -372,7 +387,7 @@ const Terminal = () => {
     addToHistory(input, "");
 
     // Special case: clear command
-    if (commandName === "clear" || commandName === "cls") {
+    if (commandName === "clear" || commandName === "c") {
       term.clear();
       displayWelcomeMessage(term);
       term.write(getPrompt());

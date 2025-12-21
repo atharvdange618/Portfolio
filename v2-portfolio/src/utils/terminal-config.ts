@@ -1,32 +1,8 @@
 import { ITheme } from "@xterm/xterm";
+import { themes } from "@/store/theme-store";
 
-export const terminalTheme: ITheme = {
-  background: "#0d1117",
-  foreground: "#c9d1d9",
-  cursor: "#50fa7b",
-  cursorAccent: "#0d1117",
-
-  black: "#1a1d29",
-  red: "#ff5555",
-  green: "#50fa7b",
-  yellow: "#f1fa8c",
-  blue: "#8be9fd",
-  magenta: "#ff79c6",
-  cyan: "#78dce8",
-  white: "#c9d1d9",
-
-  brightBlack: "#6272a4",
-  brightRed: "#ff6e6e",
-  brightGreen: "#69ff94",
-  brightYellow: "#ffffa5",
-  brightBlue: "#a4ffff",
-  brightMagenta: "#ff92df",
-  brightCyan: "#a4ffff",
-  brightWhite: "#ffffff",
-
-  selectionBackground: "#44475a",
-  selectionForeground: "#f8f8f2",
-};
+// Use default theme from theme store
+export const terminalTheme: ITheme = themes.default.theme;
 
 export const terminalConfig = {
   fontFamily: '"JetBrains Mono", "Fira Code", Monaco, Consolas, monospace',

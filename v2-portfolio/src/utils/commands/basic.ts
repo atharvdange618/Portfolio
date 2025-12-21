@@ -30,6 +30,8 @@ export const helpCommand: CommandDefinition = {
   \x1b[1;32mwhoami\x1b[0m            Display user information
   \x1b[1;32mneofetch\x1b[0m          Show system information
 
+  \x1b[1;32mtheme\x1b[0m [list|set]  Customize terminal theme
+
   \x1b[1;33mEaster Eggs:\x1b[0m
   \x1b[1;32mcowsay\x1b[0m, \x1b[1;32msl\x1b[0m, \x1b[1;32mmatrix\x1b[0m, \x1b[1;32mfortune\x1b[0m, \x1b[1;32msudo\x1b[0m, \x1b[1;32mvim\x1b[0m, \x1b[1;32mrm\x1b[0m
 
