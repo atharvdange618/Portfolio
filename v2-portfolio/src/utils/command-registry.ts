@@ -7,6 +7,12 @@ export interface CommandContext {
 export interface CommandResponse {
   output: string;
   exitCode?: number;
+  metadata?: {
+    interactive?: boolean;
+    mode?: string;
+    items?: unknown[];
+    [key: string]: unknown;
+  };
 }
 
 export type CommandExecutor = (

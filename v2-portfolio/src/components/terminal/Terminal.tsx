@@ -26,6 +26,12 @@ import { useFileSystemStore } from "@/store/filesystem-store";
 import { useThemeStore } from "@/store/theme-store";
 import { cdCommand, lsCommand, pwdCommand } from "@/utils/commands/navigation";
 import { themeCommand } from "@/utils/commands/theme";
+import {
+  projectsCommand,
+  ProjectTUIState,
+  renderProjectTUI,
+  handleProjectSelection,
+} from "@/utils/commands/interactive-projects";
 
 const getPrompt = () => {
   const { getAbsolutePath } = useFileSystemStore.getState();
@@ -89,6 +95,10 @@ const Terminal = () => {
   const vimModeRef = useRef<boolean>(false);
   const vimBufferRef = useRef<string>("");
 
+  // Interactive TUI Mode Refs
+  const tuiModeRef = useRef<boolean>(false);
+  const tuiStateRef = useRef<ProjectTUIState | null>(null);
+
   const [isReady, setIsReady] = useState(false);
   const { addToHistory } = useTerminalStore();
   const currentTheme = useThemeStore((state) => state.currentTheme);
@@ -124,6 +134,9 @@ const Terminal = () => {
     // Register Theme Command
     registry.register(themeCommand);
 
+    // Register Interactive Commands
+    registry.register(projectsCommand);
+
     commandRegistryRef.current = registry;
     tabCompletionRef.current = new TabCompletion(registry);
 
@@ -156,6 +169,8 @@ const Terminal = () => {
     term.onData((data) => {
       if (vimModeRef.current) {
         handleVimInput(term, data);
+      } else if (tuiModeRef.current) {
+        handleTUIInput(term, data);
       } else {
         handleTerminalInput(term, data);
       }
@@ -238,6 +253,67 @@ const Terminal = () => {
     if (code >= 32 && code <= 126) {
       vimBufferRef.current += data;
       term.write(data);
+    }
+  };
+
+  const handleTUIInput = (term: XTerm, data: string) => {
+    if (!tuiStateRef.current) return;
+
+    const code = data.charCodeAt(0);
+
+    // Up arrow (\x1b[A) or k - Check BEFORE ESC to avoid conflicts
+    if (data === "\x1b[A" || data === "k") {
+      if (tuiStateRef.current.selectedIndex > 0) {
+        tuiStateRef.current.selectedIndex--;
+        term.clear();
+        term.write(renderProjectTUI(tuiStateRef.current));
+      }
+      return;
+    }
+
+    // Down arrow (\x1b[B) or j
+    if (data === "\x1b[B" || data === "j") {
+      if (
+        tuiStateRef.current.selectedIndex <
+        tuiStateRef.current.items.length - 1
+      ) {
+        tuiStateRef.current.selectedIndex++;
+        term.clear();
+        term.write(renderProjectTUI(tuiStateRef.current));
+      }
+      return;
+    }
+
+    // ESC key - Exit TUI mode (only on standalone ESC, not arrow sequences)
+    if (data === "\x1b" && data.length === 1) {
+      tuiModeRef.current = false;
+      tuiStateRef.current = null;
+      term.write("\r\n\x1b[2mExited project browser\x1b[0m\r\n");
+      term.write(getPrompt());
+      return;
+    }
+
+    // q key - Also exit
+    if (data === "q" || data === "Q") {
+      tuiModeRef.current = false;
+      tuiStateRef.current = null;
+      term.write("\r\n\x1b[2mExited project browser\x1b[0m\r\n");
+      term.write(getPrompt());
+      return;
+    }
+
+    // Enter key - Select project
+    if (code === 13) {
+      const output = handleProjectSelection(tuiStateRef.current);
+      tuiModeRef.current = false;
+      tuiStateRef.current = null;
+      term.write("\r\n");
+      if (output) {
+        term.write(output);
+      }
+      term.write("\r\n");
+      term.write(getPrompt());
+      return;
     }
   };
 
@@ -626,6 +702,24 @@ const Terminal = () => {
       }
 
       const result = await command.execute(context);
+
+      // Check if command wants to enter interactive mode
+      if (
+        result.metadata?.interactive &&
+        result.metadata?.mode === "projects"
+      ) {
+        tuiModeRef.current = true;
+        tuiStateRef.current = {
+          selectedIndex: 0,
+          items: (result.metadata.items || []) as ProjectTUIState["items"],
+        };
+        term.clear();
+        if (tuiStateRef.current) {
+          term.write(renderProjectTUI(tuiStateRef.current));
+        }
+        return;
+      }
+
       if (result.output && result.output.trim()) {
         term.write(result.output);
       }

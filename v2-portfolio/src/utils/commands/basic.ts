@@ -27,6 +27,8 @@ export const helpCommand: CommandDefinition = {
   \x1b[1;32mnpm\x1b[0m list          View skills and packages
   \x1b[1;32mgh\x1b[0m user           View GitHub stats (live)
 
+  \x1b[1;32mprojects\x1b[0m          Interactive project browser
+
   \x1b[1;32mwhoami\x1b[0m            Display user information
   \x1b[1;32mneofetch\x1b[0m          Show system information
 
@@ -47,7 +49,7 @@ export const whoamiCommand: CommandDefinition = {
   description: "Display current user",
   execute: (): CommandResponse => {
     const output = `
-\x1b[1;36matharv\x1b[0m
+\x1b[1;36mAtharv\x1b[0m
 
 Full Stack Engineer specializing in MERN/PERN stack and React Native.
 Passionate about backend development and building meaningful projects.
