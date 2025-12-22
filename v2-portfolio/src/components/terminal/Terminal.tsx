@@ -62,7 +62,14 @@ async function displayWelcomeMessage(term: XTerm) {
   };
 
   // Fetch last login info from analytics
-  let lastLoginText = "Never";
+  const today = new Date();
+  const todayStr = today.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  let lastLoginText = todayStr;
+
   try {
     const response = await fetch("/api/analytics/last-session");
     if (response.ok) {
@@ -81,7 +88,7 @@ async function displayWelcomeMessage(term: XTerm) {
       }
     }
   } catch (error) {
-    // Silently fail - show default message
+    // Silently fail - show today's date as default
     console.error("Failed to fetch last login:", error);
   }
 
