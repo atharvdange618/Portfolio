@@ -26,12 +26,14 @@ import { useFileSystemStore } from "@/store/filesystem-store";
 import { useThemeStore } from "@/store/theme-store";
 import { cdCommand, lsCommand, pwdCommand } from "@/utils/commands/navigation";
 import { themeCommand } from "@/utils/commands/theme";
+import { analyticsCommand } from "@/utils/commands/analytics";
 import {
   projectsCommand,
   ProjectTUIState,
   renderProjectTUI,
   handleProjectSelection,
 } from "@/utils/commands/interactive-projects";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 const getPrompt = () => {
   const { getAbsolutePath } = useFileSystemStore.getState();
@@ -40,7 +42,7 @@ const getPrompt = () => {
   return `\x1b[1;32matharv@portfolio\x1b[0m:\x1b[1;34m${displayPath}\x1b[0m$ `;
 };
 
-function displayWelcomeMessage(term: XTerm) {
+async function displayWelcomeMessage(term: XTerm) {
   // The top border determines the width (60 dashes = 60 chars inner width)
   const TOP_BORDER =
     "┌────────────────────────────────────────────────────────────┐";
@@ -59,10 +61,34 @@ function displayWelcomeMessage(term: XTerm) {
     )}\x1b[1;36m│\x1b[0m`;
   };
 
+  // Fetch last login info from analytics
+  let lastLoginText = "Never";
+  try {
+    const response = await fetch("/api/analytics/last-session");
+    if (response.ok) {
+      const data = await response.json();
+      if (data.lastSession) {
+        const date = new Date(data.lastSession.lastActivity);
+        const dateStr = date.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        });
+        const location = data.lastSession.location
+          ? `${data.lastSession.location.cityName}, ${data.lastSession.location.countryCode}`
+          : data.lastSession.ipHash.substring(0, 8);
+        lastLoginText = `${dateStr} from ${location}`;
+      }
+    }
+  } catch (error) {
+    // Silently fail - show default message
+    console.error("Failed to fetch last login:", error);
+  }
+
   term.writeln(`\x1b[1;36m${TOP_BORDER}\x1b[0m`);
 
   term.writeln(createLine("  Welcome to \x1b[1;32matharvdange.dev\x1b[0m"));
-  term.writeln(createLine("  Last login: Wed Dec 11 2025 from 203.x.x.x"));
+  term.writeln(createLine(`  Last login: ${lastLoginText}`));
   term.writeln(createLine("")); // Empty line
   term.writeln(createLine("  \x1b[1;33m[Portfolio Server]\x1b[0m"));
   term.writeln(createLine("  System Uptime: 99.98%"));
@@ -85,6 +111,9 @@ const Terminal = () => {
   const commandRegistryRef = useRef<CommandRegistry | null>(null);
   const tabCompletionRef = useRef<TabCompletion | null>(null);
 
+  // Analytics hook
+  const { trackCommand } = useAnalytics();
+
   // State Refs
   const currentLineRef = useRef<string>("");
   const cursorPositionRef = useRef<number>(0);
@@ -94,6 +123,11 @@ const Terminal = () => {
   // Vim Mode Refs
   const vimModeRef = useRef<boolean>(false);
   const vimBufferRef = useRef<string>("");
+
+  // Password Input Mode Refs
+  const passwordModeRef = useRef<boolean>(false);
+  const passwordBufferRef = useRef<string>("");
+  const passwordCommandRef = useRef<string>("");
 
   // Interactive TUI Mode Refs
   const tuiModeRef = useRef<boolean>(false);
@@ -134,6 +168,9 @@ const Terminal = () => {
     // Register Theme Command
     registry.register(themeCommand);
 
+    // Register Analytics Command
+    registry.register(analyticsCommand);
+
     // Register Interactive Commands
     registry.register(projectsCommand);
 
@@ -149,13 +186,13 @@ const Terminal = () => {
     term.loadAddon(webLinksAddon);
     term.open(terminalRef.current);
 
-    requestAnimationFrame(() => {
+    requestAnimationFrame(async () => {
       fitAddon.fit();
       fitAddonRef.current = fitAddon;
       xtermRef.current = term;
 
       // Display welcome message
-      displayWelcomeMessage(term);
+      await displayWelcomeMessage(term);
       term.write(getPrompt());
       setIsReady(true);
 
@@ -169,6 +206,8 @@ const Terminal = () => {
     term.onData((data) => {
       if (vimModeRef.current) {
         handleVimInput(term, data);
+      } else if (passwordModeRef.current) {
+        handlePasswordInput(term, data);
       } else if (tuiModeRef.current) {
         handleTUIInput(term, data);
       } else {
@@ -200,6 +239,58 @@ const Terminal = () => {
     xtermRef.current.options.theme = theme.theme;
   }, [currentTheme, getTheme]);
 
+  const handlePasswordInput = (term: XTerm, data: string) => {
+    const code = data.charCodeAt(0);
+
+    // Handle Enter - submit password
+    if (code === 13) {
+      const password = passwordBufferRef.current;
+      const command = passwordCommandRef.current;
+
+      // Reset password mode
+      passwordModeRef.current = false;
+      passwordBufferRef.current = "";
+      passwordCommandRef.current = "";
+
+      term.write("\r\n");
+
+      // Execute the command with the password
+      if (command === "analytics") {
+        executeAnalytics(term, password);
+      }
+
+      return;
+    }
+
+    // Handle backspace
+    if (code === 127) {
+      if (passwordBufferRef.current.length > 0) {
+        passwordBufferRef.current = passwordBufferRef.current.slice(0, -1);
+        term.write("\b \b");
+      }
+      return;
+    }
+
+    // Ctrl+C - cancel password input
+    if (code === 3) {
+      passwordModeRef.current = false;
+      passwordBufferRef.current = "";
+      passwordCommandRef.current = "";
+      term.write("^C\r\n");
+      (async () => {
+        await displayWelcomeMessage(term);
+        term.write(getPrompt());
+      })();
+      return;
+    }
+
+    // Regular character - show asterisk instead of actual character
+    if (code >= 32 && code <= 126) {
+      passwordBufferRef.current += data;
+      term.write("*");
+    }
+  };
+
   const handleVimInput = (term: XTerm, data: string) => {
     const code = data.charCodeAt(0);
 
@@ -213,8 +304,10 @@ const Terminal = () => {
         vimBufferRef.current = "";
         term.write("\r\n");
         term.clear();
-        displayWelcomeMessage(term);
-        term.write(getPrompt());
+        (async () => {
+          await displayWelcomeMessage(term);
+          term.write(getPrompt());
+        })();
         return;
       }
 
@@ -363,8 +456,10 @@ const Terminal = () => {
     // Ctrl+L (clear)
     if (code === 12) {
       term.clear();
-      displayWelcomeMessage(term);
-      term.write(getPrompt() + currentLineRef.current);
+      (async () => {
+        await displayWelcomeMessage(term);
+        term.write(getPrompt() + currentLineRef.current);
+      })();
       return;
     }
 
@@ -455,6 +550,49 @@ const Terminal = () => {
     term.write(newLine);
   };
 
+  const executeAnalytics = async (term: XTerm, password: string) => {
+    try {
+      // Fetch analytics stats with password
+      const response = await fetch("/api/analytics/stats", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${password}`,
+        },
+      });
+
+      if (response.status === 401) {
+        term.writeln("\x1b[1;31mSorry, try again.\x1b[0m");
+        term.write(getPrompt());
+        return;
+      }
+
+      if (!response.ok) {
+        term.writeln("\x1b[1;31mError fetching analytics data\x1b[0m");
+        term.write(getPrompt());
+        return;
+      }
+
+      const stats = await response.json();
+
+      // Import the analytics formatting functions
+      const { formatAnalyticsOutput } = await import(
+        "@/utils/commands/analytics"
+      );
+      const output = formatAnalyticsOutput(stats);
+
+      term.write(output);
+      term.write(getPrompt());
+      setTimeout(() => term.scrollToBottom(), 0);
+    } catch (error) {
+      term.writeln(
+        `\x1b[1;31mError:\x1b[0m ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+      term.write(getPrompt());
+    }
+  };
+
   const executeCommand = async (term: XTerm, input: string) => {
     const context = parseCommand(input);
     const commandName = input.trim().split(/\s+/)[0].toLowerCase();
@@ -464,14 +602,16 @@ const Terminal = () => {
 
     // Special case: clear command
     if (commandName === "clear" || commandName === "c") {
+      trackCommand(commandName, context.args);
       term.clear();
-      displayWelcomeMessage(term);
+      await displayWelcomeMessage(term);
       term.write(getPrompt());
       return;
     }
 
     // Special case: sudo command - strip sudo and re-execute
     if (commandName === "sudo") {
+      trackCommand(commandName, context.args);
       const commandWithoutSudo = input.replace(/^sudo\s+/, "").trim();
       if (commandWithoutSudo) {
         term.writeln("\x1b[2m[sudo] password for atharv: ********\x1b[0m");
@@ -591,6 +731,7 @@ const Terminal = () => {
           "\x1b[2mYour files are safe... because they don't exist here. 😉\x1b[0m"
         );
         term.writeln("");
+        trackCommand(commandName, context.args);
         term.write(getPrompt());
         return;
       }
@@ -598,6 +739,7 @@ const Terminal = () => {
 
     // Special case: vim command - needs terminal access
     if (commandName === "vim" || commandName === "vi") {
+      trackCommand(commandName, context.args);
       // Get terminal dimensions to fill entire viewport
       const rows = term.rows;
       const cols = term.cols;
@@ -694,6 +836,16 @@ const Terminal = () => {
       return;
     }
 
+    // Special case: analytics command needs password input
+    if (commandName === "analytics" || commandName === "stats") {
+      trackCommand(commandName, context.args);
+      term.writeln("\x1b[1;33m[sudo] password for analytics:\x1b[0m ");
+      passwordModeRef.current = true;
+      passwordBufferRef.current = "";
+      passwordCommandRef.current = "analytics";
+      return;
+    }
+
     try {
       // Show loading indicator for async commands that fetch data
       const asyncCommands = ["gh", "curl"];
@@ -702,6 +854,9 @@ const Terminal = () => {
       }
 
       const result = await command.execute(context);
+
+      // Track command execution in analytics
+      trackCommand(commandName, context.args);
 
       // Check if command wants to enter interactive mode
       if (

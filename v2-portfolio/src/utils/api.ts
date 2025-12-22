@@ -22,6 +22,45 @@ export async function fetchGitHubStats(username: string) {
 }
 
 /**
+ * Fetch total stars across all user repositories
+ */
+export async function fetchTotalStars(username: string): Promise<number> {
+  try {
+    let totalStars = 0;
+    let page = 1;
+    const perPage = 100;
+
+    while (true) {
+      const response = await fetch(
+        `https://api.github.com/users/${username}/repos?per_page=${perPage}&page=${page}`
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch repositories");
+
+      const repos = await response.json();
+
+      if (repos.length === 0) break;
+
+      totalStars += repos.reduce(
+        (sum: number, repo: { stargazers_count: number }) =>
+          sum + repo.stargazers_count,
+        0
+      );
+
+      // If we got less than perPage, we're done
+      if (repos.length < perPage) break;
+
+      page++;
+    }
+
+    return totalStars;
+  } catch (error) {
+    console.error("Error fetching total stars:", error);
+    return 0;
+  }
+}
+
+/**
  * Fetch GitHub repository stats
  */
 export async function fetchRepoStats(username: string, repo: string) {

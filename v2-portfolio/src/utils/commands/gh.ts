@@ -3,7 +3,7 @@ import {
   CommandContext,
   CommandResponse,
 } from "@/utils/command-registry";
-import { fetchGitHubStats, fetchRepoStats } from "@/utils/api";
+import { fetchGitHubStats, fetchRepoStats, fetchTotalStars } from "@/utils/api";
 
 const USERNAME = "atharvdange618";
 
@@ -58,11 +58,18 @@ async function showUserStats(): Promise<CommandResponse> {
     year: "numeric",
   });
 
+  // Fetch total stars (async, so we show it updating)
+  const totalStarsPromise = fetchTotalStars(USERNAME);
+
   let output = `\x1b[1;32m@${USERNAME}\x1b[0m\n`;
   output += `\x1b[0m${stats.bio || "Full Stack Developer"}\x1b[0m\n\n`;
   output += `\x1b[1;37mGitHub Statistics:\x1b[0m\n`;
   output += `  \x1b[1;36m📦\x1b[0m Public Repos:  \x1b[1;33m${stats.publicRepos}\x1b[0m\n`;
-  output += `  \x1b[1;33m⭐\x1b[0m Total Stars:   \x1b[1;33mCalculating...\x1b[0m\n`;
+
+  // Get total stars and update the line
+  const totalStars = await totalStarsPromise;
+  output += `  \x1b[1;33m⭐\x1b[0m Total Stars:   \x1b[1;33m${totalStars}\x1b[0m\n`;
+
   output += `  \x1b[1;34m👥\x1b[0m Followers:     \x1b[1;33m${stats.followers}\x1b[0m\n`;
   output += `  \x1b[1;35m👤\x1b[0m Following:     \x1b[1;33m${stats.following}\x1b[0m\n`;
   output += `  \x1b[1;32m📅\x1b[0m Joined:        \x1b[1;33m${joinedDate}\x1b[0m\n\n`;
