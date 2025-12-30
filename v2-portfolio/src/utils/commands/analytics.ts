@@ -14,6 +14,12 @@ interface AnalyticsStats {
     count: number;
     percentage: number;
   }>;
+  topCities: Array<{
+    cityName: string;
+    countryCode: string;
+    count: number;
+    percentage: number;
+  }>;
   avgSessionDuration: number;
 }
 
@@ -82,7 +88,6 @@ function createWorldMap(): string {
  * Format analytics stats into terminal output
  */
 export function formatAnalyticsOutput(stats: AnalyticsStats): string {
-  // Build output
   let output = "\r\n";
   output +=
     "\x1b[1;36m╔════════════════════════════════════════════════════════╗\x1b[0m\r\n";
@@ -152,6 +157,25 @@ export function formatAnalyticsOutput(stats: AnalyticsStats): string {
         1
       )}%)\r\n`;
     });
+
+    // Top cities
+    if (stats.topCities && stats.topCities.length > 0) {
+      output += "\r\n";
+      output += "\x1b[1;33m  Top Cities:\x1b[0m\r\n";
+      stats.topCities.slice(0, 10).forEach((city, index) => {
+        const flag =
+          city.countryCode === "IN"
+            ? "🇮🇳"
+            : city.countryCode === "US"
+            ? "🇺🇸"
+            : city.countryCode === "IE"
+            ? "🇮🇪"
+            : "🌐";
+        output += `    ${index + 1}. ${flag} \x1b[0m${city.cityName}\x1b[0m (${
+          city.countryCode
+        }) - ${city.count} visits (${city.percentage.toFixed(1)}%)\r\n`;
+      });
+    }
   } else {
     output += "\x1b[2m  No location data available\x1b[0m\r\n";
   }
@@ -171,8 +195,6 @@ export const analyticsCommand: CommandDefinition = {
   description: "View portfolio analytics (password protected)",
   aliases: ["stats"],
   async execute() {
-    // This command is now handled specially in Terminal.tsx
-    // to support password input mode
     return {
       output:
         "\r\n\x1b[2mThis command requires password authentication\x1b[0m\r\n",

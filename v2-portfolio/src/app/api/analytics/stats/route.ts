@@ -42,6 +42,16 @@ interface CountryStat {
 }
 
 /**
+ * City stats
+ */
+interface CityStat {
+  cityName: string;
+  countryCode: string;
+  count: number;
+  percentage: number;
+}
+
+/**
  * Analytics stats response
  */
 interface AnalyticsStats {
@@ -50,6 +60,7 @@ interface AnalyticsStats {
   dailyViews: DailyView[];
   topCommands: CommandStat[];
   topCountries: CountryStat[];
+  topCities: CityStat[];
   avgSessionDuration: number; // in seconds
 }
 
@@ -183,6 +194,42 @@ export async function GET(request: NextRequest) {
           : 0,
     }));
 
+    // Get top cities
+    const topCitiesAgg = await sessionsCollection
+      .aggregate([
+        {
+          $match: {
+            createdAt: { $gte: ninetyDaysAgo },
+            "location.cityName": { $exists: true, $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              cityName: "$location.cityName",
+              countryCode: "$location.countryCode",
+            },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+      ])
+      .toArray();
+
+    const totalCitySessions = topCitiesAgg.reduce(
+      (sum, item) => sum + item.count,
+      0
+    );
+
+    const topCities: CityStat[] = topCitiesAgg.map((item) => ({
+      cityName: item._id.cityName as string,
+      countryCode: item._id.countryCode as string,
+      count: item.count,
+      percentage:
+        totalCitySessions > 0 ? (item.count / totalCitySessions) * 100 : 0,
+    }));
+
     // Calculate average session duration
     const sessionsWithDuration = await sessionsCollection
       .find({
@@ -212,6 +259,7 @@ export async function GET(request: NextRequest) {
       dailyViews,
       topCommands,
       topCountries,
+      topCities,
       avgSessionDuration: Math.round(avgDuration),
     };
 
