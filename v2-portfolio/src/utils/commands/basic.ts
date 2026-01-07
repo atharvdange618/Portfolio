@@ -36,6 +36,7 @@ export const helpCommand: CommandDefinition = {
   \x1b[1;32msystemctl\x1b[0m status  View running projects/services
   \x1b[1;32mgit\x1b[0m log           View experience timeline
   \x1b[1;32mnpm\x1b[0m list          View skills and packages
+  \x1b[1;32mgh\x1b[0m [user|repos|repo <name>|stats]  GitHub profile & stats
 
   \x1b[1;33m◆ Utility:\x1b[0m
   \x1b[1;32mclear\x1b[0m             Clear the terminal screen

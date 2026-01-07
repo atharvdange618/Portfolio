@@ -135,3 +135,92 @@ export async function fetchNpmPackageInfo(packageName: string) {
     return null;
   }
 }
+
+/**
+ * Fetch GitHub language statistics
+ */
+export async function fetchGitHubLanguages(username: string) {
+  try {
+    const reposResponse = await fetch(
+      `https://api.github.com/users/${username}/repos?per_page=100`
+    );
+    if (!reposResponse.ok) throw new Error("Failed to fetch repositories");
+    const repos = await reposResponse.json();
+
+    const languageStats: { [key: string]: number } = {};
+
+    for (const repo of repos) {
+      if (repo.fork) continue; // Skip forked repos
+
+      try {
+        const langResponse = await fetch(
+          `https://api.github.com/repos/${username}/${repo.name}/languages`
+        );
+        if (langResponse.ok) {
+          const languages = await langResponse.json();
+          for (const [lang, bytes] of Object.entries(languages)) {
+            languageStats[lang] =
+              (languageStats[lang] || 0) + (bytes as number);
+          }
+        }
+      } catch (err) {
+        continue;
+      }
+    }
+
+    const totalBytes = Object.values(languageStats).reduce(
+      (sum, bytes) => sum + bytes,
+      0
+    );
+
+    const languagePercentages = Object.entries(languageStats)
+      .map(([lang, bytes]) => ({
+        language: lang,
+        percentage: ((bytes / totalBytes) * 100).toFixed(1),
+        bytes,
+      }))
+      .sort((a, b) => b.bytes - a.bytes)
+      .slice(0, 5);
+
+    return languagePercentages;
+  } catch (error) {
+    console.error("Error fetching GitHub languages:", error);
+    return null;
+  }
+}
+
+/**
+ * Fetch GitHub events for contribution activity
+ */
+export async function fetchGitHubEvents(username: string) {
+  try {
+    const response = await fetch(
+      `https://api.github.com/users/${username}/events/public?per_page=100`
+    );
+    if (!response.ok) throw new Error("Failed to fetch GitHub events");
+    const events = await response.json();
+
+    const contributions: { [key: string]: number } = {};
+    const now = new Date();
+    const weeks = 52;
+
+    for (let i = 0; i < weeks * 7; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split("T")[0];
+      contributions[dateStr] = 0;
+    }
+
+    events.forEach((event: { created_at: string }) => {
+      const date = event.created_at.split("T")[0];
+      if (contributions[date] !== undefined) {
+        contributions[date]++;
+      }
+    });
+
+    return contributions;
+  } catch (error) {
+    console.error("Error fetching GitHub events:", error);
+    return null;
+  }
+}
