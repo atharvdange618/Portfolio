@@ -232,25 +232,21 @@ export const fortuneCommand: CommandDefinition = {
 };
 
 // sudo command - Permission denied easter egg
-// Note: This is actually handled in Terminal.tsx to re-execute commands
 export const sudoCommand: CommandDefinition = {
   name: "sudo",
   description: "Execute a command as superuser",
   usage: "sudo <command>",
   execute: async (): Promise<CommandResponse> => {
-    // This is intercepted in Terminal.tsx before it reaches here
     return { output: "" };
   },
 };
 
 // vim/vi command - Trap users in vim
-// Note: This command is handled directly in Terminal.tsx for viewport control
 export const vimCommand: CommandDefinition = {
   name: "vim",
   description: "Vi IMproved - enhanced vi editor",
   aliases: ["vi"],
   execute: async (): Promise<CommandResponse> => {
-    // This is intercepted in Terminal.tsx before it reaches here
     return { output: "" };
   },
 };
@@ -344,3 +340,61 @@ function createSpeechBubble(message: string): string {
   bubble += ` ${"-".repeat(longestLine + 2)}`;
   return bubble;
 }
+
+// please command
+export const pleaseCommand: CommandDefinition = {
+  name: "please",
+  description: "Ask nicely",
+  execute: async (): Promise<CommandResponse> => {
+    return {
+      output: `
+\x1b[1;33m✨ That's the magic word!\x1b[0m
+
+But you still need to use proper commands 😊
+Try 'help' to see what's available.
+`,
+    };
+  },
+};
+
+// ASCII quote command
+export const asciiquoteCommand: CommandDefinition = {
+  name: "asciiquote",
+  description: "Display an ASCII art quote",
+  execute: async (): Promise<CommandResponse> => {
+    const quotes = [
+      `
+  _________________________________________
+ /                                         \\
+|  Atharv builds frameworks,               |
+|  not just applications.                  |
+ \\        - Someone who knows TypeScript  /
+  -----------------------------------------
+         \\   ^__^
+          \\  (oo)\\_______
+             (__)\\       )\\/\\
+                 ||----w |
+                 ||     ||
+`,
+      `
+  _________________________________________
+ /                                         \\
+|  The best code is no code at all.       |
+|  The second best is code that works.    |
+ \\        - A wise developer              /
+  -----------------------------------------
+`,
+      `
+  _________________________________________
+ /                                         \\
+|  Started from "Hello World"              |
+|  now we're building frameworks.          |
+ \\        - Coding Journey 2021-2026      /
+  -----------------------------------------
+`,
+    ];
+
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+    return { output: `\x1b[1;36m${randomQuote}\x1b[0m` };
+  },
+};

@@ -20,12 +20,15 @@ import {
   sudoCommand,
   vimCommand,
   rmCommand,
+  pleaseCommand,
+  asciiquoteCommand,
 } from "@/utils/commands/easter-eggs";
 import { useTerminalStore } from "@/store/terminal-store";
 import { useFileSystemStore } from "@/store/filesystem-store";
 import { useThemeStore } from "@/store/theme-store";
 import { cdCommand, lsCommand, pwdCommand } from "@/utils/commands/navigation";
 import { themeCommand } from "@/utils/commands/theme";
+import { monitoringCommands } from "@/utils/commands/monitoring";
 import { analyticsCommand } from "@/utils/commands/analytics";
 import {
   projectsCommand,
@@ -43,17 +46,13 @@ const getPrompt = () => {
 };
 
 async function displayWelcomeMessage(term: XTerm) {
-  // The top border determines the width (60 dashes = 60 chars inner width)
   const TOP_BORDER =
     "┌────────────────────────────────────────────────────────────┐";
   const BOTTOM_BORDER =
     "└────────────────────────────────────────────────────────────┘";
   const INNER_WIDTH = 60;
 
-  // Helper to pad text with spaces to match the inner width
-  // It strips ANSI codes to calculate the *visual* length correctly
   const createLine = (content: string) => {
-    // Regex to strip ANSI codes (\x1b...) to get the real visual length
     const visualLength = content.replace(/\x1b\[[0-9;]*m/g, "").length;
     const padding = Math.max(0, INNER_WIDTH - visualLength);
     return `\x1b[1;36m│\x1b[0m${content}${" ".repeat(
@@ -61,7 +60,6 @@ async function displayWelcomeMessage(term: XTerm) {
     )}\x1b[1;36m│\x1b[0m`;
   };
 
-  // Fetch last login info from analytics
   const today = new Date();
   const todayStr = today.toLocaleDateString("en-US", {
     weekday: "short",
@@ -88,7 +86,6 @@ async function displayWelcomeMessage(term: XTerm) {
       }
     }
   } catch (error) {
-    // Silently fail - show today's date as default
     console.error("Failed to fetch last login:", error);
   }
 
@@ -96,11 +93,11 @@ async function displayWelcomeMessage(term: XTerm) {
 
   term.writeln(createLine("  Welcome to \x1b[1;32matharvdange.dev\x1b[0m"));
   term.writeln(createLine(`  Last login: ${lastLoginText}`));
-  term.writeln(createLine("")); // Empty line
+  term.writeln(createLine(""));
   term.writeln(createLine("  \x1b[1;33m[Portfolio Server]\x1b[0m"));
   term.writeln(createLine("  System Uptime: 99.98%"));
   term.writeln(createLine("  Active Projects: \x1b[1;32m6 running\x1b[0m"));
-  term.writeln(createLine("")); // Empty line
+  term.writeln(createLine(""));
   term.writeln(
     createLine(
       "  Type \x1b[1;33m'help'\x1b[0m or \x1b[1;33m'?'\x1b[0m for available commands"
@@ -171,9 +168,14 @@ const Terminal = () => {
     registry.register(sudoCommand);
     registry.register(rmCommand);
     registry.register(vimCommand);
+    registry.register(pleaseCommand);
+    registry.register(asciiquoteCommand);
 
     // Register Theme Command
     registry.register(themeCommand);
+
+    // Register Monitoring Commands
+    monitoringCommands.forEach((cmd) => registry.register(cmd));
 
     // Register Analytics Command
     registry.register(analyticsCommand);
@@ -238,7 +240,6 @@ const Terminal = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Apply theme changes dynamically
   useEffect(() => {
     if (!xtermRef.current) return;
 
@@ -249,19 +250,16 @@ const Terminal = () => {
   const handlePasswordInput = (term: XTerm, data: string) => {
     const code = data.charCodeAt(0);
 
-    // Handle Enter - submit password
     if (code === 13) {
       const password = passwordBufferRef.current;
       const command = passwordCommandRef.current;
 
-      // Reset password mode
       passwordModeRef.current = false;
       passwordBufferRef.current = "";
       passwordCommandRef.current = "";
 
       term.write("\r\n");
 
-      // Execute the command with the password
       if (command === "analytics") {
         executeAnalytics(term, password);
       }
@@ -269,7 +267,6 @@ const Terminal = () => {
       return;
     }
 
-    // Handle backspace
     if (code === 127) {
       if (passwordBufferRef.current.length > 0) {
         passwordBufferRef.current = passwordBufferRef.current.slice(0, -1);
@@ -278,7 +275,6 @@ const Terminal = () => {
       return;
     }
 
-    // Ctrl+C - cancel password input
     if (code === 3) {
       passwordModeRef.current = false;
       passwordBufferRef.current = "";
@@ -291,7 +287,6 @@ const Terminal = () => {
       return;
     }
 
-    // Regular character - show asterisk instead of actual character
     if (code >= 32 && code <= 126) {
       passwordBufferRef.current += data;
       term.write("*");
@@ -301,11 +296,8 @@ const Terminal = () => {
   const handleVimInput = (term: XTerm, data: string) => {
     const code = data.charCodeAt(0);
 
-    // Handle Enter in vim mode
     if (code === 13) {
       const buffer = vimBufferRef.current.trim();
-      // Check if user typed :q! or :q or :wq or :x
-      // Check exit commands
       if ([":q", ":q!", ":wq", ":x"].includes(buffer)) {
         vimModeRef.current = false;
         vimBufferRef.current = "";
@@ -325,17 +317,14 @@ const Terminal = () => {
           )}\x1b[0m\r\n`
         );
       } else {
-        // Just new line for regular typing
         term.write("\r\n");
       }
 
-      // Wrong command - stay in vim
       vimBufferRef.current = "";
       term.write("\r\n");
       return;
     }
 
-    // Handle backspace in vim mode
     if (code === 127) {
       if (vimBufferRef.current.length > 0) {
         vimBufferRef.current = vimBufferRef.current.slice(0, -1);
@@ -344,12 +333,10 @@ const Terminal = () => {
       return;
     }
 
-    // Ctrl+C in vim mode - ignore it (pure evil)
     if (code === 3) {
       return;
     }
 
-    // Regular character in vim mode
     if (code >= 32 && code <= 126) {
       vimBufferRef.current += data;
       term.write(data);
@@ -361,7 +348,6 @@ const Terminal = () => {
 
     const code = data.charCodeAt(0);
 
-    // Up arrow (\x1b[A) or k - Check BEFORE ESC to avoid conflicts
     if (data === "\x1b[A" || data === "k") {
       if (tuiStateRef.current.selectedIndex > 0) {
         tuiStateRef.current.selectedIndex--;
@@ -371,7 +357,6 @@ const Terminal = () => {
       return;
     }
 
-    // Down arrow (\x1b[B) or j
     if (data === "\x1b[B" || data === "j") {
       if (
         tuiStateRef.current.selectedIndex <
@@ -384,7 +369,6 @@ const Terminal = () => {
       return;
     }
 
-    // ESC key - Exit TUI mode (only on standalone ESC, not arrow sequences)
     if (data === "\x1b" && data.length === 1) {
       tuiModeRef.current = false;
       tuiStateRef.current = null;
@@ -393,7 +377,6 @@ const Terminal = () => {
       return;
     }
 
-    // q key - Also exit
     if (data === "q" || data === "Q") {
       tuiModeRef.current = false;
       tuiStateRef.current = null;
@@ -402,7 +385,6 @@ const Terminal = () => {
       return;
     }
 
-    // Enter key - Select project
     if (code === 13) {
       const output = handleProjectSelection(tuiStateRef.current);
       tuiModeRef.current = false;
@@ -420,7 +402,6 @@ const Terminal = () => {
   const handleTerminalInput = (term: XTerm, data: string) => {
     const code = data.charCodeAt(0);
 
-    // Enter key
     if (code === 13) {
       term.write("\r\n");
       const command = currentLineRef.current.trim();
@@ -439,7 +420,6 @@ const Terminal = () => {
       return;
     }
 
-    // Backspace
     if (code === 127) {
       if (cursorPositionRef.current > 0) {
         currentLineRef.current =
@@ -451,7 +431,6 @@ const Terminal = () => {
       return;
     }
 
-    // Ctrl+C
     if (code === 3) {
       term.write("^C\r\n");
       currentLineRef.current = "";
@@ -460,7 +439,6 @@ const Terminal = () => {
       return;
     }
 
-    // Ctrl+L (clear)
     if (code === 12) {
       term.clear();
       (async () => {
@@ -470,19 +448,16 @@ const Terminal = () => {
       return;
     }
 
-    // Tab key (completion)
     if (code === 9) {
       if (!tabCompletionRef.current) return;
 
       const result = tabCompletionRef.current.complete(currentLineRef.current);
 
       if (result.completions.length === 0) {
-        // No completions - do nothing
         return;
       }
 
       if (result.completions.length === 1) {
-        // Single completion - apply it
         const completion = result.completions[0];
         const parts = currentLineRef.current.split(/\s+/);
         parts[parts.length - 1] = completion;
@@ -490,15 +465,12 @@ const Terminal = () => {
           parts.join(" ") + (currentLineRef.current.endsWith(" ") ? "" : " ");
         replaceCurrentLine(term, newLine);
       } else {
-        // Multiple completions - show common prefix or list
         const lastPart = currentLineRef.current.split(/\s+/).pop() || "";
         if (result.commonPrefix.length > lastPart.length) {
-          // Apply common prefix
           const parts = currentLineRef.current.split(/\s+/);
           parts[parts.length - 1] = result.commonPrefix;
           replaceCurrentLine(term, parts.join(" "));
         } else {
-          // Show completions
           const formatted = tabCompletionRef.current.formatCompletions(
             result.completions
           );
@@ -509,7 +481,6 @@ const Terminal = () => {
       return;
     }
 
-    // Arrow up (history)
     if (data === "\x1b[A") {
       if (historyIndexRef.current > 0) {
         historyIndexRef.current--;
@@ -519,7 +490,6 @@ const Terminal = () => {
       return;
     }
 
-    // Arrow down (history)
     if (data === "\x1b[B") {
       if (historyIndexRef.current < commandHistoryRef.current.length - 1) {
         historyIndexRef.current++;
@@ -532,7 +502,6 @@ const Terminal = () => {
       return;
     }
 
-    // Regular character
     if (code >= 32 && code <= 126) {
       currentLineRef.current =
         currentLineRef.current.slice(0, cursorPositionRef.current) +
@@ -544,7 +513,6 @@ const Terminal = () => {
   };
 
   const replaceCurrentLine = (term: XTerm, newLine: string) => {
-    // Clear current line
     const clearLength =
       getPrompt().replace(/\x1b\[[0-9;]*m/g, "").length +
       currentLineRef.current.length +
@@ -559,7 +527,6 @@ const Terminal = () => {
 
   const executeAnalytics = async (term: XTerm, password: string) => {
     try {
-      // Fetch analytics stats with password
       const response = await fetch("/api/analytics/stats", {
         method: "GET",
         headers: {
@@ -581,7 +548,6 @@ const Terminal = () => {
 
       const stats = await response.json();
 
-      // Import the analytics formatting functions
       const { formatAnalyticsOutput } = await import(
         "@/utils/commands/analytics"
       );
@@ -604,10 +570,8 @@ const Terminal = () => {
     const context = parseCommand(input);
     const commandName = input.trim().split(/\s+/)[0].toLowerCase();
 
-    // Store in history
     addToHistory(input, "");
 
-    // Special case: clear command
     if (commandName === "clear" || commandName === "c") {
       trackCommand(commandName, context.args);
       term.clear();
@@ -616,13 +580,11 @@ const Terminal = () => {
       return;
     }
 
-    // Special case: sudo command - strip sudo and re-execute
     if (commandName === "sudo") {
       trackCommand(commandName, context.args);
       const commandWithoutSudo = input.replace(/^sudo\s+/, "").trim();
       if (commandWithoutSudo) {
         term.writeln("\x1b[2m[sudo] password for atharv: ********\x1b[0m");
-        // Re-execute the command without sudo
         await executeCommand(term, commandWithoutSudo);
       } else {
         term.writeln("\x1b[1;31musage: sudo <command>\x1b[0m");
@@ -631,10 +593,8 @@ const Terminal = () => {
       return;
     }
 
-    // Special case: rm -rf / (or similar dangerous commands) - animated horror
     if (commandName === "rm") {
       const rawInput = input.toLowerCase();
-      // Check for -r and -f flags (can be combined like -rf or separate -r -f)
       const hasR = rawInput.match(/-[a-z]*r/);
       const hasF = rawInput.match(/-[a-z]*f/);
       const wordCount = rawInput.trim().split(/\s+/).length;
@@ -655,7 +615,6 @@ const Terminal = () => {
         hasNoPreserve ||
         (hasR && hasF && wordCount <= 3)
       ) {
-        // HORROR MODE ACTIVATED
         term.writeln(
           "\x1b[1;31m⚠️  WARNING: Attempting to delete system files...\x1b[0m"
         );
@@ -684,7 +643,6 @@ const Terminal = () => {
           "/var",
         ];
 
-        // Animated deletion
         for (const file of files) {
           term.write(`\x1b[1;31mDeleting: \x1b[0m${file}`);
           await new Promise((resolve) => setTimeout(resolve, 150));
@@ -694,7 +652,6 @@ const Terminal = () => {
         term.writeln("");
         await new Promise((resolve) => setTimeout(resolve, 300));
 
-        // Animated progress bar
         term.write("\x1b[1;33mProgress: \x1b[0m[");
         const barLength = 40;
         for (let i = 0; i <= barLength; i++) {
@@ -711,7 +668,6 @@ const Terminal = () => {
 
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // THE REVEAL
         term.writeln(
           "\x1b[1;31m╔════════════════════════════════════════════════════════╗\x1b[0m"
         );
@@ -744,20 +700,15 @@ const Terminal = () => {
       }
     }
 
-    // Special case: vim command - needs terminal access
     if (commandName === "vim" || commandName === "vi") {
       trackCommand(commandName, context.args);
-      // Get terminal dimensions to fill entire viewport
       const rows = term.rows;
       const cols = term.cols;
 
-      // Clear screen and move to home
       let vimScreen = "\x1b[2J\x1b[H";
 
-      // Calculate center position for title
       const titleRow = Math.floor(rows / 2) - 3;
 
-      // Fill entire screen with vim ~ lines
       for (let i = 0; i < rows - 1; i++) {
         if (i === titleRow) {
           const title = "VIM - Vi IMproved";
@@ -804,7 +755,6 @@ const Terminal = () => {
             " ".repeat(Math.max(0, cols - padding - msg.length - 1)) +
             "\x1b[0m\r\n";
         } else {
-          // Regular vim tilde line - fill entire width
           vimScreen +=
             "\x1b[40m\x1b[1;32m~" +
             " ".repeat(Math.max(0, cols - 1)) +
@@ -812,13 +762,11 @@ const Terminal = () => {
         }
       }
 
-      // Status bar at the bottom (inverted colors)
       const statusText = ` portfolio.txt [New File]${" ".repeat(
         Math.max(0, cols - 70)
       )}0,0-1${" ".repeat(10)}All `;
       vimScreen += "\x1b[7m" + statusText.slice(0, cols) + "\x1b[0m";
 
-      // Move cursor to bottom left corner where vim command input would be
       vimScreen += "\x1b[" + rows + ";1H";
 
       term.write(vimScreen);
@@ -843,7 +791,6 @@ const Terminal = () => {
       return;
     }
 
-    // Special case: analytics command needs password input
     if (commandName === "analytics" || commandName === "stats") {
       trackCommand(commandName, context.args);
       term.writeln("\x1b[1;33m[sudo] password for analytics:\x1b[0m ");
@@ -854,7 +801,6 @@ const Terminal = () => {
     }
 
     try {
-      // Show loading indicator for async commands that fetch data
       const asyncCommands = ["gh", "curl"];
       if (asyncCommands.includes(commandName)) {
         term.writeln("\x1b[1;36mFetching data...\x1b[0m");
@@ -862,10 +808,8 @@ const Terminal = () => {
 
       const result = await command.execute(context);
 
-      // Track command execution in analytics
       trackCommand(commandName, context.args);
 
-      // Check if command wants to enter interactive mode
       if (
         result.metadata?.interactive &&
         result.metadata?.mode === "projects"
@@ -885,9 +829,7 @@ const Terminal = () => {
       if (result.output && result.output.trim()) {
         term.write(result.output);
       }
-      // Always write prompt after command execution
       term.write(getPrompt());
-      // Scroll to bottom to ensure prompt is visible
       setTimeout(() => term.scrollToBottom(), 0);
     } catch (error) {
       console.error("Command execution error:", error);
@@ -901,7 +843,6 @@ const Terminal = () => {
     }
   };
 
-  // Auto-type command with realistic typing effect
   const autoTypeCommand = async (term: XTerm, command: string) => {
     const chars = command.split("");
 
@@ -911,16 +852,13 @@ const Terminal = () => {
       currentLineRef.current += char;
       cursorPositionRef.current++;
 
-      // Random delay between 50-150ms to simulate human typing
       await new Promise((resolve) =>
         setTimeout(resolve, Math.random() * 100 + 50)
       );
     }
 
-    // Wait a bit before "pressing enter"
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    // Execute the command
     term.write("\r\n");
     executeCommand(term, command);
     commandHistoryRef.current.push(command);
