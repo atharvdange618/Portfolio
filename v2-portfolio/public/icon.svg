@@ -30,11 +30,6 @@
 
     <!-- Code brackets -->
     <text x="110" y="310" font-family="monospace" font-size="36" fill="#00d9ff">
-        { }
+        Node | TS
     </text>
-
-    <!-- Dots decoration -->
-    <circle cx="200" cy="295" r="3" fill="#00ff00" />
-    <circle cx="215" cy="295" r="3" fill="#00ff00" />
-    <circle cx="230" cy="295" r="3" fill="#00ff00" />
 </svg>
