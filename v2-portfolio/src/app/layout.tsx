@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://atharvdange.vercel.app"),
+  metadataBase: new URL("https://atharvdangedev.in"),
   title: "Atharv Dange - Full Stack Developer & Software Engineer",
   description:
     "Portfolio of Atharv Dange (@atharvdange618) - Full Stack Developer specializing in TypeScript, React, Next.js, and Node.js. Creator of Reiatsu framework, Telemetry analytics, and innovative web applications.",
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://atharvdange.vercel.app",
+    url: "https://atharvdangedev.in",
     title: "Atharv Dange - Full Stack Developer & Software Engineer",
     description:
       "Full Stack Developer specializing in TypeScript, React, Next.js, and Node.js. Building innovative web applications and open-source frameworks.",
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
     images: ["/og-image.svg"],
   },
   alternates: {
-    canonical: "https://atharvdange.vercel.app",
+    canonical: "https://atharvdangedev.in",
   },
   verification: {
     google: "your-google-verification-code",
@@ -92,7 +92,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="canonical" href="https://atharvdange.vercel.app" />
+        <link rel="canonical" href="https://atharvdangedev.in" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -100,7 +100,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Person",
               name: "Atharv Dange",
-              url: "https://atharvdange.vercel.app",
+              url: "https://atharvdangedev.in",
               sameAs: [
                 "https://github.com/atharvdange618",
                 "https://linkedin.com/in/atharvdange",
