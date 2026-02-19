@@ -1,0 +1,106 @@
+.font-heading {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.font-body {
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+body {
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.shadow-brutal {
+  box-shadow: 4px 4px 0px #000;
+}
+
+.shadow-brutal-sm {
+  box-shadow: 3px 3px 0px #000;
+}
+
+.shadow-brutal-lg {
+  box-shadow: 8px 8px 0px #000;
+}
+
+.shadow-brutal-colored {
+  box-shadow: 8px 8px 0px #60b5ff;
+}
+
+.dark .shadow-brutal {
+  box-shadow: 4px 4px 0px #fff;
+}
+
+.dark .shadow-brutal-sm {
+  box-shadow: 3px 3px 0px #fff;
+}
+
+.dark .shadow-brutal-lg {
+  box-shadow: 8px 8px 0px #fff;
+}
+
+::selection {
+  background-color: #60b5ff;
+  color: white;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #60b5ff;
+  border: 2px solid #000;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff9149;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.link-underline {
+  position: relative;
+}
+
+.link-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background-color: #ff9149;
+  transition: width 0.3s ease;
+}
+
+.link-underline:hover::after {
+  width: 100%;
+}

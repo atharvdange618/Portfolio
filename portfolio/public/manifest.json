@@ -1,0 +1,21 @@
+{
+  "name": "Atharv Dange - Full Stack Engineer",
+  "short_name": "Atharv Dange",
+  "description": "Full Stack Engineer specializing in Node.js, React, TypeScript, and modern web technologies",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#60B5FF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["portfolio", "developer", "technology"],
+  "lang": "en-US",
+  "dir": "ltr"
+}
