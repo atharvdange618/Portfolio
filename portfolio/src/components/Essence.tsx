@@ -7,9 +7,10 @@ import {
   Film,
   Quote,
   Heart,
+  Disc3,
   Headphones,
-  Piano,
 } from "lucide-react";
+import { useNowPlaying } from "../hooks/useNowPlaying";
 
 const iconMap: Record<string, React.ElementType> = {
   Swords,
@@ -32,6 +33,105 @@ const itemVariants = {
     transition: { duration: 0.6, ease: "easeOut" as const },
   },
 };
+
+function NowPlayingCard() {
+  const { track, loading, error } = useNowPlaying();
+
+  return (
+    <div className="flex flex-col h-full z-10 relative">
+      {error ? (
+        <p className="font-mono text-sm text-red-500">Failed to load track</p>
+      ) : loading ? (
+        <div className="flex-1 flex items-center justify-center py-4">
+          <p className="font-mono text-xs text-gray-500">
+            Fetching from Last.fm...
+          </p>
+        </div>
+      ) : track ? (
+        <div className="flex gap-4 items-center mt-2">
+          {track.imageUrl ? (
+            <div className="w-16 h-16 shrink-0 border-2 border-black overflow-hidden relative group-hover:scale-105 transition-transform duration-300">
+              <img
+                src={track.imageUrl}
+                alt={track.album}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-16 h-16 shrink-0 border-2 border-black bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <Disc3
+                size={18}
+                className={`text-black dark:text-white ${track.isPlaying ? "animate-spin" : ""}`}
+                style={{ animationDuration: "3s" }}
+              />
+            </div>
+          )}
+
+          <div className="min-w-0 flex-1">
+            <h4 className="font-heading text-base font-bold text-black dark:text-white">
+              {track.isPlaying ? "Now Playing" : "Recently Played"}
+            </h4>
+
+            <a
+              href={track.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline decoration-[#FF9149] decoration-2 underline-offset-2"
+            >
+              <p
+                className="font-heading text-base font-bold text-black dark:text-white truncate"
+                title={track.name}
+              >
+                {track.name}
+              </p>
+            </a>
+
+            <p
+              className="font-mono text-xs text-[#9B6BC7] dark:text-[#D8B4FF] truncate mt-1"
+              title={track.artist}
+            >
+              {track.artist}
+            </p>
+
+            <div className="flex items-center justify-between">
+              <p
+                className="font-mono text-[10px] text-gray-500 truncate uppercase tracking-wider"
+                title={track.album}
+              >
+                {track.album}
+              </p>
+
+              {track.isPlaying && (
+                <div className="flex items-center gap-1" aria-label="Live">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-[#FF9149] animate-pulse"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-[#FF9149] animate-pulse"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-[#FF9149] animate-pulse"
+                    style={{ animationDelay: "300ms" }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="font-mono text-sm text-gray-500 py-4">
+          No recent tracks found.
+        </p>
+      )}
+
+      {track?.isPlaying && (
+        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#FF9149]/20 blur-3xl rounded-full pointer-events-none -z-10" />
+      )}
+    </div>
+  );
+}
 
 export default function Essence() {
   const { characterEssence } = personalInfo;
@@ -161,25 +261,7 @@ export default function Essence() {
               ))}
             </div>
             <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3">
-              <div>
-                <p className="font-mono text-sm text-gray-500 mb-1">
-                  Favourite Artist
-                </p>
-                <p className="font-heading text-sm text-[#9B6BC7] dark:text-[#D8B4FF] font-semibold">
-                  {characterEssence.music.favouriteArtist}
-                </p>
-              </div>
-              <div>
-                <p className="font-mono text-sm text-gray-500 mb-1">
-                  Instrumental Love
-                </p>
-                <div className="flex items-center gap-2">
-                  <Piano size={14} className="text-gray-500" />
-                  <span className="font-mono text-xs text-gray-600 dark:text-gray-400">
-                    {characterEssence.music.instrumentalLove.join(" · ")}
-                  </span>
-                </div>
-              </div>
+              <NowPlayingCard />
             </div>
           </motion.div>
 
@@ -211,9 +293,9 @@ export default function Essence() {
 
         <motion.div variants={itemVariants} className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <span className="h-px w-12 bg-[#FF9149]/50" />
-            <Heart size={16} className="text-[#FF9149] essence-glow" />
-            <span className="h-px w-12 bg-[#FF9149]/50" />
+            <span className="h-px w-12 bg-[#ec4899]/60" />
+            <Heart size={18} className="text-[#ec4899] essence-glow" />
+            <span className="h-px w-12 bg-[#ec4899]/60" />
           </div>
           <p className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-black dark:text-white italic tracking-tight">
             "{characterEssence.philosophy}"
