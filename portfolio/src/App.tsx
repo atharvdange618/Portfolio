@@ -12,7 +12,7 @@ const App = () => {
   return (
     <ThemeProvider>
       <Toaster />
-      <div className="App min-h-screen bg-white dark:bg-[#1a1a1a]">
+      <div className="App min-h-screen bg-white dark:bg-[#09090b]">
         <Navbar />
         <main id="main" role="main">
           <Hero />

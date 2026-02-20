@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { mockProjects } from "../data/mock";
 import { ExternalLink, Github, ArrowRight } from "lucide-react";
 import { Badge } from "./ui/badge";
@@ -8,7 +9,7 @@ export default function Projects() {
   return (
     <section
       id="projects"
-      className="py-20 bg-white dark:bg-[#1a1a1a] relative"
+      className="py-20 bg-white dark:bg-[#09090b] relative"
       aria-labelledby="projects-heading"
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-black dark:bg-white" />
@@ -39,9 +40,21 @@ export default function Projects() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {mockProjects.map((project, i) => (
-            <div
+            <motion.div
               key={project.id}
-              className="bg-white dark:bg-[#222] border-3 border-black dark:border-white p-6 flex flex-col hover:translate-x-[-4px] hover:translate-y-[-4px] transition-transform duration-200 group"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{
+                duration: 0.4,
+                delay: i * 0.1,
+                type: "spring",
+                stiffness: 200,
+                damping: 20,
+              }}
+              whileHover={{ scale: 1.02, y: -4, x: -4 }}
+              whileTap={{ scale: 0.98, x: 2, y: 2 }}
+              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-6 flex flex-col group cursor-pointer"
               style={{
                 borderWidth: "3px",
                 boxShadow: `6px 6px 0px ${shadowColors[i % shadowColors.length]}`,
@@ -62,7 +75,7 @@ export default function Projects() {
                 </Badge>
               </div>
 
-              <p className="font-body text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4 flex-grow">
+              <p className="font-body text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4 grow">
                 {project.description}
               </p>
 
@@ -70,7 +83,7 @@ export default function Projects() {
                 {project.techStack.map((tech) => (
                   <span
                     key={tech}
-                    className="font-mono text-xs px-2 py-1 bg-[#AFDDFF] dark:bg-[#2a4a6a] text-black dark:text-[#AFDDFF] border border-black dark:border-[#AFDDFF]"
+                    className="font-mono text-xs px-2 py-1 bg-[#AFDDFF] dark:bg-[#27272a] text-black dark:text-[#AFDDFF] border border-black dark:border-[#AFDDFF]"
                   >
                     {tech}
                   </span>
@@ -99,7 +112,7 @@ export default function Projects() {
                   </a>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

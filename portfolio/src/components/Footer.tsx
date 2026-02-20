@@ -21,7 +21,7 @@ export default function Footer() {
 
   return (
     <footer
-      className="bg-[#AFDCFD] dark:bg-[#1a1a1a] border-t-3 border-black dark:border-white relative"
+      className="bg-[#AFDCFD] dark:bg-[#09090b] border-t-3 border-black dark:border-white relative"
       style={{ borderTopWidth: "3px" }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -52,7 +52,7 @@ export default function Footer() {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div
-            className="bg-white dark:bg-[#222] border-3 border-black dark:border-white p-5"
+            className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-5"
             style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #60B5FF" }}
           >
             <div className="flex items-center gap-2 mb-3">
@@ -68,7 +68,7 @@ export default function Footer() {
           </div>
 
           <div
-            className="bg-white dark:bg-[#222] border-3 border-black dark:border-white p-5"
+            className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-5"
             style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #FF9149" }}
           >
             <h4 className="font-mono text-sm font-bold text-[#60B5FF] uppercase tracking-wider mb-3">
@@ -89,7 +89,7 @@ export default function Footer() {
           </div>
 
           <div
-            className="bg-white dark:bg-[#222] border-3 border-black dark:border-white p-5"
+            className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-5"
             style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #E0FFF1" }}
           >
             <h4 className="font-mono text-sm font-bold text-[#FF9149] uppercase tracking-wider mb-3">
@@ -142,7 +142,7 @@ export default function Footer() {
           </div>
 
           <div
-            className="bg-white dark:bg-[#222] border-3 border-black dark:border-white p-5"
+            className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-5"
             style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #FFECDB" }}
           >
             <h4 className="font-mono text-sm font-bold text-green-600 uppercase tracking-wider mb-3">
@@ -187,9 +187,9 @@ export default function Footer() {
               href={personalInfo.social.blog}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-mono text-xs sm:text-sm px-3 py-1.5 bg-[#FF9149] text-white border-2 border-black dark:border-white hover:translate-y-[-2px] transition-transform duration-200"
+              className="inline-flex items-center gap-1 font-mono text-xs sm:text-sm px-3 py-1.5 bg-[#FF9149] text-black border-2 border-black dark:border-white hover:translate-y-[-2px] transition-transform duration-200"
             >
-              Blog →
+              Blog
             </a>
             <button
               onClick={scrollToTop}

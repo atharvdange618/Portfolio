@@ -51,7 +51,7 @@ export default function About() {
   return (
     <section
       id="about"
-      className="py-20 bg-[#E0FFF1] dark:bg-[#162B22] relative"
+      className="py-20 bg-[#E0FFF1] dark:bg-[#09090b] relative"
       aria-labelledby="about-heading"
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-black dark:bg-white" />
@@ -70,12 +70,12 @@ export default function About() {
         <div className="grid lg:grid-cols-2 gap-10">
           <div className="space-y-6">
             <div
-              className="bg-white dark:bg-[#1a1a1a] p-6 border-3 border-black dark:border-white shadow-brutal"
+              className="bg-white dark:bg-[#09090b] p-6 border-3 border-black dark:border-white shadow-brutal"
               style={{ borderWidth: "3px", boxShadow: "6px 6px 0px #000" }}
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-[#60B5FF] border-2 border-black">
-                  <Code2 size={20} className="text-white" />
+                  <Code2 size={20} className="text-black" />
                 </div>
                 <h3 className="font-heading text-xl font-bold text-black dark:text-white">
                   Who I Am
@@ -87,12 +87,12 @@ export default function About() {
             </div>
 
             <div
-              className="bg-white dark:bg-[#1a1a1a] p-6 border-3 border-black dark:border-white"
+              className="bg-white dark:bg-[#09090b] p-6 border-3 border-black dark:border-white"
               style={{ borderWidth: "3px", boxShadow: "6px 6px 0px #FF9149" }}
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-[#FF9149] border-2 border-black">
-                  <Briefcase size={20} className="text-white" />
+                  <Briefcase size={20} className="text-black" />
                 </div>
                 <h3 className="font-heading text-xl font-bold text-black dark:text-white">
                   Current Role
@@ -109,7 +109,7 @@ export default function About() {
             </div>
 
             <div
-              className="bg-white dark:bg-[#1a1a1a] p-6 border-3 border-black dark:border-white"
+              className="bg-white dark:bg-[#09090b] p-6 border-3 border-black dark:border-white"
               style={{ borderWidth: "3px", boxShadow: "6px 6px 0px #60B5FF" }}
             >
               <div className="flex items-center gap-3 mb-4">
@@ -133,7 +133,7 @@ export default function About() {
                 <Badge
                   key={topic}
                   variant="outline"
-                  className="border-2 border-black dark:border-white bg-white dark:bg-[#2a2a2a] text-black dark:text-white font-mono text-xs px-3 py-1 hover:bg-[#60B5FF] hover:text-white hover:border-black transition-colors duration-200"
+                  className="border-2 border-black dark:border-white bg-white dark:bg-[#27272a] text-black dark:text-white font-mono text-xs px-3 py-1 hover:bg-[#60B5FF] hover:text-white hover:border-black transition-colors duration-200"
                 >
                   {topic}
                 </Badge>
@@ -143,7 +143,7 @@ export default function About() {
 
           <div>
             <div
-              className="bg-white dark:bg-[#1a1a1a] p-6 border-3 border-black dark:border-white"
+              className="bg-white dark:bg-[#09090b] p-6 border-3 border-black dark:border-white"
               style={{ borderWidth: "3px", boxShadow: "6px 6px 0px #000" }}
             >
               <h3 className="font-heading text-2xl font-bold text-black dark:text-white mb-6">

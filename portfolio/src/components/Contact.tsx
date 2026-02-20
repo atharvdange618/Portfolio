@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { personalInfo } from "../data/mock";
 import {
   Mail,
@@ -85,7 +86,7 @@ export default function Contact() {
   return (
     <section
       id="contact"
-      className="py-20  dark:bg-[#1A2B3D] relative"
+      className="py-20  dark:bg-[#09090b] relative"
       aria-labelledby="contact-heading"
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-black dark:bg-white" />
@@ -151,18 +152,20 @@ export default function Contact() {
                   color: "#E0FFF1",
                 },
               ].map((item) => (
-                <a
+                <motion.a
                   key={item.label}
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 bg-white dark:bg-[#1a1a1a] border-3 border-black dark:border-white hover:translate-x-[-3px] hover:translate-y-[-3px] transition-all duration-200 group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98, x: 2, y: 2 }}
+                  className="flex items-center gap-4 p-4 bg-white dark:bg-[#09090b] border-3 border-black dark:border-white transition-all duration-200 group"
                   style={{
                     borderWidth: "3px",
                     boxShadow: `4px 4px 0px ${item.color}`,
                   }}
                 >
-                  <div className="p-2 border-2 border-black dark:border-white bg-gray-50 dark:bg-[#2a2a2a] text-black dark:text-white group-hover:bg-[#60B5FF] group-hover:text-white transition-colors duration-200">
+                  <div className="p-2 border-2 border-black dark:border-white bg-gray-50 dark:bg-[#27272a] text-black dark:text-white group-hover:bg-[#60B5FF] group-hover:text-white transition-colors duration-200">
                     {item.icon}
                   </div>
                   <div>
@@ -173,13 +176,13 @@ export default function Contact() {
                       {item.desc}
                     </span>
                   </div>
-                </a>
+                </motion.a>
               ))}
             </div>
           </div>
 
           <div
-            className="bg-white dark:bg-[#1a1a1a] p-6 sm:p-8 border-3 border-black dark:border-white"
+            className="bg-white dark:bg-[#09090b] p-6 sm:p-8 border-3 border-black dark:border-white"
             style={{ borderWidth: "3px", boxShadow: "8px 8px 0px #000" }}
           >
             <h3 className="font-heading text-2xl font-bold text-black dark:text-white mb-6">
@@ -217,7 +220,7 @@ export default function Contact() {
                       },
                     })}
                     placeholder="Your name"
-                    className="border-2 border-black dark:border-white dark:text-white bg-gray-50 dark:bg-[#2a2a2a] font-body rounded-none focus:ring-2 focus:ring-[#60B5FF]"
+                    className="border-2 border-black dark:border-white dark:text-white bg-gray-50 dark:bg-[#27272a] font-body rounded-none focus:ring-2 focus:ring-[#60B5FF] focus:shadow-[8px_8px_0px_#60B5FF] transition-shadow duration-200"
                     disabled={isSubmitting}
                   />
                   {errors.name && (
@@ -245,7 +248,7 @@ export default function Contact() {
                       },
                     })}
                     placeholder="you@example.com"
-                    className="border-2 border-black dark:border-white bg-gray-50 dark:text-white dark:bg-[#2a2a2a] font-body rounded-none focus:ring-2 focus:ring-[#60B5FF]"
+                    className="border-2 border-black dark:border-white bg-gray-50 dark:text-white dark:bg-[#27272a] font-body rounded-none focus:ring-2 focus:ring-[#60B5FF] focus:shadow-[8px_8px_0px_#60B5FF] transition-shadow duration-200"
                     disabled={isSubmitting}
                   />
                   {errors.email && (
@@ -282,7 +285,7 @@ export default function Contact() {
                     })}
                     placeholder="What's on your mind?"
                     rows={5}
-                    className="border-2 border-black dark:border-white bg-gray-50 dark:text-white dark:bg-[#2a2a2a] font-body rounded-none focus:ring-2 focus:ring-[#60B5FF] resize-none"
+                    className="border-2 border-black dark:border-white bg-gray-50 dark:text-white dark:bg-[#27272a] font-body rounded-none focus:ring-2 focus:ring-[#60B5FF] focus:shadow-[8px_8px_0px_#60B5FF] transition-shadow duration-200 resize-none"
                     disabled={isSubmitting}
                   />
                   {errors.message && (
@@ -292,10 +295,12 @@ export default function Contact() {
                   )}
                 </div>
 
-                <button
+                <motion.button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#FF9149] text-white font-body font-semibold border-3 border-black hover:shadow-brutal-lg hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95, x: 2, y: 2 }}
+                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#FF9149] text-black font-body font-semibold border-3 border-black hover:shadow-brutal-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #000" }}
                 >
                   {isSubmitting ? (
@@ -309,7 +314,7 @@ export default function Contact() {
                       Send Message
                     </>
                   )}
-                </button>
+                </motion.button>
               </form>
             )}
           </div>

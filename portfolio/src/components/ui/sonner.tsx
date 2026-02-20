@@ -25,7 +25,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "bg-white dark:bg-[#1a1a1a] border-2 border-black dark:border-white shadow-lg",
+            "bg-white dark:bg-[#09090b] border-2 border-black dark:border-white shadow-lg",
           title: "text-black dark:text-white font-heading font-bold",
           description: "text-gray-700 dark:text-gray-400 font-body",
           actionButton: "bg-[#60B5FF] text-white border-2 border-black",

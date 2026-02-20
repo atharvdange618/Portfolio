@@ -133,7 +133,7 @@ export default function BlogPosts() {
   return (
     <section
       id="blog"
-      className="py-20 bg-[#FFECDB] dark:bg-[#2B2118] relative"
+      className="py-20 bg-[#FFECDB] dark:bg-[#09090b] relative"
       aria-labelledby="blog-heading"
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-black dark:bg-white" />
@@ -194,7 +194,7 @@ export default function BlogPosts() {
               return (
                 <article
                   key={post.slug}
-                  className="bg-white dark:bg-[#1a1a1a] border-3 border-black dark:border-white flex flex-col hover:translate-x-[-4px] hover:translate-y-[-4px] transition-transform duration-200 group"
+                  className="bg-white dark:bg-[#09090b] border-3 border-black dark:border-white flex flex-col hover:translate-x-[-4px] hover:translate-y-[-4px] transition-transform duration-200 group"
                   style={{
                     borderWidth: "3px",
                     boxShadow:

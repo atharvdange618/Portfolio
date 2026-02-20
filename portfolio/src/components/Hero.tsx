@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { personalInfo } from "../data/mock";
 import Typed from "typed.js";
 import {
@@ -40,7 +41,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="min-h-screen flex items-center pt-16 pb-12 sm:pb-20 bg-white dark:bg-[#1a1a1a] relative overflow-hidden">
+    <section className="min-h-screen flex items-center pt-16 pb-12 sm:pb-20 bg-white dark:bg-[#09090b] relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="space-y-8">
           <div className="grid lg:grid-cols-5 gap-6 lg:gap-8 items-start">
@@ -56,7 +57,7 @@ export default function Hero() {
                 Hey, I'm{" "}
                 <span className="relative inline-block">
                   <span className="relative z-10">Atharv</span>
-                  <span className="absolute bottom-[-8px] left-0 w-full h-3 sm:h-4 bg-[#60B5FF] -z-0 -rotate-1" />
+                  <span className="absolute bottom-[-8px] left-0 w-full h-3 sm:h-4 bg-[#60B5FF] z-0 -rotate-1" />
                 </span>
                 <span className="text-[#FF9149] bottom-[-8px] sm:bottom-[-14px] left-1 relative">
                   .
@@ -81,7 +82,7 @@ export default function Hero() {
               </p>
 
               <div className="flex flex-wrap gap-3 pt-2">
-                <a
+                <motion.a
                   href="#projects"
                   onClick={(e) => {
                     e.preventDefault();
@@ -89,12 +90,14 @@ export default function Hero() {
                       .querySelector("#projects")
                       ?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-[#60B5FF] text-white font-body font-semibold text-sm sm:text-base border-3 border-black dark:border-white shadow-brutal hover:shadow-brutal-lg hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95, x: 2, y: 2 }}
+                  className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-[#60B5FF] text-black font-body font-semibold text-sm sm:text-base border-3 border-black dark:border-white shadow-brutal hover:shadow-brutal-lg transition-colors duration-200"
                   style={{ borderWidth: "3px" }}
                 >
                   View My Work <ArrowRight size={16} />
-                </a>
-                <a
+                </motion.a>
+                <motion.a
                   href="#contact"
                   onClick={(e) => {
                     e.preventDefault();
@@ -102,11 +105,13 @@ export default function Hero() {
                       .querySelector("#contact")
                       ?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white dark:bg-[#2a2a2a] text-black dark:text-white font-body font-semibold text-sm sm:text-base border-3 border-black dark:border-white shadow-brutal hover:shadow-brutal-lg hover:bg-[#FF9149] hover:text-white hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95, x: 2, y: 2 }}
+                  className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white dark:bg-[#27272a] text-black dark:text-white font-body font-semibold text-sm sm:text-base border-3 border-black dark:border-white shadow-brutal hover:shadow-brutal-lg hover:bg-[#FF9149] hover:text-black transition-colors duration-200"
                   style={{ borderWidth: "3px" }}
                 >
                   Get In Touch
-                </a>
+                </motion.a>
               </div>
             </div>
 
@@ -167,7 +172,7 @@ export default function Hero() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-4">
             <div
-              className="bg-white dark:bg-[#222] border-3 border-black dark:border-white p-4"
+              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4"
               style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #60B5FF" }}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -206,7 +211,7 @@ export default function Hero() {
             </div>
 
             <div
-              className="bg-white dark:bg-[#222] border-3 border-black dark:border-white p-4"
+              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4"
               style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #FF9149" }}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -221,7 +226,7 @@ export default function Hero() {
             </div>
 
             <div
-              className="bg-white dark:bg-[#222] border-3 border-black dark:border-white p-4"
+              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4"
               style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #E0FFF1" }}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -235,11 +240,13 @@ export default function Hero() {
               </p>
             </div>
 
-            <a
+            <motion.a
               href={personalInfo.social.blog}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#FFECDB] dark:bg-[#3a2f1e] border-3 border-black dark:border-white p-4 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform duration-200 group"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.95, x: 2, y: 2 }}
+              className="bg-[#FFECDB] dark:bg-[#27272a] border-3 border-black dark:border-white p-4 transition-colors duration-200 group"
               style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #FFECDB" }}
             >
               <div className="flex items-center justify-between mb-2">
@@ -254,7 +261,7 @@ export default function Hero() {
               <p className="font-mono text-xs text-gray-600 dark:text-gray-400">
                 Deep dives & learnings
               </p>
-            </a>
+            </motion.a>
           </div>
         </div>
       </div>

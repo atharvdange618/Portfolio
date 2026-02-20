@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Sun, Moon, Menu, X, Code2, Github, Linkedin } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { personalInfo } from "@/data/mock";
@@ -35,8 +36,8 @@ export default function Navbar() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 border-b-3 border-black dark:border-white transition-colors duration-300 ${
         scrolled
-          ? "bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-sm"
-          : "bg-white dark:bg-[#1a1a1a]"
+          ? "bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-sm"
+          : "bg-white dark:bg-[#09090b]"
       }`}
       style={{ borderBottomWidth: "3px" }}
     >
@@ -50,9 +51,14 @@ export default function Navbar() {
             }}
             className="flex items-center gap-2 group"
           >
-            <div className="p-1.5 bg-[#60B5FF] border-2 border-black dark:border-white group-hover:rotate-12 transition-transform duration-200">
+            <motion.div
+              whileHover={{ rotate: 12, scale: 1.1 }}
+              whileTap={{ scale: 0.9, rotate: -5 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              className="p-1.5 bg-[#60B5FF] border-2 border-black dark:border-white transition-transform duration-200"
+            >
               <Code2 size={16} className="text-white" />
-            </div>
+            </motion.div>
             <span className="font-heading text-lg sm:text-xl font-bold text-black dark:text-white group-hover:text-[#60B5FF] transition-colors duration-200 tracking-tight">
               Atharv Dange
               <span className="text-[#FF9149]">.</span>
@@ -99,9 +105,12 @@ export default function Navbar() {
               </a>
             </div>
 
-            <button
+            <motion.button
               onClick={toggleTheme}
-              className="ml-2 p-2 border-2 border-black dark:border-white bg-[#FFECDB] dark:bg-[#2a2a2a] hover:translate-y-[-2px] transition-all duration-200"
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.9, y: 2 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              className="ml-2 p-2 border-2 border-black dark:border-white bg-[#FFECDB] dark:bg-[#27272a] transition-all duration-200 cursor-pointer"
               aria-label="Toggle theme"
               style={{
                 boxShadow: scrolled ? "none" : "2px 2px 0px rgba(0,0,0,0.2)",
@@ -115,14 +124,13 @@ export default function Navbar() {
               ) : (
                 <Moon size={18} className="text-gray-800" />
               )}
-            </button>
+            </motion.button>
           </div>
 
-          {/* Mobile Controls */}
           <div className="flex md:hidden items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="p-2 border-2 border-black dark:border-white bg-[#FFECDB] dark:bg-[#2a2a2a]"
+              className="p-2 border-2 border-black dark:border-white bg-[#FFECDB] dark:bg-[#27272a]"
               aria-label="Toggle theme"
             >
               {isDark ? (
@@ -136,7 +144,7 @@ export default function Navbar() {
             </button>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-2 border-2 border-black dark:border-white bg-white dark:bg-[#1a1a1a]"
+              className="p-2 border-2 border-black dark:border-white bg-white dark:bg-[#09090b]"
               aria-label="Toggle menu"
             >
               {mobileOpen ? (
@@ -149,10 +157,9 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {mobileOpen && (
         <div
-          className="md:hidden border-t-3 border-black dark:border-white bg-white dark:bg-[#1a1a1a]"
+          className="md:hidden border-t-3 border-black dark:border-white bg-white dark:bg-[#09090b]"
           style={{ borderTopWidth: "3px" }}
         >
           <div className="px-4 py-3 space-y-2">
@@ -167,7 +174,6 @@ export default function Navbar() {
               </a>
             ))}
 
-            {/* Mobile Social Links */}
             <div className="flex items-center gap-2 pt-2 border-t-2 border-gray-300 dark:border-gray-700 mt-2">
               <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
                 Connect:
