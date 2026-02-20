@@ -12,15 +12,24 @@ export interface LastFmTrack {
 export function useNowPlaying() {
   const [track, setTrack] = useState<LastFmTrack | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fallbackTrack: LastFmTrack = {
+      name: "About You",
+      artist: "The 1975",
+      album: "The 1975",
+      url: "https://www.last.fm/music/The+1975/_/Robbers",
+      imageUrl:
+        "https://i.pinimg.com/736x/23/37/d8/2337d80326eaad3b74a5de147f854699.jpg",
+      isPlaying: false,
+    };
+
     const fetchNowPlaying = async () => {
       const username = import.meta.env.VITE_LASTFM_USERNAME;
       const apiKey = import.meta.env.VITE_LASTFM_API_KEY;
 
       if (!username || !apiKey) {
-        setError("Missing Last.fm configuration");
+        setTrack(fallbackTrack);
         setLoading(false);
         return;
       }
@@ -118,7 +127,8 @@ export function useNowPlaying() {
           });
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        console.error("Last.fm fetch error (showing fallback):", err);
+        setTrack(fallbackTrack);
       } finally {
         setLoading(false);
       }
@@ -130,5 +140,5 @@ export function useNowPlaying() {
     return () => clearInterval(interval);
   }, []);
 
-  return { track, loading, error };
+  return { track, loading };
 }

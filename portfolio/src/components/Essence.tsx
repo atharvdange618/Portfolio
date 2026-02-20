@@ -35,13 +35,11 @@ const itemVariants = {
 };
 
 function NowPlayingCard() {
-  const { track, loading, error } = useNowPlaying();
+  const { track, loading } = useNowPlaying();
 
   return (
     <div className="flex flex-col h-full z-10 relative">
-      {error ? (
-        <p className="font-mono text-sm text-red-500">Failed to load track</p>
-      ) : loading ? (
+      {loading ? (
         <div className="flex-1 flex items-center justify-center py-4">
           <p className="font-mono text-xs text-gray-500">
             Fetching from Last.fm...
