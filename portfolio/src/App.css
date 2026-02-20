@@ -104,3 +104,17 @@ html {
 .link-underline:hover::after {
   width: 100%;
 }
+
+@keyframes essenceGlow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px rgba(255, 145, 73, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(255, 145, 73, 0.6));
+  }
+}
+
+.essence-glow {
+  animation: essenceGlow 3s ease-in-out infinite;
+}

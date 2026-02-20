@@ -1,6 +1,7 @@
 import About from "./components/About";
 import BlogPosts from "./components/BlogPosts";
 import Contact from "./components/Contact";
+import Essence from "./components/Essence";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import Navbar from "./components/Navbar";
@@ -17,6 +18,7 @@ const App = () => {
         <main id="main" role="main">
           <Hero />
           <About />
+          <Essence />
           <Projects />
           <BlogPosts />
           <Contact />

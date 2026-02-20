@@ -6,6 +6,46 @@ export const personalInfo = {
   company: "SmartScripts Pvt. Ltd.",
   funFact:
     "When I'm not coding, you can find me watching movies, diving into a new anime series, or exploring the world around me with my girlfriend.",
+  characterEssence: {
+    identity: [
+      {
+        label: "Anime",
+        description: "Stories of will, sacrifice, and becoming",
+        icon: "Swords",
+      },
+      {
+        label: "Dark Academia",
+        description: "The romance of knowledge and old libraries",
+        icon: "BookOpen",
+      },
+      {
+        label: "Stoicism",
+        description: "Control what you can. Accept what you can't.",
+        icon: "Mountain",
+      },
+    ],
+    anime: {
+      favourites: ["Vagabond", "Vinland Saga", "Bleach"],
+      spiritCharacter: {
+        name: "Jiraiya",
+        from: "Naruto",
+      },
+    },
+    music: {
+      bands: ["The 1975", "Radiohead", "Cigarettes After Sex", "Coldplay"],
+      favouriteArtist: "Darshan Raval",
+      instrumentalLove: ["Violin", "Piano", "Sarangi"],
+    },
+    movies: {
+      genres: ["Mystery", "Thriller", "Sci-Fi", "Romance", "Drama"],
+    },
+    interests: ["Music", "Movies", "Skies & Sunsets"],
+    philosophy: "Empathy over indifference",
+    quote: {
+      text: "A man who has not passed through the inferno of his passions has never overcome them.",
+      author: "Carl Jung",
+    },
+  },
   askMeAbout: [
     "Backend Architecture",
     "TypeScript",
