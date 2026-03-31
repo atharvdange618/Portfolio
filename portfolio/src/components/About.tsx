@@ -95,16 +95,15 @@ export default function About() {
                   <Briefcase size={20} className="text-black" />
                 </div>
                 <h3 className="font-heading text-xl font-bold text-black dark:text-white">
-                  Current Role
+                  Current Status
                 </h3>
               </div>
               <p className="font-body text-gray-700 dark:text-gray-300 leading-relaxed">
-                Working at{" "}
-                <span className="font-semibold text-black dark:text-white">
-                  {personalInfo.company}
+                <span className="font-semibold text-[#60B5FF]">
+                  Open to exciting opportunities!
                 </span>{" "}
-                building production applications and mobile apps. Focused on
-                MERN/PERN stack and React Native.
+                Previously built production applications and mobile apps at
+                SmartScripts. Focused on MERN/PERN stack and React Native.
               </p>
             </div>
 

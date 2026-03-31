@@ -73,12 +73,11 @@ export default function Hero() {
               </div>
 
               <p className="font-body text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-lg leading-relaxed">
-                {personalInfo.tagline} Building scalable web apps and exploring
-                the depths of JavaScript at{" "}
-                <span className="font-semibold text-black dark:text-white">
-                  {personalInfo.company}
+                {personalInfo.tagline} Previously built scalable web apps and
+                explored the depths of JavaScript at SmartScripts.{" "}
+                <span className="font-semibold text-[#60B5FF]">
+                  Now open to exciting opportunities!
                 </span>
-                .
               </p>
 
               <div className="flex flex-wrap gap-3 pt-2">
