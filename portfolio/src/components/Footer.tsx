@@ -90,7 +90,7 @@ export default function Footer() {
 
           <div
             className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-5"
-            style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #E0FFF1" }}
+            style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #22c55e" }}
           >
             <h4 className="font-mono text-sm font-bold text-[#FF9149] uppercase tracking-wider mb-3">
               Connect
@@ -143,7 +143,7 @@ export default function Footer() {
 
           <div
             className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-5"
-            style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #FFECDB" }}
+            style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #a855f7" }}
           >
             <h4 className="font-mono text-sm font-bold text-green-600 uppercase tracking-wider mb-3">
               Status

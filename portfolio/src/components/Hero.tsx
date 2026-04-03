@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { personalInfo } from "../data/mock";
 import Typed from "typed.js";
@@ -10,7 +10,9 @@ import {
   Coffee,
   Code2,
   Zap,
+  FileText,
 } from "lucide-react";
+import ResumeModal from "./ResumeModal";
 
 const roles = [
   "Full Stack Engineer",
@@ -22,6 +24,7 @@ const roles = [
 
 export default function Hero() {
   const typedRef = useRef<HTMLSpanElement>(null);
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
 
   useEffect(() => {
     if (!typedRef.current) return;
@@ -96,6 +99,15 @@ export default function Hero() {
                 >
                   View My Work <ArrowRight size={16} />
                 </motion.a>
+                <motion.button
+                  onClick={() => setIsResumeModalOpen(true)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95, x: 2, y: 2 }}
+                  className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-[#FFB494] text-black font-body font-semibold text-sm sm:text-base border-3 border-black dark:border-white shadow-brutal hover:shadow-brutal-lg transition-colors duration-200"
+                  style={{ borderWidth: "3px" }}
+                >
+                  <FileText size={16} /> View Resume
+                </motion.button>
                 <motion.a
                   href="#contact"
                   onClick={(e) => {
@@ -185,7 +197,8 @@ export default function Hero() {
                   href={personalInfo.social.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 border-2 border-black dark:border-white text-black dark:text-white hover:bg-[#60B5FF] hover:text-white transition-colors duration-200"
+                  className="p-1.5 border-2 border-black dark:border-white text-black dark:text-white hover:bg-[#60B5FF] hover:text-white transition-all duration-200"
+                  style={{ boxShadow: "2px 2px 0px black" }}
                   aria-label="GitHub"
                 >
                   <Github size={16} />
@@ -194,14 +207,16 @@ export default function Hero() {
                   href={personalInfo.social.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 border-2 border-black dark:border-white text-black dark:text-white hover:bg-[#60B5FF] hover:text-white transition-colors duration-200"
+                  className="p-1.5 border-2 border-black dark:border-white text-black dark:text-white hover:bg-[#60B5FF] hover:text-white transition-all duration-200"
+                  style={{ boxShadow: "2px 2px 0px black" }}
                   aria-label="LinkedIn"
                 >
                   <Linkedin size={16} />
                 </a>
                 <a
                   href={personalInfo.social.email}
-                  className="p-1.5 border-2 border-black dark:border-white text-black dark:text-white hover:bg-[#60B5FF] hover:text-white transition-colors duration-200"
+                  className="p-1.5 border-2 border-black dark:border-white text-black dark:text-white hover:bg-[#60B5FF] hover:text-white transition-all duration-200"
+                  style={{ boxShadow: "2px 2px 0px black" }}
                   aria-label="Email"
                 >
                   <Mail size={16} />
@@ -226,7 +241,7 @@ export default function Hero() {
 
             <div
               className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4"
-              style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #E0FFF1" }}
+              style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #22c55e" }}
             >
               <div className="flex items-center gap-2 mb-2">
                 <Coffee size={18} className="text-green-600" />
@@ -246,7 +261,7 @@ export default function Hero() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95, x: 2, y: 2 }}
               className="bg-[#FFECDB] dark:bg-[#27272a] border-3 border-black dark:border-white p-4 transition-colors duration-200 group"
-              style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #FFECDB" }}
+              style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #FF9149" }}
             >
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-heading text-sm font-bold text-black dark:text-white">
@@ -264,6 +279,11 @@ export default function Hero() {
           </div>
         </div>
       </div>
+
+      <ResumeModal
+        isOpen={isResumeModalOpen}
+        onClose={() => setIsResumeModalOpen(false)}
+      />
     </section>
   );
 }

@@ -57,6 +57,7 @@ export const personalInfo = {
     twitter: "https://x.com/atharvdangedev",
     github: "https://github.com/atharvdange618",
     email: "mailto:atharvdange.dev@gmail.com",
+    phone: "7875273298",
     portfolio: "https://atharvdangedev.in",
     blog: "https://blog.atharvdangedev.in",
   },
