@@ -2,7 +2,7 @@ export const personalInfo = {
   name: "Atharv Dange",
   role: "Full Stack Engineer",
   tagline: "I don't just use things, I dig into how they work.",
-  bio: "A deep-dive experimenter at heart. My core strength is in the Node.js/Express ecosystem, but I'm constantly pushing boundaries with Bun, Hono, and Fastify. Previously built production applications and mobile apps at SmartScripts. Now open to exciting opportunities.",
+  bio: "A deep-dive experimenter at heart. My core strength is in the Node.js/Express ecosystem, but I'm constantly pushing boundaries with Bun, Hono, and Fastify. I thrive on building projects that challenge my understanding and allow me to explore new technologies. Whether it's crafting a complex backend architecture or experimenting with the latest frontend frameworks, I'm always eager to learn and grow.",
   company: "Open to Opportunities",
   funFact:
     "When I'm not coding, you can find me watching movies, diving into a new anime series, or exploring the world around me with my girlfriend.",
