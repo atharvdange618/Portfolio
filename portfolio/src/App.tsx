@@ -8,12 +8,14 @@ import Navbar from "./components/Navbar";
 import Projects from "./components/Projects";
 import { Toaster } from "./components/ui/sonner";
 import { ThemeProvider } from "./context/ThemeContext";
+import FloatingParticles from "./components/FloatingParticles";
 
 const App = () => {
   return (
     <ThemeProvider>
       <Toaster />
-      <div className="App min-h-screen bg-white dark:bg-[#09090b]">
+      <FloatingParticles />
+      <div className="App min-h-screen bg-white dark:bg-[#09090b] relative">
         <Navbar />
         <main id="main" role="main">
           <Hero />

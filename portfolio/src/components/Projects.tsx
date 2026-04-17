@@ -33,7 +33,7 @@ export default function Projects() {
             </p>
           </div>
           <a
-            href="https://blog.atharvdangedev.in/blogs"
+            href="https://blog.atharvdangedev.in/projects"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 font-body font-semibold text-[#60B5FF] hover:text-[#FF9149] transition-colors duration-200"
@@ -70,15 +70,34 @@ export default function Projects() {
                   stiffness: 200,
                   damping: 20,
                 }}
-                whileHover={{ scale: 1.02, y: -4, x: -4 }}
-                whileTap={{ scale: 0.98, x: 2, y: 2 }}
-                className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-6 flex flex-col group cursor-pointer"
+                whileHover={{
+                  scale: 1.03,
+                  y: -8,
+                  rotateX: 5,
+                  rotateY: 5,
+                  transition: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 15,
+                  },
+                }}
+                whileTap={{ scale: 0.97 }}
+                className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-6 flex flex-col group cursor-pointer relative overflow-hidden"
                 style={{
                   borderWidth: "3px",
                   boxShadow: `6px 6px 0px ${shadowColors[i % shadowColors.length]}`,
+                  transformStyle: "preserve-3d",
+                  perspective: "1000px",
                 }}
               >
-                <div className="flex items-start justify-between mb-3">
+                <motion.div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300"
+                  style={{
+                    background: `linear-gradient(135deg, ${shadowColors[i % shadowColors.length]} 0%, transparent 100%)`,
+                  }}
+                />
+
+                <div className="flex items-start justify-between mb-3 relative z-10">
                   <h3 className="font-heading text-xl font-bold text-black dark:text-white group-hover:text-[#60B5FF] transition-colors duration-200">
                     {project.name}
                   </h3>
