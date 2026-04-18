@@ -11,7 +11,6 @@ import {
   Code2,
   Zap,
   FileText,
-  X,
 } from "lucide-react";
 import ResumeModal from "./ResumeModal";
 
@@ -50,7 +49,7 @@ export default function Hero() {
         <div className="space-y-8">
           <div className="grid lg:grid-cols-5 gap-6 lg:gap-8 items-start">
             <div className="lg:col-span-3 space-y-4 sm:space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#E0FFF1] border-2 border-black dark:border-white shadow-brutal-sm font-mono text-xs sm:text-sm font-medium">
+              <div className="inline-flex items-center gap-2 px-3 mt-4 sm:px-4 py-2 bg-[#E0FFF1] border-2 border-black dark:border-white shadow-brutal-sm font-mono text-xs sm:text-sm font-medium">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 <span className="text-black dark:text-black">
                   Available for collaborations
@@ -169,7 +168,7 @@ export default function Hero() {
                   Connect
                 </h3>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 <motion.a
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   whileTap={{ scale: 0.9 }}
@@ -210,9 +209,17 @@ export default function Hero() {
                   href={personalInfo.social.twitter}
                   className="p-1.5 border-2 border-black dark:border-white text-black dark:text-white hover:bg-[#60B5FF] hover:text-white transition-all duration-200"
                   style={{ boxShadow: "2px 2px 0px black" }}
-                  aria-label="Email"
+                  aria-label="Twitter"
                 >
-                  <X size={16} />
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="text-black dark:text-white sm:w-3.5 sm:h-3.5"
+                  >
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
                 </motion.a>
               </div>
             </div>
