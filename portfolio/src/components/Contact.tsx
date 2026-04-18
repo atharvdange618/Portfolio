@@ -300,7 +300,7 @@ export default function Contact() {
                   disabled={isSubmitting}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.95, x: 2, y: 2 }}
-                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#FF9149] text-black font-body font-semibold border-3 border-black hover:shadow-brutal-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#FF9149] text-black font-body font-semibold border-3 border-black hover:shadow-brutal-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #000" }}
                 >
                   {isSubmitting ? (

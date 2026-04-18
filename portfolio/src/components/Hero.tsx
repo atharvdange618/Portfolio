@@ -117,7 +117,7 @@ export default function Hero() {
                   onClick={() => setIsResumeModalOpen(true)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.95, x: 2, y: 2 }}
-                  className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-[#FFB494] text-black font-body font-semibold text-sm sm:text-base border-3 border-black dark:border-white shadow-brutal hover:shadow-brutal-lg transition-colors duration-200"
+                  className="cursor-pointer inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-[#FFB494] text-black font-body font-semibold text-sm sm:text-base border-3 border-black dark:border-white shadow-brutal hover:shadow-brutal-lg transition-colors duration-200"
                   style={{ borderWidth: "3px" }}
                 >
                   <FileText size={16} /> View Resume

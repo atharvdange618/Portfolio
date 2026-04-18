@@ -102,7 +102,7 @@ export default function ResumeModal({ isOpen, onClose }: ResumeModalProps) {
                   }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98, x: 2, y: 2 }}
-                  className="p-4 border-3 border-black dark:border-white text-left transition-all duration-200"
+                  className="p-4 border-3 border-black dark:border-white text-left transition-all duration-200 cursor-pointer"
                   style={{
                     borderWidth: "3px",
                     backgroundColor: card.bgColor,
