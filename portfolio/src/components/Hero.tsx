@@ -11,6 +11,7 @@ import {
   Code2,
   Zap,
   FileText,
+  X,
 } from "lucide-react";
 import ResumeModal from "./ResumeModal";
 
@@ -145,111 +146,21 @@ export default function Hero() {
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
-                className="bg-[#1a1a1a] border-3 border-black dark:border-white shadow-brutal-colored p-0 rotate-1 hover:rotate-0 transition-all duration-300 hover:scale-105"
-                style={{ borderWidth: "3px", boxShadow: "8px 8px 0px #60B5FF" }}
+                className="border-3 border-black dark:border-white shadow-brutal-colored overflow-hidden"
+                style={{ borderWidth: "3px", boxShadow: "8px 8px 0px #FF9149" }}
               >
-                <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-gray-700">
-                  <motion.div
-                    className="w-3 h-3 rounded-full bg-red-400"
-                    animate={{ opacity: [1, 0.5, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                  <motion.div
-                    className="w-3 h-3 rounded-full bg-yellow-400"
-                    animate={{ opacity: [1, 0.5, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-                  />
-                  <motion.div
-                    className="w-3 h-3 rounded-full bg-green-400"
-                    animate={{ opacity: [1, 0.5, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
-                  />
-                  <span className="ml-2 font-mono text-xs text-gray-400">
-                    atharvdange@dev ~
-                  </span>
-                </div>
-                <motion.div
-                  className="p-4 font-mono text-sm space-y-2"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.8, delay: 0.5 }}
-                >
-                  <motion.div
-                    className="text-gray-400"
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 0.6 }}
-                  >
-                    <span className="text-[#60B5FF]">const</span>{" "}
-                    <span className="text-[#FF9149]">atharv</span>{" "}
-                    <span className="text-white">=</span> {"{"}
-                  </motion.div>
-                  <motion.div
-                    className="pl-4 text-gray-300"
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 0.7 }}
-                  >
-                    <span className="text-[#E0FFF1]">role</span>:{" "}
-                    <span className="text-yellow-300">
-                      "Full Stack Engineer"
-                    </span>
-                    ,
-                  </motion.div>
-                  <motion.div
-                    className="pl-4 text-gray-300"
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 0.8 }}
-                  >
-                    <span className="text-[#E0FFF1]">core</span>:{" "}
-                    <span className="text-yellow-300">"Node.js / Express"</span>
-                    ,
-                  </motion.div>
-                  <motion.div
-                    className="pl-4 text-gray-300"
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 0.9 }}
-                  >
-                    <span className="text-[#E0FFF1]">exploring</span>:{" "}
-                    <span className="text-yellow-300">
-                      "Bun, Hono, Fastify"
-                    </span>
-                    ,
-                  </motion.div>
-                  <motion.div
-                    className="pl-4 text-gray-300"
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 1.0 }}
-                  >
-                    <span className="text-[#E0FFF1]">motto</span>:{" "}
-                    <span className="text-yellow-300">
-                      "Dig deep, build bold"
-                    </span>
-                    ,
-                  </motion.div>
-                  <motion.div
-                    className="text-gray-400"
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 1.1 }}
-                  >
-                    {"}"}
-                  </motion.div>
-                  <div className="mt-3 flex items-center gap-1">
-                    <span className="text-[#60B5FF]">$</span>
-                    <span className="text-white animate-pulse">_</span>
-                  </div>
-                </motion.div>
+                <img
+                  src="/superman.jpeg"
+                  alt="Spread love"
+                  className="w-full h-full object-cover"
+                />
               </motion.div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-4">
             <div
-              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4 hover-3d"
+              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4 "
               style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #60B5FF" }}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -293,11 +204,21 @@ export default function Hero() {
                 >
                   <Mail size={16} />
                 </motion.a>
+                <motion.a
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
+                  href={personalInfo.social.twitter}
+                  className="p-1.5 border-2 border-black dark:border-white text-black dark:text-white hover:bg-[#60B5FF] hover:text-white transition-all duration-200"
+                  style={{ boxShadow: "2px 2px 0px black" }}
+                  aria-label="Email"
+                >
+                  <X size={16} />
+                </motion.a>
               </div>
             </div>
 
             <div
-              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4 hover-3d"
+              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4 "
               style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #FF9149" }}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -312,7 +233,7 @@ export default function Hero() {
             </div>
 
             <div
-              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4 hover-3d"
+              className="bg-white dark:bg-[#18181b] border-3 border-black dark:border-white p-4 "
               style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #22c55e" }}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -330,7 +251,7 @@ export default function Hero() {
               href={personalInfo.social.blog}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#FFECDB] dark:bg-[#27272a] border-3 border-black dark:border-white p-4 transition-colors duration-200 group hover-3d"
+              className="bg-[#FFECDB] dark:bg-[#27272a] border-3 border-black dark:border-white p-4 transition-colors duration-200 group "
               style={{ borderWidth: "3px", boxShadow: "4px 4px 0px #FF9149" }}
             >
               <div className="flex items-center justify-between mb-2">
