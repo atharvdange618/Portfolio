@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sun, Moon, Menu, X, Code2, Github, Linkedin } from "lucide-react";
+import { Sun, Moon, Menu, X, Github, Linkedin } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { personalInfo } from "@/data/mock";
 
@@ -55,9 +55,13 @@ export default function Navbar() {
               whileHover={{ rotate: 12, scale: 1.1 }}
               whileTap={{ scale: 0.9, rotate: -5 }}
               transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              className="p-1.5 bg-[#60B5FF] border-2 border-black dark:border-white transition-transform duration-200"
+              className="w-10 h-10 border-2 border-black dark:border-white transition-transform duration-200 overflow-hidden"
             >
-              <Code2 size={16} className="text-white" />
+              <img
+                src={isDark ? "/dark.jpg" : "/light.jpeg"}
+                alt="Atharv Dange"
+                className="w-full h-full object-cover"
+              />
             </motion.div>
             <span className="font-heading text-lg sm:text-xl font-bold text-black dark:text-white group-hover:text-[#60B5FF] transition-colors duration-200 tracking-tight">
               Atharv Dange
