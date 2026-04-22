@@ -1,33 +1,35 @@
-import About from "./components/About";
-import BlogPosts from "./components/BlogPosts";
-import Contact from "./components/Contact";
-import Essence from "./components/Essence";
-import Footer from "./components/Footer";
-import Hero from "./components/Hero";
-import Navbar from "./components/Navbar";
-import Projects from "./components/Projects";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/sonner";
 import { ThemeProvider } from "./context/ThemeContext";
 import FloatingParticles from "./components/FloatingParticles";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import Home from "./pages/Home";
+import ProjectsPage from "./pages/ProjectsPage";
+
+const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <ThemeProvider>
-      <Toaster />
-      <FloatingParticles />
-      <div className="App min-h-screen bg-white dark:bg-[#09090b] relative">
-        <Navbar />
-        <main id="main" role="main">
-          <Hero />
-          <About />
-          <Essence />
-          <Projects />
-          <BlogPosts />
-          <Contact />
-        </main>
-        <Footer />
-      </div>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <BrowserRouter>
+          <Toaster />
+          <FloatingParticles />
+          <div className="App min-h-screen bg-white dark:bg-[#09090b] relative">
+            <Navbar />
+            <main id="main" role="main">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/projects" element={<ProjectsPage />} />
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+        </BrowserRouter>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 };
 
