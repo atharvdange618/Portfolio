@@ -3,6 +3,14 @@ import { Briefcase, Code2, Lightbulb, MessageCircle } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { useTheme } from "@/hooks/useTheme";
 
+const formatName = (name: string) => {
+  const cleanName = name.replace(/\.(svg|png)$/i, "").replace(/-icon$/i, "");
+  return cleanName
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 const SkillIconsGrid = ({
   icons,
   theme,
@@ -10,14 +18,58 @@ const SkillIconsGrid = ({
   icons: string[];
   theme?: string;
 }) => {
-  if (icons.length === 0) return null;
+  if (!icons || icons.length === 0) return null;
   return (
-    <img
-      src={`https://skillicons.dev/icons?i=${icons.join(",")}${theme ? `&theme=${theme}` : ""}&perline=9`}
-      alt="Tech stack icons"
-      className="max-w-full"
-      loading="lazy"
-    />
+    <>
+      {icons.map((icon) => (
+        <div
+          key={icon}
+          className="relative group flex items-center justify-center"
+        >
+          <img
+            src={`https://skillicons.dev/icons?i=${icon}${theme ? `&theme=${theme}` : ""}`}
+            alt={icon}
+            className="w-12 h-12 hover:-translate-y-1 hover:scale-105 transition-all duration-200 cursor-pointer"
+            loading="lazy"
+          />
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
+            <span className="whitespace-nowrap bg-black dark:bg-white text-white dark:text-black font-mono text-xs px-2 py-1 rounded-md">
+              {formatName(icon)}
+            </span>
+            <div className="w-2 h-2 bg-black dark:bg-white rotate-45 -mt-1"></div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+};
+
+const LocalIconsGrid = ({ icons }: { icons: string[] }) => {
+  if (!icons || icons.length === 0) return null;
+  return (
+    <>
+      {icons.map((icon) => (
+        <div
+          key={icon}
+          className="relative group flex items-center justify-center"
+        >
+          <div className="w-12 h-12 bg-[#f5f5f5] dark:bg-[#242938] rounded-xl flex items-center justify-center p-[6px] hover:-translate-y-1 hover:scale-105 transition-all duration-200 cursor-pointer">
+            <img
+              src={`/icons/${icon}`}
+              alt={icon.replace(".svg", "")}
+              className="w-full h-full object-contain"
+              loading="lazy"
+            />
+          </div>
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
+            <span className="whitespace-nowrap bg-black dark:bg-white text-white dark:text-black font-mono text-xs px-2 py-1 rounded-md">
+              {formatName(icon)}
+            </span>
+            <div className="w-2 h-2 bg-black dark:bg-white rotate-45 -mt-1"></div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 };
 
@@ -28,18 +80,18 @@ const TextBadges = ({
   items: string[];
   colorClass: string;
 }) => {
-  if (items.length === 0) return null;
+  if (!items || items.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-2">
+    <>
       {items.map((item) => (
         <Badge
           key={item}
-          className={`border-2 border-black dark:border-white ${colorClass} font-mono text-xs px-3 py-1`}
+          className={`border-2 border-black dark:border-white ${colorClass} font-mono text-sm px-4 py-2 hover:-translate-y-1 hover:scale-105 transition-all duration-200 cursor-pointer`}
         >
           {item}
         </Badge>
       ))}
-    </div>
+    </>
   );
 };
 
@@ -123,102 +175,50 @@ export default function About() {
                 {personalInfo.funFact}
               </p>
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              <span className="font-mono text-sm text-gray-500 dark:text-gray-400 mr-2 flex items-center gap-1">
-                <MessageCircle size={14} /> Ask me about:
-              </span>
-              {personalInfo.askMeAbout.map((topic) => (
-                <Badge
-                  key={topic}
-                  variant="outline"
-                  className="border-2 border-black dark:border-white bg-white dark:bg-[#27272a] text-black dark:text-white font-mono text-xs px-3 py-1 hover:bg-[#60B5FF] hover:text-white hover:border-black transition-colors duration-200"
-                >
-                  {topic}
-                </Badge>
-              ))}
-            </div>
           </div>
 
           <div>
             <div
-              className="bg-white dark:bg-[#09090b] p-6 border-3 border-black dark:border-white"
+              className="bg-white dark:bg-[#09090b] p-6 border-3 border-black dark:border-white h-fit mb-6"
               style={{ borderWidth: "3px", boxShadow: "6px 6px 0px #000" }}
             >
               <h3 className="font-heading text-2xl font-bold text-black dark:text-white mb-6">
                 Tech Stack & Tools
               </h3>
 
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-mono text-sm font-bold text-[#60B5FF] uppercase tracking-wider mb-3">
-                    // The Core
-                  </h4>
-                  <div className="space-y-3">
-                    <SkillIconsGrid icons={techStack.core} theme={theme} />
-                    <TextBadges
-                      items={techStack.coreText}
-                      colorClass="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
-                    />
-                  </div>
-                </div>
+              <div className="flex flex-wrap gap-3 items-center">
+                <SkillIconsGrid icons={techStack.icons} theme={theme} />
+                <LocalIconsGrid icons={techStack.localIcons} />
+                <TextBadges
+                  items={techStack.text}
+                  colorClass="bg-[#60B5FF] hover:bg-[#4a9ee6] text-black dark:text-black"
+                />
+              </div>
+            </div>
 
-                <div>
-                  <h4 className="font-mono text-sm font-bold text-[#FF9149] uppercase tracking-wider mb-3">
-                    // Exploratory
-                  </h4>
-                  <div className="space-y-3">
-                    <SkillIconsGrid
-                      icons={techStack.exploratory}
-                      theme={theme}
-                    />
-                    <TextBadges
-                      items={techStack.exploratoryText}
-                      colorClass="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200"
-                    />
+            <div
+              className="bg-white dark:bg-[#09090b] p-6 border-3 border-black dark:border-white"
+              style={{ borderWidth: "3px", boxShadow: "6px 6px 0px #FDE047" }}
+            >
+              <div className="flex flex-col xl:flex-row xl:items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#FDE047] border-2 border-black shrink-0">
+                    <MessageCircle size={20} className="text-black" />
                   </div>
+                  <h3 className="font-heading text-xl font-bold text-black dark:text-white whitespace-nowrap">
+                    Ask me about
+                  </h3>
                 </div>
-
-                <div>
-                  <h4 className="font-mono text-sm font-bold text-green-600 uppercase tracking-wider mb-3">
-                    // Frontend
-                  </h4>
-                  <div className="space-y-3">
-                    <SkillIconsGrid icons={techStack.frontend} theme={theme} />
-                    <TextBadges
-                      items={techStack.frontendText}
-                      colorClass="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-mono text-sm font-bold text-purple-600 uppercase tracking-wider mb-3">
-                    // State & Data
-                  </h4>
-                  <div className="space-y-3">
-                    <SkillIconsGrid
-                      icons={techStack.stateAndData}
-                      theme={theme}
-                    />
-                    <TextBadges
-                      items={techStack.stateAndDataText}
-                      colorClass="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-mono text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">
-                    // Tools & Platforms
-                  </h4>
-                  <div className="space-y-3">
-                    <SkillIconsGrid icons={techStack.tools} theme={theme} />
-                    <TextBadges
-                      items={techStack.toolsText}
-                      colorClass="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                    />
-                  </div>
+                <div className="flex flex-wrap gap-2 xl:ml-auto">
+                  {personalInfo.askMeAbout.map((topic) => (
+                    <Badge
+                      key={topic}
+                      variant="outline"
+                      className="border-2 border-black dark:border-white bg-white dark:bg-[#27272a] text-black dark:text-white font-mono text-sm px-4 py-2 hover:bg-[#FDE047] hover:text-black hover:border-black hover:-translate-y-1 hover:scale-105 transition-all duration-200 cursor-pointer"
+                    >
+                      {topic}
+                    </Badge>
+                  ))}
                 </div>
               </div>
             </div>

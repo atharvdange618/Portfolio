@@ -64,19 +64,18 @@ export const personalInfo = {
 };
 
 export const techStack = {
-  core: ["nodejs", "express", "postgres", "react", "nextjs", "ts", "mongodb"],
-  coreText: [] as string[],
-
-  exploratory: ["bun", "sqlite", "go"],
-  exploratoryText: ["Hono", "React Native/Expo", "Fastify"],
-
-  frontend: ["react", "nextjs", "ts", "tailwind", "vite"],
-  frontendText: [] as string[],
-
-  stateAndData: ["prisma"],
-  stateAndDataText: ["TanStack Query", "Zustand", "Mongoose"],
-
-  tools: [
+  icons: [
+    "nodejs",
+    "express",
+    "postgres",
+    "react",
+    "nextjs",
+    "ts",
+    "mongodb",
+    "bun",
+    "sqlite",
+    "tailwind",
+    "prisma",
     "git",
     "github",
     "neovim",
@@ -84,11 +83,38 @@ export const techStack = {
     "vercel",
     "linux",
     "obsidian",
-    "pnpm",
   ],
-  toolsText: [] as string[],
-
-  other: ["prisma", "pnpm", "npm", "md"],
+  localIcons: [
+    "gopher.svg",
+    "hono.svg",
+    "clerk.svg",
+    "bruno.svg",
+    "expo.svg",
+    "zustand.svg",
+    "fastify-icon.svg",
+    "html-5.svg",
+    "css.svg",
+    "javascript.svg",
+    "vite-icon.svg",
+    "svg.svg",
+    "react-query-icon.svg",
+    "Mongoose.js.svg",
+    "zod.svg",
+    "axios.svg",
+    "linux-mint.svg",
+    "firefox.svg",
+    "prettier.svg",
+    "vitest.svg",
+    "puppeteer.svg",
+    "markdown.svg",
+    "npm-icon.svg",
+    "pnpm.svg",
+    "cloudinary-icon.svg",
+    "netlify-icon.svg",
+    "leaflet.svg",
+    "jwt-icon.svg",
+  ],
+  text: [],
 };
 
 export const mockProjects = [
