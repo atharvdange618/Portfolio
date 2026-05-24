@@ -1,7 +1,6 @@
 import Hero from "../components/Hero";
 import About from "../components/About";
 import Essence from "../components/Essence";
-import BlogPosts from "../components/BlogPosts";
 import Contact from "../components/Contact";
 
 export default function Home() {
@@ -10,7 +9,6 @@ export default function Home() {
       <Hero />
       <About />
       <Essence />
-      <BlogPosts />
       <Contact />
     </>
   );

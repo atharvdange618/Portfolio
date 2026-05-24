@@ -8,7 +8,7 @@ import { personalInfo } from "@/data/mock";
 const navLinks = [
   { label: "About", href: "/#about" },
   { label: "Projects", href: "/projects" },
-  { label: "Blog", href: "/#blog" },
+  { label: "Blog", href: "https://blog.atharvdangedev.in" },
   { label: "Contact", href: "/#contact" },
 ];
 
@@ -32,7 +32,9 @@ export default function Navbar() {
     e.preventDefault();
     setMobileOpen(false);
 
-    if (href.startsWith("/#")) {
+    if (href.startsWith("http://") || href.startsWith("https://")) {
+      window.location.assign(href);
+    } else if (href.startsWith("/#")) {
       const targetId = href.substring(2);
 
       if (location.pathname !== "/") {
