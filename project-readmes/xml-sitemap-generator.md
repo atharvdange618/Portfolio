@@ -135,6 +135,7 @@ const config = {
 ### Stats Logging
 
 Every run generates a JSON log in `public/logs/` containing:
+
 - Duration and timestamp
 - Breakdown of Sitemap-only vs. Crawled-only pages
 - Depth distribution and max depth
