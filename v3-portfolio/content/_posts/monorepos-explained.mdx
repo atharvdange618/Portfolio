@@ -1,0 +1,191 @@
+---
+id: "monorepos-explained"
+title: "Monorepos Explained: The What and Why"
+description: "Managing multiple projects across multiple repositories gets messy fast. This post breaks down what monorepos are, the problems they solve, the new problems they create, and how Turborepo fixes them - without writing a single line of setup code."
+date: "2026-05-17"
+tags:
+  ["monorepo", "turborepo", "pnpm", "workspaces", "build-tools", "architecture"]
+---
+
+Imagine you are building a house. You have a contractor for the foundation, a separate contractor for the walls, and a third one for the roof. Each of them works from a different blueprint, uses different tools, and communicates through a game of telephone. When the foundation team makes a change, the wall team does not know about it until something breaks. Sound exhausting? That is exactly what managing multiple separate code repositories feels like on a real project.
+
+Now imagine a single lead architect who has every blueprint in one room, knows how all the pieces connect, and can coordinate everyone at once. That is the monorepo idea in a single sentence.
+
+---
+
+## The Old Way: Multiple Repositories
+
+Most developers start with one repo per project. You have a frontend repo, a backend repo, maybe a shared utilities repo. This feels clean in the beginning. Each project lives in its own world.
+
+But as things grow, cracks start to appear.
+
+```
+github.com/atharvdange618/
+├── my-app-frontend      (React / Next.js)
+├── my-app-backend       (Express API)
+└── my-app-shared-utils  (TypeScript types, helpers)
+```
+
+Here is the thing: these three projects are not independent. They are deeply connected. The frontend calls the backend. Both the frontend and backend use the same TypeScript types. When you change a type in `shared-utils`, you need to:
+
+1. Publish a new version of `shared-utils` to npm (or manage it locally somehow)
+2. Update the version in `frontend`
+3. Update the version in `backend`
+4. Run `npm install` in both places
+5. Hope nothing broke.
+
+For a one-person side project, this is annoying. For a team of five, it is a productivity killer. And this is the problem monorepos solve.
+
+---
+
+## What is a Monorepo?
+
+A monorepo (short for monolithic repository) is a single git repository that holds multiple related projects. Instead of spreading your code across many repos, everything lives together under one roof.
+
+Think of it like an apartment building vs. separate houses. Separate houses means separate electricity bills, separate maintenance, separate everything. An apartment building shares infrastructure. The pipes, wiring, and elevator are all shared. Each apartment is still its own space, but the common stuff is managed once.
+
+```
+my-monorepo/                    <-- single git repository
+├── apps/
+│   ├── web/                    <-- Next.js frontend
+│   └── api/                    <-- Express backend
+├── packages/
+│   ├── types/                  <-- shared TypeScript types
+│   └── utils/                  <-- shared utility functions
+├── package.json
+└── pnpm-workspace.yaml
+```
+
+Every "project" is still its own thing with its own `package.json`, its own dependencies, its own scripts. But they all live in the same repository, so sharing code between them is just an import away. No publishing, no versioning, no synchronization headaches.
+
+The benefits are real and immediate:
+
+- **Shared code without npm packages.** Your frontend and backend can both import from `@myapp/types` as if it were a regular dependency, but it is just a local folder.
+- **Atomic commits.** When you change a shared type, you can update every app that uses it in a single commit. No more "this broke in prod because frontend was on v1.2.3 but backend expected v1.3.0."
+- **Unified tooling.** One ESLint config, one TypeScript config, one Prettier setup. Maintained once, used everywhere.
+- **Easier onboarding.** A new developer clones one repo and gets everything. No hunting down five different repositories.
+
+---
+
+## The Problem Monorepos Create
+
+Monorepos sound like a dream. And mostly, they are. But they come with one significant growing pain: speed.
+
+When everything lives together, your build and test commands run across everything. Change one line in `packages/utils` and your CI pipeline tries to rebuild the entire monorepo from scratch. That means rebuilding the frontend, the backend, running all the tests, linting everything. Even the parts that have absolutely nothing to do with your change.
+
+```
+You changed one file in packages/utils
+           |
+           v
+CI runs build on EVERYTHING
+ ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+ │  apps/web   │  │  apps/api   │  │  pkg/utils  │
+ │  (rebuilt)  │  │  (rebuilt)  │  │  (rebuilt)  │
+ └─────────────┘  └─────────────┘  └─────────────┘
+
+Time taken: painfully long
+```
+
+For a small repo, this is fine. For a large one with ten apps and fifteen packages, this is a serious problem. Builds that take 20 minutes when they should take 2.
+
+This is exactly the problem Turborepo was built to fix.
+
+---
+
+## What is Turborepo?
+
+Turborepo is a build system for monorepos. It does not replace pnpm workspaces or your existing tools. It sits on top of everything and makes it dramatically faster.
+
+It does this through two core ideas.
+
+**First: it understands your dependency graph.**
+
+Turborepo knows which packages depend on which. If `apps/web` depends on `packages/ui`, and `packages/ui` depends on `packages/types`, Turborepo builds them in the right order automatically. You do not have to think about it.
+
+```
+Dependency Graph (Turborepo figures this out for you):
+
+packages/types
+     |
+     v
+packages/ui  ───────┐
+     |              |
+     v              v
+apps/web         apps/api
+
+Build order: types --> ui --> web & api (in parallel)
+```
+
+**Second: it caches everything.**
+
+This is the real magic. When Turborepo runs a task like `build` on a package, it stores the result in a cache. The next time you run the same task and nothing has changed in that package, it just replays the cached output. Instantly. No rebuild.
+
+```
+First run:
+ packages/types  -->  [BUILD]  -->  cache saved
+ packages/ui     -->  [BUILD]  -->  cache saved
+ apps/web        -->  [BUILD]  -->  cache saved
+
+Second run (you only changed apps/web):
+ packages/types  -->  [CACHE HIT]  ✓  (skipped)
+ packages/ui     -->  [CACHE HIT]  ✓  (skipped)
+ apps/web        -->  [BUILD]      ✓  (rebuilt, because it changed)
+```
+
+The cache can even be shared across your entire team through Vercel's Remote Cache. That means when your teammate builds the project and pushes the cache, your machine benefits from their build on the next pull. Your CI pipeline benefits too.
+
+Before Turborepo, caching in monorepos was mostly nonexistent. Lerna - the most popular monorepo tool at the time - had no caching at all; every build was a full rebuild. Some teams hacked together Makefiles with manual hash checks. Others adopted Nx, which did have caching but came with its own paradigm shift and ecosystem lock-in. Most teams simply accepted the slow builds and moved on. Turborepo was the first tool to make caching both automatic and painless - install it, define your task pipeline, and it just works.
+
+Put simply: pnpm workspaces give you the monorepo structure. Turborepo gives you the speed to actually work in it without wanting to throw your laptop out the window.
+
+---
+
+## When is a Monorepo Overkill?
+
+Monorepos are not a silver bullet. They solve real problems, but they also add real complexity. Here is the honest picture.
+
+**You probably do not need a monorepo if:**
+
+- You are building a single app with no shared code across projects
+- Your team is just you, or two people working on one thing
+- Your projects have nothing to do with each other (like a portfolio site and an unrelated side project)
+- You are a beginner still learning the fundamentals of web development
+
+Jumping into a monorepo as your first project setup adds a layer of tooling that you do not yet need. Learn how npm packages, git, and project structure work first. The monorepo will make more sense when you have actually felt the pain it solves.
+
+**You should seriously consider a monorepo when:**
+
+- Multiple apps share significant amounts of code (types, utilities, components)
+- You find yourself copy-pasting the same interfaces or helper functions across repos
+- You have a design system or component library used by more than one frontend
+- You are working with a team where keeping shared code in sync is becoming a real problem
+- You are building a full-stack app where the frontend and backend both use the same TypeScript types
+
+```
+One repo, no shared code:        --> separate repos, keep it simple
+One repo, lots of shared code:   --> monorepo is the right call
+Many unrelated projects:         --> separate repos, no question
+Team with shared types/utils:    --> monorepo saves everyone time
+```
+
+The rule of thumb is this: reach for a monorepo when the cost of keeping multiple repos in sync is higher than the cost of learning the monorepo tooling. For most full-stack JavaScript projects on a team of two or more, that point comes pretty quickly.
+
+---
+
+## Key Takeaways
+
+**Monorepo** is a single git repository that holds multiple related projects. It solves the code sharing and synchronization problems that come with separate repos.
+
+**The trade-off** is speed. Monorepos get slow as they grow because everything gets rebuilt together.
+
+**Turborepo** solves the speed problem by understanding your dependency graph and caching build outputs so unchanged packages are never rebuilt twice.
+
+**Do not reach for a monorepo too early.** It is a solution to a specific set of problems. When you have those problems, it is a fantastic tool. When you do not, it is unnecessary complexity.
+
+The biggest shift in mindset is this: you are no longer thinking in terms of individual projects. You are thinking in terms of a system. Packages are building blocks. Apps are assembled from those blocks. Turborepo makes sure the whole thing builds fast. That mental model, once it clicks, makes working in large codebases genuinely enjoyable.
+
+---
+
+## Up Next
+
+Ready to actually build one? Read **[Setting Up a Monorepo with pnpm and Turborepo](https://blog.atharvdangedev.in/posts/setting-up-a-monorepo-with-pnpm-and-turborepo)** for a step-by-step setup guide including workspace configuration, shared packages, and common beginner mistakes.

@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f1019;
+  --foreground: #a9b1d6;
+
+  --card: #0f1019;
+  --card-foreground: #a9b1d6;
+  --card-border: #292e42;
+
+  --green: #9ece6a;
+  --blue: #89ddff;
+  --purple: #bb9af7;
+  --purple-blue: #7aa2f7;
+  --gray-white: #a9b1d6;
+
+  --tag-background: #292e42;
+  --muted: #565f89;
+}
+
+@theme {
+  /* Color tokens */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-border: var(--card-border);
+
+  --color-green: var(--green);
+  --color-blue: var(--blue);
+  --color-purple: var(--purple);
+  --color-purple-blue: var(--purple-blue);
+  --color-gray-white: var(--gray-white);
+
+  --color-tag-background: var(--tag-background);
+  --color-muted: var(--muted);
+
+  /* Semantic color aliases */
+  --color-primary: var(--purple-blue);
+  --color-secondary: var(--purple);
+  --color-success: var(--green);
+  --color-info: var(--blue);
+  --color-surface: var(--card);
+  --color-surface-border: var(--card-border);
+  --color-text-primary: var(--gray-white);
+  --color-text-secondary: var(--muted);
+
+  /* Typography scale */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+
+  /* Spacing */
+  --spacing-section: 3rem;
+  --spacing-card-gap: 1.5rem;
+  --spacing-block: 1.5rem;
+
+  /* Border radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
+
+  /* Fonts */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  @apply bg-background text-foreground;
+}
