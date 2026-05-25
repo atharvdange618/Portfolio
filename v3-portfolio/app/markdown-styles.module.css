@@ -1,41 +1,45 @@
 @reference "./globals.css";
 
 .markdown {
-  @apply text-base leading-relaxed;
+    @apply text-lg leading-relaxed;
 }
 
 .markdown p,
 .markdown ul,
 .markdown ol,
 .markdown blockquote {
-  @apply my-6;
+    @apply my-6;
 }
 
 .markdown h2 {
-  @apply text-2xl mt-12 mb-4 leading-snug font-semibold text-purple-blue;
+    @apply text-2xl mt-12 mb-4 leading-snug font-semibold text-purple;
 }
 
 .markdown h3 {
-  @apply text-xl mt-8 mb-4 leading-snug text-purple font-semibold;
+    @apply text-xl mt-8 mb-4 leading-snug text-purple font-semibold;
 }
 
 .markdown ul {
-  @apply ml-4 list-disc text-sm;
+    @apply ml-4 list-disc;
 }
 
 .markdown ol {
-  @apply ml-8 list-decimal text-sm;
+    @apply ml-8 list-decimal;
 }
 
 .markdown b,
 .markdown strong {
-  @apply text-blue font-bold;
+    @apply text-blue font-bold;
 }
 
 .markdown blockquote {
-  @apply bg-background italic px-4 text-purple;
+    @apply bg-bg italic px-4 text-purple;
 }
 
 .markdown a {
-  @apply underline text-green;
+    @apply underline text-green;
+}
+
+.markdown :not(pre) > code {
+    @apply bg-surface text-cyan font-mono text-[0.875em] px-1.5 py-0.5 rounded border border-border;
 }
