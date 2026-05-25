@@ -19,11 +19,63 @@ export function formatDate(dateString: string): string {
   });
 }
 
+interface MdxNode {
+  type: string;
+  tagName?: string;
+  properties?: {
+    className?: string[];
+    [key: string]: unknown;
+  };
+  children?: MdxNode[];
+  value?: string;
+}
+
 export async function markdownToHtml(markdown: string) {
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkRehype, { allowDangerousHtml: true })
+    .use(() => (tree: MdxNode) => {
+      function walk(node: MdxNode) {
+        if (!node.children) return;
+        for (let i = 0; i < node.children.length; i++) {
+          const child = node.children[i];
+          if (
+            child.type === "element" &&
+            child.tagName === "pre" &&
+            child.children &&
+            child.children.length === 1 &&
+            child.children[0].tagName === "code" &&
+            child.children[0].properties &&
+            Array.isArray(child.children[0].properties.className) &&
+            child.children[0].properties.className.includes("language-mermaid")
+          ) {
+            const codeNode = child.children[0];
+            const rawText = (codeNode.children || [])
+              .filter((c) => c.type === "text")
+              .map((c) => c.value || "")
+              .join("");
+
+            node.children[i] = {
+              type: "element",
+              tagName: "div",
+              properties: {
+                className: ["mermaid"],
+              },
+              children: [
+                {
+                  type: "text",
+                  value: rawText.trim(),
+                },
+              ],
+            };
+          } else {
+            walk(child);
+          }
+        }
+      }
+      walk(tree);
+    })
     .use(rehypePrettyCode, {
       theme: "tokyo-night",
       keepBackground: true,

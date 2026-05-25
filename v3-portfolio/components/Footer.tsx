@@ -143,9 +143,6 @@ export function Footer() {
                   aria-label={label}
                 >
                   <Icon className="w-3.5 h-3.5 text-comment group-hover:text-fg transition-colors" />
-                  <span className="font-medium text-fg/70 group-hover:text-fg transition-colors">
-                    {label}
-                  </span>
                 </Link>
               ))}
             </div>

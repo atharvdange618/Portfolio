@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Fira_Code } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { CodeCopyButtonInitializer } from "@/components/mdx/CodeCopyButtonInitializer";
+import { MermaidInitializer } from "@/components/mdx/MermaidInitializer";
 import "./globals.css";
 
 const firaCode = Fira_Code({
@@ -82,6 +83,7 @@ export default function RootLayout({
         className={`${firaCode.variable} ${geist.variable} antialiased min-h-screen flex flex-col`}
       >
         <CodeCopyButtonInitializer />
+        <MermaidInitializer />
         <main className="max-w-5xl w-full mx-auto px-6 py-16 flex-1">
           {children}
         </main>
