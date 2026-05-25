@@ -1,102 +1,132 @@
-import { ChevronLeft } from "lucide-react";
+import { getAllPosts, getPostBySlug } from "@/lib/mdx";
+import { BlogFrontmatter } from "@/lib/types";
+import { formatDate, markdownToHtml } from "@/lib/utils";
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getAllPosts, getPostBySlug } from "@/lib/api";
-import { MDXRemote } from "next-mdx-remote-client/rsc";
-import { Callout, SystemsDiagram } from "@/components/mdx-components";
-import { Metadata } from "next";
+import { FaClock, FaArrowLeftLong } from "react-icons/fa6";
 import markdownStyles from "../../markdown-styles.module.css";
-import { TagPill } from "@/components/ui/tag-pill";
 
-const mdxComponents = {
-  Callout,
-  SystemsDiagram,
-};
+export async function generateStaticParams() {
+  const posts = getAllPosts();
+  return posts.map((p) => ({ slug: p.slug }));
+}
 
-type Params = {
-  params: Promise<{
-    slug: string;
-  }>;
-};
-
-export async function generateMetadata(props: Params): Promise<Metadata> {
-  const params = await props.params;
-  const post = getPostBySlug(params.slug);
-  let title = "Not found";
-  if (post) {
-    title = post.title;
-  }
-
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
+  if (!post) return {};
+  const fm = post.data as BlogFrontmatter;
   return {
-    title,
+    title: fm.title,
+    description: fm.description,
+    alternates: {
+      canonical: `/blog/${slug}`,
+    },
     openGraph: {
-      title,
+      type: "article",
+      url: `https://tty.atharvdangedev.in/blog/${slug}`,
+      title: fm.title,
+      description: fm.description,
+      publishedTime: fm.publishedAt,
+      authors: ["Atharv Dange"],
+      tags: fm.tags,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: fm.title,
+      description: fm.description,
     },
   };
 }
 
-export async function generateStaticParams() {
-  const posts = getAllPosts();
+export default async function BlogPostPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
+  if (!post) notFound();
 
-  return posts.map((post) => ({
-    slug: post.id,
-  }));
-}
+  const fm = post.data as BlogFrontmatter;
+  const wordCount = post.content.trim().split(/\s+/).length;
+  const readingTime = Math.ceil(wordCount / 250);
 
-export default async function Post(props: Params) {
-  const params = await props.params;
-  const post = getPostBySlug(params.slug);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: fm.title,
+    description: fm.description,
+    datePublished: fm.publishedAt,
+    url: `https://tty.atharvdangedev.in/blog/${slug}`,
+    author: {
+      "@type": "Person",
+      name: "Atharv Dange",
+      url: "https://tty.atharvdangedev.in",
+    },
+    publisher: {
+      "@type": "Person",
+      name: "Atharv Dange",
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://tty.atharvdangedev.in/blog/${slug}`,
+    },
+  };
 
-  if (!post) {
-    return (
-      <div className="min-h-screen bg-background text-gray-white px-4 py-8 md:px-8 md:py-16 font-sans">
-        <div className="max-w-4xl mx-auto flex flex-col gap-10">
-          <Link
-            href="/blog"
-            className="inline-flex text-purple-blue items-center gap-2 font-mono text-sm"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back to blog
-          </Link>
-          <h1 className="text-purple-blue text-3xl font-bold mb-8 text-center tracking-tight">
-            Post not found
-          </h1>
-        </div>
-      </div>
-    );
-  }
+  const content = await markdownToHtml(post.content || "");
+
   return (
-    <div className="min-h-screen bg-background text-gray-white px-4 py-8 md:px-8 md:py-16 font-sans">
-      <div className="max-w-4xl mx-auto w-full">
-        <Link
-          href="/blog"
-          className="inline-flex text-purple-blue items-center gap-2 mb-8 font-mono text-sm"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to blog
-        </Link>
+    <article className="flex flex-col gap-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Link
+        href="/blog"
+        className="flex items-center gap-2 text-comment hover:text-fg transition-colors duration-200 text-sm w-fit"
+      >
+        <FaArrowLeftLong className="w-3 h-3" />
+        Back to blog
+      </Link>
 
-        <div className="rounded-xl p-6 md:p-8 bg-card border border-card-border">
-          <article className="prose prose-invert max-w-none">
-            <h1 className="text-3xl font-bold text-purple-blue mb-3 tracking-tight">
-              {post.title}
-            </h1>
-            <time className="text-xs font-mono text-muted mb-6 block">
-              {post.date}
-            </time>
-            <div className="flex flex-wrap gap-2 mb-8 font-mono">
-              {post.tags.map((tag) => (
-                <TagPill key={tag}>{tag}</TagPill>
-              ))}
-            </div>
-            <div className={markdownStyles["markdown"]}>
-              <MDXRemote
-                source={post.content || ""}
-                components={mdxComponents}
-              />
-            </div>
-          </article>
+      <div className="flex flex-col gap-4 pb-8 border-b border-border">
+        <div className="flex items-center gap-3 text-sm text-comment">
+          <span>{formatDate(fm.publishedAt)}</span>
+          <span>·</span>
+          <span className="flex items-center gap-1">
+            <FaClock className="w-3 h-3" />
+            {readingTime} min read
+          </span>
+        </div>
+
+        <h1 className="text-3xl font-bold text-fg">{fm.title}</h1>
+
+        <p className="text-fg/80 text-lg leading-relaxed">{fm.description}</p>
+
+        <div className="flex flex-wrap gap-2">
+          {fm.tags.map((tag) => (
+            <Link
+              key={tag}
+              href={`/blog?tag=${tag}`}
+              className="text-sm text-purple hover:text-fg transition-colors duration-200"
+            >
+              #{tag}
+            </Link>
+          ))}
         </div>
       </div>
-    </div>
+
+      <div className="max-w-full w-full min-w-0">
+        <div
+          className={markdownStyles["markdown"]}
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      </div>
+    </article>
   );
 }

@@ -1,87 +1,48 @@
-"use client";
+import { getFeaturedProjects, getRecentPosts } from "@/lib/mdx";
+import { Hero } from "@/components/Hero";
+import { About } from "@/components/About";
+import { Experience } from "@/components/Experience";
+import { Stack } from "@/components/Stack";
+import { Projects } from "@/components/Projects";
+import { Blogs } from "@/components/Blogs";
 
-import { User, Code, BookOpen, Briefcase } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import Home from "@/components/sections/Home";
-import About from "@/components/sections/About";
-import Experience from "@/components/sections/Experience";
-import Projects from "@/components/sections/Projects";
-import Footer from "@/components/sections/Footer";
+export default function Home() {
+  const featuredProjects = getFeaturedProjects();
+  const recentPosts = getRecentPosts(3);
 
-export default function App() {
-  const scrollTo = (id: string) => {
-    const section = document.getElementById(id);
-    section?.scrollIntoView();
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: "Atharv Dange",
+    url: "https://tty.atharvdangedev.in",
+    sameAs: [
+      "https://github.com/atharvdange618",
+      "https://linkedin.com/in/atharv-dange",
+      "https://blog.atharvdangedev.in",
+      "https://x.com/atharvdangedev",
+    ],
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Pune",
+      addressRegion: "Maharashtra",
+      addressCountry: "India",
+    },
+    description:
+      "Full Stack Developer based in Pune, India. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
   };
 
   return (
-    <div className="min-h-screen bg-background text-purple-blue p-4 md:p-8 font-sans">
-      <div className="flex flex-col flex-wrap items-start overflow-x-hidden w-fit">
-        <div className="flex flex-row flex-wra mb-8 gap-x-8 gap-y-4">
-          <pre className="text-green text-xs md:text-sm lg:text-base whitespace-pre overflow-x-auto">
-            {`
- █████╗ ████████╗██╗  ██╗ █████╗ ██████╗ ██╗   ██╗
-██╔══██╗╚══██╔══╝██║  ██║██╔══██╗██╔══██╗██║   ██║
-███████║   ██║   ███████║███████║██████╔╝██║   ██║
-██╔══██║   ██║   ██╔══██║██╔══██║██╔══██╗╚██╗ ██╔╝
-██║  ██║   ██║   ██║  ██║██║  ██║██║  ██║ ╚████╔╝ 
-╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  
-`}
-          </pre>
-          <pre className="text-green text-xs md:text-sm lg:text-base whitespace-pre overflow-x-auto">
-            {`
-██████╗  █████╗ ███╗   ██╗ ██████╗ ███████╗
-██╔══██╗██╔══██╗████╗  ██║██╔════╝ ██╔════╝
-██║  ██║███████║██╔██╗ ██║██║  ███╗█████╗  
-██║  ██║██╔══██║██║╚██╗██║██║   ██║██╔══╝  
-██████╔╝██║  ██║██║ ╚████║╚██████╔╝███████╗
-╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝
-`}
-          </pre>
-        </div>
-
-        <nav className="mb-12 flex flex-wrap w-full justify-between">
-          <Button
-            variant="ghost"
-            className={`gap-2 hover:text-purple`}
-            onClick={() => scrollTo("#about")}
-          >
-            <User className="w-4 h-4" />
-            ~/about
-          </Button>
-          <Button
-            variant="ghost"
-            className={`gap-2 hover:text-purple`}
-            onClick={() => scrollTo("#experience")}
-          >
-            <Briefcase className="w-4 h-4" />
-            ~/experience
-          </Button>
-          <Button
-            variant="ghost"
-            className={`gap-2 hover:text-purple`}
-            onClick={() => scrollTo("#projects")}
-          >
-            <Code className="w-4 h-4" />
-            ~/projects
-          </Button>
-          <Link href="/blog">
-            <Button variant="ghost" className="gap-2 hover:text-purple">
-              <BookOpen className="w-4 h-4" />
-              ~/blog
-            </Button>
-          </Link>
-        </nav>
-      </div>
-
-      <div className="space-y-12">
-        <Home />
-        <About />
-        <Experience />
-        <Projects />
-        <Footer />
-      </div>
+    <div className="flex flex-col gap-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Hero />
+      <About />
+      <Experience />
+      <Stack />
+      <Projects projects={featuredProjects} />
+      <Blogs posts={recentPosts} />
     </div>
   );
 }

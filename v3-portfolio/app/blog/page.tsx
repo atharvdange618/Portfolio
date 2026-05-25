@@ -1,25 +1,41 @@
+/* eslint-disable react/no-unescaped-entities */
+import { getAllPosts, getAllTags } from "@/lib/mdx";
+import { TerminalLabel } from "@/components/mdx/TerminalLabel";
+import { BlogList } from "@/components/BlogList";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-import { getAllPosts } from "@/lib/api";
-import { BlogCard } from "@/components/BlogCard";
+import { FaArrowLeftLong } from "react-icons/fa6";
 
-export default async function BlogPage() {
+export const metadata = {
+  title: "Blog - Atharv Dange",
+  description:
+    "Writing on JavaScript & Web fundamentals, frameworks, tools and software engineering",
+};
+
+export default function BlogPage() {
   const posts = getAllPosts();
+  const tags = getAllTags();
+
   return (
-    <div className="min-h-screen bg-background text-gray-white p-4 md:p-8 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-purple-blue text-3xl font-bold mb-8 flex flex-row w-full justify-between">
-          <Link href="/" className="font-mono">
-            <ChevronLeft className="w-8 h-8 text-gray-white" />
-          </Link>
-          <span className="font-mono">~/blog</span>
-        </h1>
-        <div className="h-full flex flex-col gap-3">
-          {posts.map((post) => (
-            <BlogCard key={post.id} post={post} />
-          ))}
-        </div>
+    <div className="flex flex-col gap-8">
+      <Link
+        href="/"
+        className="flex items-center gap-2 text-comment hover:text-fg transition-colors duration-200 text-sm w-fit"
+      >
+        <FaArrowLeftLong className="w-3 h-3" />
+        Back to home
+      </Link>
+      <h1 className="sr-only">
+        Atharv Dange's Blog - Articles on JavaScript, Web Fundamentals, and
+        Systems Engineering
+      </h1>
+      <div>
+        <TerminalLabel command="ls blog/" />
+        <p className="text-fg/80 leading-relaxed text-lg">
+          Writing on JavaScript & Web fundamentals, frameworks, tools and
+          software engineering and things I figure out while building.
+        </p>
       </div>
+      <BlogList posts={posts} tags={tags} />
     </div>
   );
 }
