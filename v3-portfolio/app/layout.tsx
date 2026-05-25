@@ -44,12 +44,21 @@ export const metadata: Metadata = {
     title: "Atharv Dange - Full Stack Developer",
     description:
       "Full Stack Developer based in Pune, India. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1914,
+        height: 964,
+        alt: "Atharv Dange - Full Stack Engineer Portfolio",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Atharv Dange - Full Stack Developer",
     description:
       "Full Stack Developer based in Pune, India. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,

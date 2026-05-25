@@ -34,11 +34,20 @@ export async function generateMetadata({
       url: `https://tty.atharvdangedev.in/projects/${slug}`,
       title: fm.title,
       description: fm.description,
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1914,
+          height: 964,
+          alt: fm.title,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: fm.title,
       description: fm.description,
+      images: ["/og-image.png"],
     },
   };
 }

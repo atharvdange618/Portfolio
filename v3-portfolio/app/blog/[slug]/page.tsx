@@ -34,11 +34,20 @@ export async function generateMetadata({
       publishedTime: fm.publishedAt,
       authors: ["Atharv Dange"],
       tags: fm.tags,
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1914,
+          height: 964,
+          alt: fm.title,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: fm.title,
       description: fm.description,
+      images: ["/og-image.png"],
     },
   };
 }
