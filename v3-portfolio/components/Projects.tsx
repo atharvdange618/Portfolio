@@ -39,7 +39,7 @@ export function Projects({
                 {project.description}
               </p>
               <div className="flex flex-wrap gap-2">
-                {project.stack.map((s) => (
+                {project.stack.slice(0, 3).map((s) => (
                   <StackTag key={s} tag={s} />
                 ))}
               </div>
@@ -48,7 +48,8 @@ export function Projects({
                   href={`/projects/${project.slug}`}
                   className="text-sm text-fg hover:text-purple transition-colors duration-200 flex items-center gap-1 group"
                 >
-                  Read the story <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+                  Read the story{" "}
+                  <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </Link>
                 {project.github && (
                   <a
@@ -78,7 +79,8 @@ export function Projects({
           href="/projects"
           className="text-base text-comment hover:text-purple transition-colors duration-200 flex items-center gap-1 w-fit group"
         >
-          View all projects <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+          View all projects{" "}
+          <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
         </Link>
       </div>
     </section>

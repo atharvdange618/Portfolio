@@ -36,9 +36,9 @@ export function Blogs({
                 {post.description}
               </p>
               <div className="flex flex-wrap gap-2 mt-1">
-                {post.tags.map((tag) => (
+                {post.tags.slice(0, 5).map((tag) => (
                   <span key={tag} className="text-sm text-purple">
-                    #{tag}
+                    #{tag.toLowerCase()}
                   </span>
                 ))}
               </div>
@@ -49,7 +49,8 @@ export function Blogs({
           href="/blog"
           className="text-base text-comment hover:text-purple transition-colors duration-200 flex items-center gap-1 w-fit group"
         >
-          Read all posts <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+          Read all posts{" "}
+          <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
         </Link>
       </div>
     </section>
