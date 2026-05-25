@@ -1,5 +1,5 @@
 {
-  "name": "v3-portfolio",
+  "name": "portfolio",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,24 +9,29 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "gray-matter": "^4.0.3",
-    "lucide-react": "^1.16.0",
     "next": "16.1.7",
-    "next-mdx-remote-client": "^2.1.10",
-    "radix-ui": "^1.4.3",
+    "next-mdx-remote": "^6.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-icons": "^5.6.0",
+    "rehype-pretty-code": "^0.14.3",
+    "rehype-stringify": "^10.0.1",
     "remark": "^15.0.1",
+    "remark-gfm": "^4.0.1",
     "remark-html": "^16.0.1",
     "remark-parse": "^11.0.0",
-    "shadcn": "^4.8.0",
-    "tailwind-merge": "^3.6.0"
+    "remark-rehype": "^11.1.2",
+    "shiki": "^4.1.0",
+    "tailwind-merge": "^3.6.0",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/mdx": "^2.0.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
