@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/sonner";
 import { ThemeProvider } from "./context/ThemeContext";
 import FloatingParticles from "./components/FloatingParticles";
+import MinimalistRedirect from "./components/MinimalistRedirect";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
@@ -17,6 +18,7 @@ const App = () => {
         <BrowserRouter>
           <Toaster />
           <FloatingParticles />
+          <MinimalistRedirect />
           <div className="App min-h-screen bg-white dark:bg-[#09090b] relative">
             <Navbar />
             <main id="main" role="main">

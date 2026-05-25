@@ -309,7 +309,7 @@ export default function Essence() {
                   {characterEssence.quote.text}
                 </p>
                 <p className="font-mono text-sm font-bold text-[#FF9149] mt-3">
-                  — {characterEssence.quote.author}
+                  - {characterEssence.quote.author}
                 </p>
               </div>
             </div>

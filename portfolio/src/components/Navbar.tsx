@@ -8,7 +8,13 @@ import { personalInfo } from "@/data/mock";
 const navLinks = [
   { label: "About", href: "/#about" },
   { label: "Projects", href: "/projects" },
-  { label: "Blog", href: "https://blog.atharvdangedev.in" },
+  { label: "Blog", href: "https://blog.atharvdangedev.in", target: "_blank" },
+  {
+    label: "Minimalist View",
+    href:
+      import.meta.env.VITE_MINIMALIST_PORTFOLIO_URL || "http://localhost:3000",
+    target: "_blank",
+  },
   { label: "Contact", href: "/#contact" },
 ];
 
@@ -28,7 +34,15 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const handleNavClick = (e: React.MouseEvent, href: string) => {
+  const handleNavClick = (
+    e: React.MouseEvent,
+    href: string,
+    target?: string,
+  ) => {
+    if (target === "_blank") {
+      setMobileOpen(false);
+      return;
+    }
     e.preventDefault();
     setMobileOpen(false);
 
@@ -100,7 +114,11 @@ export default function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                onClick={(e) => handleNavClick(e, link.href)}
+                onClick={(e) => handleNavClick(e, link.href, link.target)}
+                target={link.target}
+                rel={
+                  link.target === "_blank" ? "noopener noreferrer" : undefined
+                }
                 className="px-3 lg:px-4 py-2 font-body text-sm font-medium text-black dark:text-white hover:bg-[#60B5FF] hover:text-white border-2 border-transparent hover:border-black dark:hover:border-white transition-all duration-200"
               >
                 {link.label}
@@ -197,7 +215,11 @@ export default function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                onClick={(e) => handleNavClick(e, link.href)}
+                onClick={(e) => handleNavClick(e, link.href, link.target)}
+                target={link.target}
+                rel={
+                  link.target === "_blank" ? "noopener noreferrer" : undefined
+                }
                 className="block px-4 py-3 font-body text-base font-medium text-black dark:text-white border-2 border-black dark:border-white hover:bg-[#60B5FF] hover:text-white transition-colors duration-200"
               >
                 {link.label}

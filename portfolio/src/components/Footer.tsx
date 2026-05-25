@@ -4,15 +4,32 @@ import { Github, Linkedin, Mail, ArrowUp, Code2, Heart } from "lucide-react";
 const footerLinks = [
   { label: "About", href: "#about" },
   { label: "Projects", href: "#projects" },
-  { label: "Blog", href: "#blog" },
+  { label: "Blog", href: "https://blog.atharvdangedev.in", target: "_blank" },
+  {
+    label: "Minimalist View",
+    href:
+      import.meta.env.VITE_MINIMALIST_PORTFOLIO_URL || "http://localhost:3000",
+    target: "_blank",
+  },
   { label: "Contact", href: "#contact" },
 ];
 
 export default function Footer() {
-  const handleNavClick = (e: React.MouseEvent, href: string) => {
+  const handleNavClick = (
+    e: React.MouseEvent,
+    href: string,
+    target?: string,
+  ) => {
+    if (target === "_blank") {
+      return;
+    }
     e.preventDefault();
-    const el = document.querySelector(href);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    try {
+      const el = document.querySelector(href);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      console.error("Invalid selector", href, err);
+    }
   };
 
   const scrollToTop = () => {
@@ -79,7 +96,11 @@ export default function Footer() {
                 <a
                   key={link.href}
                   href={link.href}
-                  onClick={(e) => handleNavClick(e, link.href)}
+                  onClick={(e) => handleNavClick(e, link.href, link.target)}
+                  target={link.target}
+                  rel={
+                    link.target === "_blank" ? "noopener noreferrer" : undefined
+                  }
                   className="block font-body text-sm text-gray-700 dark:text-gray-400 hover:text-[#FF9149] hover:translate-x-1 transition-all duration-200"
                 >
                   → {link.label}
