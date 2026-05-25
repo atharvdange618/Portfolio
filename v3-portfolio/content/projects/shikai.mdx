@@ -1,0 +1,122 @@
+---
+title: "Shikai"
+status: "active"
+featured: true
+stack:
+  - "Expo"
+  - "React Native"
+  - "TypeScript"
+  - "Expo Router"
+  - "TanStack Query"
+  - "Zustand"
+  - "Axios"
+  - "React Native Reanimated"
+  - "React Native Gesture Handler"
+  - "Shopify FlashList"
+  - "Expo SecureStore"
+startedAt: "2026-04-6"
+updatedAt: "2026-05-17"
+github: "https://github.com/atharvdange618/Shikai"
+live: "https://github.com/atharvdange618/Shikai/releases"
+description: "Shikai is a mobile-first GitHub companion for developers who value clarity and sophistication."
+---
+
+Shikai is a beautifully crafted, mobile-first GitHub companion that transforms how developers interact with their GitHub presence on mobile devices.
+
+Unlike GitHub's official app-built primarily for productivity and collaboration-Shikai serves as your personal dashboard. It's a read-only sanctuary where you can check your repositories, admire your contribution streak, and share your profile without the anxiety of accidentally pushing code or merging a PR on a tiny screen.
+
+The name _Shikai_ (視界) means "field of vision" in Japanese, perfectly capturing the app's philosophy: see what matters-your work, your progress, your impact-without distractions.
+
+---
+
+## The Challenge
+
+GitHub's mobile app is incredibly powerful for collaboration: reviewing PRs, triaging issues, and managing notifications. But it's built for _doing work_, not for _checking in_.
+
+I wanted an app that filled the gap for developers who want a beautiful, stress-free way to:
+- **Track progress**: See their contribution graph and maintain their streak.
+- **Share their profile**: Have a clean portfolio ready at meetups or interviews.
+- **Monitor projects**: Keep tabs on repositories without the pressure of taking action.
+- **Admire their work**: A read-only space to appreciate what they've built.
+
+**My Role:** I was the sole developer and designer for this project, handling everything from the UI/UX conceptualization to the final React Native implementation and custom OAuth proxy deployment.
+
+---
+
+## The Solution
+
+Shikai was designed to be **read-only by design**. There are no write operations, no merge buttons, and no close issue actions. When you open Shikai, you know you're safe to browse and explore without consequences.
+
+### Core Features
+
+- **Overview Dashboard**: A visual heat map of your 52-week contribution graph, pinned repositories with live stats, and a real-time activity feed.
+- **Repository Management**: Deep insights into your repositories including advanced filters, comprehensive stats, language breakdowns, and a complete commit history log.
+- **File Explorer**: A custom file tree interface that lets you navigate folder hierarchies and read code or markdown files directly within the app, complete with syntax highlighting.
+- **Professional Profile**: A display-ready profile card perfect for showcasing your GitHub identity, complete with total stars, follower counts, and social links.
+
+---
+
+## Design Philosophy
+
+Three core principles guided every decision in Shikai:
+
+1. **Read-Only by Design**: As mentioned, eliminating write actions removes anxiety. It's purely a viewing space.
+2. **Mobile-First, Native Feel**: Every interaction is optimized for touch. I prioritized smooth scrolling, natural gestures, haptic feedback, and fluid animations using React Native Reanimated. 
+3. **Information at the Right Density**: Not too sparse, not overwhelming. Card-based layouts group related data, while progressive disclosure reveals deeper details only when needed to prevent cognitive overload.
+
+---
+
+## Technical Architecture & Decisions
+
+Building a fluid, native-feeling app required a robust tech stack. 
+
+- **State & Data**: I chose **TanStack Query** for intelligent server state management (handling caching and background refetching) and **Zustand** for minimal client state management (like theme and filters). 
+- **Navigation**: **Expo Router** provided type-safe, file-based routing.
+- **UI & Animations**: **React Native Reanimated** and **Gesture Handler** ensured 60fps native animations on the UI thread, while **Shopify FlashList** replaced standard FlatLists to provide 10x better performance for large lists of repositories and commits.
+
+```ascii
+┌──────────────┐
+│     User     │
+│  Interaction │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────┐     TanStack Query      ┌─────────────────┐
+│  Custom Hooks    │────────(caching)──────> │  Query Client   │
+│  (useRepos,      │                         │  (5min cache)   │
+│   useUser, etc)  │                         └────────┬────────┘
+└──────┬───────────┘                                  │
+       │                                              │
+       │ Axios Request                                │
+       ▼                                              │
+┌──────────────────┐                                  │
+│  GitHub REST/    │                                  │
+│  GraphQL APIs    │<─────── Refetch if stale ────────┘
+└──────────────────┘
+```
+
+---
+
+## Challenges & Learnings
+
+Building Shikai pushed my React Native and architectural skills to the next level. Several key challenges stood out:
+
+### 1. Navigating GitHub's Dual APIs
+One of the biggest hurdles was scrambling my head around GitHub's APIs. I had to heavily integrate and balance both the **REST API** and the **GraphQL API** to fetch exactly the data I needed without hitting rate limits or over-fetching. 
+
+### 2. Implementing a 3-Layer Prefetch Architecture
+To make the app feel blazingly fast, I designed a custom **3-layer prefetching architecture**. Using `usePrefetchOnPress`, I ensured that data for repository cards, file trees, and user profiles was fetched optimally in the background, guaranteeing instant screen transitions when a user tapped an item.
+
+### 3. The Code File Explorer Modal
+I wanted users to be able to read actual code files from their codebase right on their phones. Building the file modal involved implementing a recursive file tree UI and integrating a syntax highlighter capable of handling various programming languages cleanly on a mobile screen. 
+
+### 4. Overhauling Authentication (PAT to OAuth)
+Initially, I used a Personal Access Token (PAT) approach for authentication, but this was clunky for users. I replaced this with a seamless **GitHub Sign-In OAuth flow**. This required building a custom **Cloudflare Worker (Wrangler)** to act as an OAuth proxy, securely exchanging tokens without exposing client secrets in the mobile app. Once authenticated, the tokens are stored heavily encrypted on-device using `expo-secure-store`.
+
+---
+
+## Results & Impact
+
+Shikai successfully bridges the gap for developers who want to stay connected to their GitHub presence visually. 
+
+It serves as a beautiful portfolio piece for students and learners wanting to track their green squares, a quick reference for open-source maintainers monitoring community engagement, and a polished showcase for professional developers at interviews or client demos.

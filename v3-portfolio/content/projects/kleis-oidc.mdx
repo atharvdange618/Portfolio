@@ -1,0 +1,244 @@
+---
+title: "Kleis OIDC"
+status: "active"
+featured: true
+stack:
+  - "Next.js"
+  - "TypeScript"
+  - "Node.js"
+  - "Tailwind CSS"
+  - "Express"
+  - "PostgreSQL"
+  - "Prisma"
+  - "Turborepo"
+  - "Jose"
+startedAt: "2026-04-19"
+updatedAt: "2026-05-23"
+github: "https://github.com/atharvdange618/OIDC"
+live: "https://kleis.atharvdangedev.in"
+description: "Kleis OIDC is a custom, zero-dependency OpenID Connect (OIDC) Identity Provider and Single Sign-On (SSO) engine built entirely from scratch."
+---
+
+Kleis OIDC is a custom, zero-dependency OpenID Connect (OIDC) Identity Provider and Single Sign-On (SSO) engine built entirely from scratch.
+
+By bypassing third-party authentication frameworks (such as NextAuth, Auth0, or Firebase), this project implements every cryptographic handshake, session verification layer, and token lifecycle mechanism directly. It also ships with a custom Next.js SDK (`@kleis-auth/nextjs`) to demonstrate a plug-and-play developer integration.
+
+---
+
+## The Challenge
+
+Modern web applications rely heavily on external Identity Providers (IdPs) for user management and authentication. However, treating security and identity as a "black box" hides the critical mechanics of protocol security. Furthermore, integrating SSO and token exchange flows between multiple client platforms is complex and prone to high-severity vulnerabilities like CSRF, session hijack, token replay, and race conditions.
+
+The challenge was to design and implement a fully compliant OIDC provider from the ground up, ensuring:
+- Absolute adherence to OAuth 2.0 and OIDC core specifications without using third-party auth libraries.
+- Secure session management, refresh token rotation, and credential protection.
+- A seamless developer experience with an integrated client-side SDK and management portal.
+
+**My Role:** I was the sole developer and architect for this project, building the backend identity server, designing the database schema, creating the custom SDK, and deploying the developer portal.
+
+---
+
+## The Solution
+
+Kleis OIDC provides a production-grade authentication flow packaged inside a lightweight, developer-focused monorepo. It decouples core identity verification from client applications, offering seamless Single Sign-On across multiple registered clients.
+
+### Core Features
+
+- **Protocol Compliance**: Direct implementation of the Authorization Code Flow with Proof Key for Code Exchange (PKCE S256) to secure public clients.
+- **Asymmetric Security (RS256 & JWKS)**: Cryptographic signature verification using RSA private/public key pairs, exposing public keys via a standard JWKS endpoint (`/.well-known/jwks.json`).
+- **Single Sign-On (SSO)**: Stateful cross-client session synchronization enabling users to log in once and access all registered applications.
+- **Refresh Token Rotation**: Strict continuous token rotation with atomic database transaction checks to detect and mitigate token theft immediately.
+- **Developer Tools**: A Next.js SDK (`@kleis-auth/nextjs`) providing pre-built context providers, hooks, and middleware, paired with an in-app Developer Portal for client registration.
+
+---
+
+## Technical Architecture
+
+The codebase is organized as a monorepo managed with **pnpm workspaces** and **Turborepo** for optimized building.
+
+```ascii
+                 ┌────────────────────────────────────────────────────────┐
+                 │                       KLEIS OIDC                       │
+                 │                       (Monorepo)                       │
+                 └───────────┬────────────────────────────────┬───────────┘
+                             │                                │
+                             ▼                                ▼
+                 ┌──────────────────────┐        ┌────────────────────────┐
+                 │      apps/idp/       │        │   packages/nextjs/     │
+                 │   (Identity Server)  │        │     (Consumer SDK)     │
+                 └───────────┬──────────┘        └────────────┬───────────┘
+                             │                                │
+                             ▼                                ▼
+                 ┌──────────────────────┐        ┌────────────────────────┐
+                 │      PostgreSQL      │        │    apps/demo & apps/   │
+                 │     (Prisma ORM)     │        │     (Client Apps)      │
+                 └──────────────────────┘        └────────────────────────┘
+```
+
+The **Identity Server** (`apps/idp/`) manages credentials, developer clients, active consents, and cryptographic configurations. The **Next.js SDK** (`packages/nextjs/`) abstracts away token storage, cookie encryption, network handshakes, and client-side page protection.
+
+---
+
+## Engineering Deep Dives & Security Implementations
+
+### 1. Authorization Code Flow with PKCE (RFC 7636)
+
+To protect public clients (like Single Page Applications and Mobile apps) from authorization code interception attacks, Kleis OIDC mandates Proof Key for Code Exchange (PKCE).
+
+When a user authenticates, the client app generates a secure random `code_verifier` and hashes it using SHA-256 to create a `code_challenge`. The challenge is sent to the server in the initial authorization request. During the code-for-token exchange, the client sends the raw `code_verifier`, allowing the server to cryptographically verify the client's identity before issuing tokens.
+
+```ascii
+┌──────────────┐             (1) /authorize (Challenge)           ┌──────────────┐
+│  Client App  ├─────────────────────────────────────────────────►│  Kleis IdP   │
+│              │◄─────────────────────────────────────────────────┤   (Server)   │
+│ (User Agent) │          (2) Redirect with Auth Code             │              │
+└──────┬───────┘                                                  └──────┬───────┘
+       │                                                                 ▲
+       │                                                                 │
+       │             (3) POST /token (Code + Verifier)                   │
+       └─────────────────────────────────────────────────────────────────┘
+```
+
+The server-side validation compares the computed SHA-256 hash of the incoming verifier with the stored challenge:
+
+```typescript
+// From src/lib/pkce.ts
+import crypto from "crypto";
+
+export function verifyPkce(
+  codeVerifier: string,
+  storedChallenge: string,
+): boolean {
+  const computed = crypto
+    .createHash("sha256")
+    .update(codeVerifier)
+    .digest("base64url");
+
+  return computed === storedChallenge;
+}
+```
+
+During POST requests to `/token`, the verifier is validated atomically:
+
+```typescript
+const pkceValid = verifyPkce(input.code_verifier, authCode.codeChallenge);
+if (!pkceValid) {
+  throw new BadRequestError("PKCE verification failed", ErrorCodes.PKCE_FAILED);
+}
+```
+
+### 2. Asymmetric Cryptographic Signing (RS256 & JWKS)
+
+Symmetric JWT signing (HS256) requires sharing a secret key between the Identity Provider and every microservice/client. If a single client is compromised, an attacker can sign fake tokens for the entire ecosystem.
+
+To eliminate this vulnerability, Kleis OIDC implements asymmetric signing (RS256). The IdP signs JWTs using a private RSA key, while client applications verify the signature using the corresponding public key.
+
+```ascii
+┌─────────────────────────────────┐
+│           KLEIS IdP             │
+│  (Signs JWT with Private Key)   │
+└────────────────┬────────────────┘
+                 │
+                 ▼ JWT Token Issued
+┌─────────────────────────────────┐
+│           CLIENT APP            │
+│  (Verifies JWT with Public Key) │
+│  Exposed at /.well-known/jwks   │
+└─────────────────────────────────┘
+```
+
+Using the `jose` library, the server loads PEM-formatted keys to construct and sign OIDC tokens:
+
+```typescript
+// From src/lib/jwt.ts
+import { SignJWT, importPKCS8 } from "jose";
+import { privateKeyPem, KEY_ID, ISSUER } from "../config/keys";
+
+export async function signJwt(
+  payload: Record<string, unknown>,
+  expiresIn: string,
+) {
+  const privateKey = await importPKCS8(privateKeyPem, "RS256");
+
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg: "RS256", kid: KEY_ID })
+    .setIssuer(ISSUER)
+    .setIssuedAt()
+    .setExpirationTime(expiresIn)
+    .sign(privateKey);
+}
+```
+
+The corresponding public keys are served dynamically via standard JSON Web Key Sets (JWKS) at `/.well-known/jwks.json`. Clients cache these keys to perform offline token validation, reducing network overhead and eliminating roundtrips to the IdP.
+
+### 3. Refresh Token Rotation & Reuse Detection
+
+To allow users to stay logged in without exposing long-lived access tokens, Kleis OIDC uses short-lived access tokens and refresh tokens. To prevent refresh token theft, we implement a strict **Refresh Token Rotation** scheme.
+
+Every time a refresh token is used, it is immediately invalidated, and a new refresh token and access token pair are issued. If the server receives an request with an already-used refresh token, it assumes a security breach (the token was intercepted/stolen) and immediately revokes all tokens associated with that user session.
+
+```ascii
+[ Active Token ] ──(Used once)──► [ Issue New Token ] + [ Mark Old Used ]
+       │
+ (Attempted Reuse)
+       ▼
+ [ Revoke All Tokens for User/Client ] ──► [ Force Login ]
+```
+
+To prevent race conditions (e.g. concurrent client-side rendering requests triggering duplicate refreshes simultaneously), this validation is wrapped inside an database transaction using Prisma:
+
+```typescript
+// From src/services/token.service.ts
+return prisma.$transaction(async (tx) => {
+  const updated = await tx.refreshToken.updateMany({
+    where: { token: input.refresh_token, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+
+  // If count is 0, the token was already marked used!
+  if (updated.count === 0) {
+    log.error(
+      {
+        clientId: input.client_id,
+        userId: stored.userId,
+        security: true,
+      },
+      "Refresh token reuse detected: revoking all tokens",
+    );
+
+    // Immediate mitigation: revoke everything
+    await authService.revokeTokensForLogout(stored.userId, input.client_id);
+    throw new BadRequestError(
+      "Refresh token reuse detected: all tokens revoked",
+      ErrorCodes.TOKEN_REUSE_DETECTED,
+    );
+  }
+
+  // Create and issue new pair...
+});
+```
+
+---
+
+## Technical Challenges & Trade-offs
+
+### 1. From-Scratch Protocol Compliance vs. Off-the-Shelf Packages
+Integrating pre-built frameworks like `oidc-provider` abstracts the specifications but makes the authentication flow a black box. Writing standard-compliant OAuth 2.0 and OIDC endpoints required building custom parsing for `application/x-www-form-urlencoded` payloads, handling strict redirect URI wildcard matching, and organizing error payloads (RFC 6749) with proper `error` and `error_description` response variables.
+- **Decision**: Building from scratch was selected to gain direct control of the data layers and security states. While this increased initial development time, it ensured a lightweight codebase and full visibility into token signing and validation pipelines.
+
+### 2. State Management: Stateful SSO Sessions vs. Stateless REST APIs
+Modern web development favors stateless APIs. However, implementing Single Sign-On requires a central session management system.
+- **Decision**: We implemented stateful sessions inside `apps/idp` using Express Sessions backed by a PostgreSQL session store. While this requires a database call during the initial `/authorize` redirection, it enables robust multi-app logout and immediate session revocation capabilities.
+
+### 3. Cryptographic Performance: RS256 vs. HS256
+Symmetric signing (HS256) is highly performant and easy to set up. However, sharing the secret signature key with multiple client applications creates a single point of failure.
+- **Decision**: We opted for RS256 asymmetric signing. Although asymmetric key verification uses slightly more CPU cycles, exposing only the public key via JWKS prevents clients from forging tokens, protecting the identity server from compromised client environments.
+
+---
+
+## Results & Impact
+
+- **End-to-End Security & Compliance**: Built a secure identity system from the ground up, achieving compliance with RFC 6749 and OIDC Core 1.0 protocols.
+- **Reduced Attack Surface**: Implemented PKCE, RS256 asymmetric signatures, and transactional Refresh Token Rotation, protecting against authorization code interception and token replay attacks.
+- **Optimized Developer Integration**: Packaged client integration into a custom `@kleis-auth/nextjs` SDK, reducing authentication setup time to less than 15 lines of code in consuming React/Next.js projects.
+- **Scalable Architecture**: Modeled the platform as a high-performance Turborepo monorepo, separating core authentication server concerns from developer management applications and client-side tooling.

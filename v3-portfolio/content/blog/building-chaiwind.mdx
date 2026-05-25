@@ -1,0 +1,634 @@
+---
+title: "Building chai-wind: How I Cloned Tailwind's Core Idea From Scratch"
+publishedAt: "2026-03-22"
+tags:
+  - "dom-manipulation"
+  - "css"
+  - "browser-apis"
+  - "mutation-observer"
+  - "inline-styles"
+  - "javascript"
+  - "tailwindcss"
+  - "css-in-js"
+  - "web-apis"
+  - "cssom"
+featured: "true"
+description: "A deep-dive into how chai-wind works, covering DOM scanning, inline style injection, multi-property parsing, MutationObserver-based dynamic watching, and a runtime class registration API, all built without a bundler, build step, or stylesheet."
+---
+
+Imagine you're a hotel attendant. Guests walk in wearing name badges. Some badges you recognize you have a list of known guests and their preferences. When you spot a match, you immediately hand that person their favorite room key, preferred newspaper, and coffee order without them saying a word. Guests with unrecognized badges? You wave them through without comment. That's exactly what chai-wind does to your HTML elements. It reads their class "badges," looks them up in a known list, and silently applies everything it knows about them.
+
+This document walks through every part of that system, explaining the concepts, the code, the design decisions, and the gotchas.
+
+## The Problem Statement
+
+Standard CSS workflow: you write classes in HTML, then separately write rules targeting those classes in a stylesheet. The browser links them at render time. Tailwind took this further by generating a stylesheet at build time containing only the classes you actually used in your markup.
+
+chai-wind takes a different path entirely. There is no stylesheet. There is no build step. Instead, a JavaScript engine runs in the browser, finds elements with known class names, and writes their styles directly into the element's `style` attribute as inline styles. The result is functionally identical, but the mechanism is completely different.
+
+This is not how you'd build a production CSS framework. What it is, though, is an excellent way to understand the DOM, browser APIs, and runtime JavaScript deeply. Every concept involved here maps to something real that comes up constantly in frontend engineering.
+
+## Part 1: The Style Map
+
+### What it is
+
+Before anything can be scanned or injected, we need the source of truth: a plain JavaScript object that maps class names to CSS declaration strings.
+
+```javascript
+const customStyles = {
+  "chai-p-2": "padding: 8px",
+  "chai-px-4": "padding-left: 16px; padding-right: 16px",
+  "chai-flex": "display: flex",
+  "chai-text-lg": "font-size: 18px; line-height: 28px",
+};
+```
+
+That's it. A key-value store. Keys are strings that match what you'd put in a `class` attribute. Values are CSS declaration strings the same thing that goes inside a style block, minus the selector.
+
+### Why a plain object and not a Map?
+
+A JavaScript `Map` would work fine and is technically more appropriate for key-value lookup with arbitrary string keys. We used a plain object for two reasons. First, object literals are more readable for this use case you can glance at `customStyles` and immediately see the full mapping. Second, `Object.assign()` makes it trivially easy to merge additional styles at runtime, which we use in the `register()` API.
+
+### The value format: why CSS declaration strings
+
+The value for each class is a raw CSS string like `"padding: 8px"` or `"padding-left: 16px; padding-right: 16px"`. This format was chosen deliberately. CSS strings are human-readable, easy to write, and directly usable with the browser's style API. You could use an object format instead:
+
+```javascript
+// Object format   also valid
+"chai-px-4": { paddingLeft: "16px", paddingRight: "16px" }
+```
+
+But string format is simpler to write and mirrors what you'd actually write in a stylesheet. The tradeoff is that the engine has to parse it, which we handle in `applyStyleString()` explained below.
+
+### Multi-property classes
+
+This is a key design point. A single class can map to multiple CSS declarations, separated by semicolons:
+
+```javascript
+"chai-text-lg": "font-size: 18px; line-height: 28px"
+```
+
+This means one class name can do the work of several CSS properties. Tailwind uses the same idea internally many utility classes set multiple related properties to ensure consistent results.
+
+## Part 2: Parsing the CSS String
+
+### The challenge
+
+Once we match a class name and retrieve its CSS string, we can't just dump it somewhere and hope for the best. We need to apply it to a specific DOM element. There are three ways to set inline styles in JavaScript:
+
+```ascii
+┌─────────────────────────────────────────────────────────────┐
+│               Three ways to set inline styles               │
+├────────────────────────┬────────────────────────────────────┤
+│ el.style.cssText       │ Replaces ALL inline styles         │
+│                        │ Destructive   dangerous            │
+├────────────────────────┼────────────────────────────────────┤
+│ el.setAttribute(       │ Also replaces the entire           │
+│   'style', '...')      │ style attribute   destructive      │
+├────────────────────────┼────────────────────────────────────┤
+│ el.style.setProperty(  │ Sets ONE property at a time        │
+│   prop, value)         │ Non-destructive   correct choice   │
+└────────────────────────┴────────────────────────────────────┘
+```
+
+`cssText` and `setAttribute('style', ...)` are both destructive. If an element already has `style="color: red"` and you set `cssText = "padding: 8px"`, you lose the color. That's a problem the moment any other code touches inline styles on the same element.
+
+`setProperty(property, value)` sets a single property and leaves everything else alone. That's what we want.
+
+### applyStyleString()
+
+```javascript
+function applyStyleString(el, styleStr) {
+  styleStr.split(";").forEach((declaration) => {
+    const colonIdx = declaration.indexOf(":");
+    if (colonIdx === -1) return;
+
+    const property = declaration.slice(0, colonIdx).trim();
+    const value = declaration.slice(colonIdx + 1).trim();
+
+    if (property && value) {
+      el.style.setProperty(property, value);
+    }
+  });
+}
+```
+
+Let's trace through this with a concrete example.
+
+Input: `el`, `"padding-left: 16px; padding-right: 16px"`
+
+Step 1: `split(";")` produces `["padding-left: 16px", " padding-right: 16px"]`
+
+Step 2: For each declaration, find the first colon with `indexOf(":")`. We use `indexOf` instead of `split(":")` deliberately. Why? CSS values can contain colons, such as `background-image: url(https://...)`. If you split on ":" you'd break the value. Finding the _first_ colon and slicing gives us exactly the property name on the left and the full value on the right.
+
+Step 3: `.trim()` on both sides strips any whitespace from the split. A trailing space after a semicolon would otherwise silently fail.
+
+Step 4: Guard check `if (property && value)` skips empty strings. The last element after splitting `"padding: 8px;"` (note trailing semicolon) is `""`, and this guard catches it.
+
+Step 5: `el.style.setProperty(property, value)` this is the actual injection. The browser's CSSOM handles all the validation. If you pass a bad property name, it silently does nothing. If the value is valid, it writes to the element's inline style.
+
+```ascii
+┌──────────────────────────────────────────────────────────────────┐
+│            applyStyleString() execution trace                    │
+│                                                                  │
+│  Input: "padding-left: 16px; padding-right: 16px"                │
+│                                                                  │
+│  split(";")                                                      │
+│  ┌────────────────────────┬──────────────────────────┐           │
+│  │  "padding-left: 16px"  │  " padding-right: 16px"  │           │
+│  └──────────┬─────────────┴──────────┬───────────────┘           │
+│             │                        │                           │
+│     indexOf(":")= 11         indexOf(":")= 14                    │
+│             │                        │                           │
+│    prop = "padding-left"    prop = "padding-right"               │
+│    val  = "16px"            val  = "16px"                        │
+│             │                        │                           │
+│             ▼                        ▼                           │
+│  el.style.setProperty(     el.style.setProperty(                 │
+│    "padding-left", "16px")   "padding-right", "16px")            │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+## Part 3: Processing a Single Element
+
+### processElement()
+
+```javascript
+const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT"]);
+
+function processElement(el) {
+  if (el.nodeType !== Node.ELEMENT_NODE) return;
+  if (SKIP_TAGS.has(el.tagName)) return;
+  if (!el.classList || el.classList.length === 0) return;
+
+  const matched = [];
+
+  el.classList.forEach((cls) => {
+    if (customStyles[cls]) {
+      applyStyleString(el, customStyles[cls]);
+      matched.push(cls);
+    }
+  });
+
+  if (matched.length > 0) {
+    el.setAttribute("data-chai-applied", matched.join(" "));
+
+    if (ChaiWind.debug) {
+      console.log(
+        `%c[chai-wind]%c matched on <${el.tagName.toLowerCase()}>:`,
+        "color: #f97316; font-weight: bold",
+        "color: inherit",
+        matched,
+        "→ style applied:",
+        el.getAttribute("style"),
+      );
+    }
+  }
+}
+```
+
+### The nodeType guard
+
+The DOM is a tree of nodes, and not all nodes are elements. Text content between tags, HTML comments, CDATA sections these are all nodes too. If you try to access `.classList` on a text node, you get `undefined`, and `undefined.forEach()` throws.
+
+The `nodeType` property tells you what kind of node you're dealing with:
+
+```ascii
+┌───────────────────────────────────────────────┐
+│              DOM Node Types                   │
+├────────────────────┬──────────────────────────┤
+│ nodeType value     │ What it represents       │
+├────────────────────┼──────────────────────────┤
+│ 1                  │ Element node (<div>, etc)│
+│ 3                  │ Text node                │
+│ 8                  │ Comment node             │
+│ 9                  │ Document node            │
+│ 11                 │ DocumentFragment         │
+└────────────────────┴──────────────────────────┘
+```
+
+`Node.ELEMENT_NODE` equals `1`. Anything else gets an early return. This is a defensive pattern you'll use any time you're walking DOM nodes programmatically.
+
+### The SKIP_TAGS guard
+
+The `nodeType` check passes for `<script>`, `<style>`, and `<noscript>` they are all element nodes. They would pass the classList check too if someone added a class to them. To explicitly exclude them, we maintain a constant `Set` of tag names to reject early:
+
+```javascript
+const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT"]);
+```
+
+A `Set` lookup is O(1) and the check runs before the classList loop, so the cost is negligible. It also makes the intent explicit this is a deliberate exclusion, not an accidental omission.
+
+### classList vs className
+
+We iterate using `el.classList.forEach()` rather than parsing `el.className` (a raw string) ourselves. The `classList` API is a live `DOMTokenList` a Set-like interface. Each call to `.forEach()` gives you individual class strings, already trimmed, already split on whitespace. You could get the same result from `el.className.split(" ")` but you'd have to handle edge cases: multiple spaces, leading/trailing whitespace, empty strings from consecutive spaces. `classList` handles all of that automatically.
+
+### The data-chai-applied marker
+
+After applying styles, we stamp the element with `data-chai-applied="chai-p-2 chai-text-lg"`. This serves a few purposes. First, it's a debugging aid: you can open DevTools, select any element, and immediately see which chai classes were recognized and applied. Second, it acts as a processed marker, which matters if you later want to avoid re-processing elements. Third, it's useful for testing: you can write assertions like `expect(el.dataset.chaiApplied).toContain("chai-p-2")`.
+
+## Part 4: Scanning the Entire DOM
+
+### scanDOM()
+
+```javascript
+function scanDOM(root = document.body) {
+  const elements = root.querySelectorAll('[class*="chai-"]');
+  elements.forEach(processElement);
+  processElement(root);
+}
+```
+
+`querySelectorAll('[class*="chai-"]')` uses the CSS **contains** attribute selector. The `*=` operator matches any element whose `class` attribute string contains the substring `"chai-"` anywhere. This means the browser's native selector engine (written in C++) does the filtering before any JavaScript runs only elements that actually carry at least one chai class are returned. On a DOM-heavy page this can be dramatically fewer elements than `querySelectorAll("*")`.
+
+One subtle point: `querySelectorAll` returns descendants only, not the element you call it on. So we call `processElement(root)` separately afterward. If you ever call `scanDOM` on a specific subtree (like a newly inserted component's container element), that container itself would be skipped without this line.
+
+`NodeList` vs `Array` is worth understanding here. The return value of `querySelectorAll` is a `NodeList`, not an Array. Modern `NodeList`s support `.forEach()` directly, so our code works. But they don't support `.map()`, `.filter()`, or `.reduce()`. If you need those, convert first: `Array.from(elements).filter(...)`. We only need `forEach` here so we're fine.
+
+### Why `[class*="chai-"]` and not `[class="chai-"]`
+
+The difference between these two selector operators matters a lot:
+
+```ascii
+┌─────────────────────────────────────────────────────────────────┐
+│             CSS attribute selector operators                    │
+├──────────────┬──────────────────────────────────────────────────┤
+│ [attr="val"] │ Exact match - the entire attribute equals "val"  │
+│              │ [class="chai-"] would only match elements whose  │
+│              │ class is literally the four-character string     │
+│              │ "chai-" and nothing else. Almost never true.     │
+├──────────────┼──────────────────────────────────────────────────┤
+│ [attr*="val"]│ Contains - the attribute string contains "val"   │
+│              │ somewhere. Matches "chai-p-4 foo" and            │
+│              │ "bar chai-flex" alike. Correct choice here.      │
+├──────────────┼──────────────────────────────────────────────────┤
+│ [attr~="val"]│ Word match - "val" is a whitespace-delimited     │
+│              │ token in the attribute. Equivalent to            │
+│              │ classList.contains(). Used in register().        │
+└──────────────┴──────────────────────────────────────────────────┘
+```
+
+Using `*=` for the scan (finds any element with a chai class) and `~=` for `register()` (finds elements with that specific class token) is the right pairing for each use case.
+
+## Part 5: The MutationObserver
+
+This is where the engine moves from "static page scanner" to "live runtime system."
+
+### The problem it solves
+
+`scanDOM()` runs once at initialization. But JavaScript-heavy applications constantly mutate the DOM: React renders components, Vue reactively updates templates, vanilla JS inserts elements in response to user actions. If a new element gets added after the initial scan, it misses the styling pass.
+
+The `MutationObserver` API solves this. It's a browser built-in that lets you subscribe to DOM changes and run a callback when they happen.
+
+```ascii
+┌───────────────────────────────────────────────────────────────────────┐
+│                    MutationObserver lifecycle                         │
+│                                                                       │
+│   ┌──────────────┐   observe()   ┌──────────────────────────────┐     │
+│   │  Your code   │ ────────────► │    MutationObserver          │     │
+│   └──────────────┘               │    (watching document.body)  │     │
+│                                  └──────────────┬───────────────┘     │
+│                                                 │                     │
+│   ┌──────────────┐   DOM change  ┌──────────────▼───────────────┐     │
+│   │ el added /   │ ────────────► │   Mutation record queued     │     │
+│   │ class changed│               └──────────────┬───────────────┘     │
+│   └──────────────┘                              │                     │
+│                                  ┌──────────────▼───────────────┐     │
+│                                  │ callback(mutations[]) called │     │
+│                                  └──────────────┬───────────────┘     │
+│                                                 │                     │
+│                                  ┌──────────────▼───────────────┐     │
+│                                  │  processElement() on each    │     │
+│                                  │  added node + its children   │     │
+│                                  └──────────────────────────────┘     │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### Setting it up
+
+```javascript
+let _pendingNodes = new Set();
+let _rafId = null;
+
+function _flushPending() {
+  _pendingNodes.forEach((node) => {
+    processElement(node);
+    node.querySelectorAll?.('[class*="chai-"]').forEach(processElement);
+  });
+  _pendingNodes.clear();
+  _rafId = null;
+}
+
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      _pendingNodes.add(node);
+    });
+
+    if (mutation.type === "attributes" && mutation.attributeName === "class") {
+      _pendingNodes.add(mutation.target);
+    }
+  });
+
+  if (!_rafId) {
+    _rafId = requestAnimationFrame(_flushPending);
+  }
+});
+```
+
+The callback receives an array of `MutationRecord` objects. Each record describes one change. Two types concern us.
+
+**childList mutations** happen when nodes are added or removed. `mutation.addedNodes` is a `NodeList` of everything that was inserted. Rather than processing each node immediately, we add it to `_pendingNodes` a module-level `Set`. Using a `Set` is important: if the same node appears in multiple mutation records within the same frame (which can happen with some frameworks), it is automatically deduplicated.
+
+**attribute mutations** happen when an element's attribute changes. We filter to `attributeName === "class"` specifically, which fires when someone does `el.className = "..."` or `el.classList.add("chai-p-4")`. The target element goes into `_pendingNodes` for the same batched flush.
+
+### RAF batching
+
+After collecting all mutated nodes, we schedule a single `requestAnimationFrame` callback (`_flushPending`) to do the actual processing. The `_rafId` guard ensures only one frame is ever scheduled at a time subsequent mutations before the frame fires just keep adding to `_pendingNodes` without scheduling another flush.
+
+This matters when something inserts many nodes at once, like a list render:
+
+```ascii
+┌──────────────────────────────────────────────────────────────────┐
+│              Without RAF batching (old behaviour)                │
+│                                                                  │
+│  insert node 1 → observer fires → processElement()               │
+│  insert node 2 → observer fires → processElement()               │
+│  insert node 3 → observer fires → processElement()               │
+│  ... × 50                                                        │
+│                                                                  │
+│              With RAF batching (new behaviour)                   │
+│                                                                  │
+│  insert node 1 → _pendingNodes.add()  ─┐                         │
+│  insert node 2 → _pendingNodes.add()   │ schedule one rAF        │
+│  insert node 3 → _pendingNodes.add()   │                         │
+│  ... × 50                             ─┘                         │
+│                                         ↓                        │
+│                          next frame: _flushPending() runs once   │
+│                          processes all 50 nodes in one pass      │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Starting the observer
+
+```javascript
+observer.observe(document.body, {
+  childList: true, // Watch for nodes being added/removed
+  subtree: true, // Watch the entire tree, not just direct children
+  attributes: true, // Watch for attribute changes
+  attributeFilter: ["class"], // Only 'class', ignore everything else
+});
+```
+
+`subtree: true` is what makes this work across the entire document, not just direct children of `<body>`. Without it, adding a `<div>` inside a nested component would go undetected.
+
+`attributeFilter: ["class"]` is a performance optimization. Without it, every `style`, `id`, `data-*` mutation would trigger the callback. Since we only care about class changes, we filter down.
+
+## Part 6: The Initialization Flow
+
+### init()
+
+```javascript
+init(options = {}) {
+  if (options.debug !== undefined) this.debug = options.debug;
+
+  if (options.styles) {
+    Object.assign(customStyles, options.styles);
+  }
+
+  scanDOM();
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+
+  console.log(
+    `%c chai-wind initialized %c ${Object.keys(customStyles).length} classes registered`,
+    "background: #f97316; color: white; font-weight: bold; padding: 2px 6px; border-radius: 3px",
+    "color: #f97316",
+  );
+},
+```
+
+`Object.assign(customStyles, options.styles)` merges any user-provided styles into the existing map. This is a shallow merge, meaning new keys are added and existing keys are overwritten. It's the same pattern used across the entire chai-wind API: the internal `customStyles` object is the single source of truth, and every feature either reads from it or extends it.
+
+### Auto-init timing
+
+```javascript
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () =>
+    ChaiWind.init({ debug: true }),
+  );
+} else {
+  ChaiWind.init({ debug: true });
+}
+```
+
+`document.readyState` has three values: `"loading"` (parser is still working), `"interactive"` (HTML is parsed but subresources like images may not be loaded), and `"complete"` (everything loaded).
+
+If the script runs before the parser finishes, `document.body` may not yet have all its elements. In that case we defer via `DOMContentLoaded`. If the script is loaded at the bottom of `<body>` or as a module, `readyState` will already be `"interactive"` or `"complete"` and we init immediately.
+
+This makes chai-wind safe to drop in anywhere without worrying about script placement.
+
+```ascii
+┌───────────────────────────────────────────────────────────┐
+│               Document loading states                     │
+│                                                           │
+│  HTML parsing  ───►  "loading"                            │
+│                                                           │
+│  HTML parsed   ───►  "interactive"  ◄── DOMContentLoaded  │
+│                                                           │
+│  All loaded    ───►  "complete"     ◄── window load       │
+│                                                           │
+│  chai-wind checks readyState:                             │
+│  if "loading" → wait for DOMContentLoaded                 │
+│  else         → init() right now                          │
+└───────────────────────────────────────────────────────────┘
+```
+
+## Part 7: The Public API
+
+### register() runtime class addition
+
+```javascript
+register(newStyles = {}) {
+  Object.assign(customStyles, newStyles);
+  Object.keys(newStyles).forEach((cls) => {
+    document.querySelectorAll(`[class~="${cls}"]`).forEach(processElement);
+  });
+},
+```
+
+This is how you extend chai-wind at runtime. Say you want to define a one-off class for a specific component:
+
+```javascript
+ChaiWind.register({
+  "chai-card-elevated":
+    "background-color: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 24px",
+});
+```
+
+`register()` merges the new entries into `customStyles`, then for each newly added class name queries the DOM with `[class~="cls"]`. The `~=` operator is the **word/token selector** it matches elements where the class name is a full whitespace-delimited token in the `class` attribute. So `chai-custom-card foo` matches but `chai-custom-cardExtra` does not. This is intentional and correct: we want exact class token matching, not substring matching.
+
+This is more efficient than the old approach of calling `scanDOM()` on the whole DOM. A full re-scan is O(all chai elements); the targeted approach is O(elements that actually have the new class) which is often just one or two elements.
+
+This pattern of "define style, then re-scan only what needs it" mirrors how you might hot-reload CSS changes in development. The elements are already there; now that we know what their classes mean, we go back and apply only the missing styles.
+
+### refresh() force re-scan
+
+```javascript
+refresh() {
+  scanDOM();
+},
+```
+
+A manual trigger for cases where you've mutated the DOM in a way the observer might have missed, or after batch-updating class attributes through a framework's reconciler. In practice the observer catches everything, but having an escape hatch is good API design.
+
+### listClasses() developer ergonomics
+
+```javascript
+listClasses() {
+  console.table(customStyles);
+},
+```
+
+`console.table()` is an underused DevTools feature. It renders a JavaScript object as a formatted table in the console with "Key" and "Value" columns, sortable and searchable. For a framework like this, being able to glance at the full style map while debugging is genuinely useful.
+
+## Part 8: The Full Data Flow
+
+Here's the complete picture from HTML to styled element:
+
+```ascii
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     chai-wind full flow                                     │
+│                                                                             │
+│  HTML file loads                                                            │
+│       │                                                                     │
+│       ▼                                                                     │
+│  chai-wind.js executes                                                      │
+│       │                                                                     │
+│       ├── checks document.readyState                                        │
+│       │         │                                                           │
+│       │    "loading"? ──► wait for DOMContentLoaded                         │
+│       │    else?       ──► call init() now                                  │
+│       │                                                                     │
+│       ▼                                                                     │
+│  init() runs                                                                │
+│       │                                                                     │
+│       ├── merge any extra styles via Object.assign()                        │
+│       ├── call scanDOM()                                                    │
+│       │       │                                                             │
+│       │       ├── querySelectorAll('[class*="chai-"]') → matching elements  │
+│       │       │                                                             │
+│       │       └── for each element:                                         │
+│       │               │                                                     │
+│       │               ├── nodeType check (skip non-elements)                │
+│       │               ├── iterate classList                                 │
+│       │               ├── lookup each class in customStyles                 │
+│       │               ├── if match → applyStyleString(el, cssStr)           │
+│       │               │       │                                             │
+│       │               │       ├── split on ";"                              │
+│       │               │       ├── for each declaration:                     │
+│       │               │       │   find ":" index                            │
+│       │               │       │   extract prop + value                      │
+│       │               │       │   el.style.setProperty(p, v)                │
+│       │               │       └── done                                      │
+│       │               │                                                     │
+│       │               └── set data-chai-applied attribute                   │
+│       │                                                                     │
+│       └── start MutationObserver                                            │
+│               │                                                             │
+│               └── watching: childList, subtree, class attribute             │
+│                       │                                                     │
+│                       └── on change → processElement() on new nodes         │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Part 9: The Demo Page's Interactive Features
+
+### Dynamic injection test
+
+The "Inject dynamic element" button creates a new `<div>` with chai classes and appends it to `#dynamic-output`:
+
+```javascript
+function injectDynamic() {
+  dynamicCount++;
+  const color = colors[dynamicCount % colors.length];
+  const el = document.createElement("div");
+  el.className = `${color} chai-p-4 chai-border-neo chai-neo-shadow-sm chai-text-sm chai-font-bold`;
+  el.style.color = "#0a0a0a";
+  el.innerHTML = `
+    <strong>Dynamic element #${dynamicCount}</strong> - added after page load.<br>
+    <span style="font-size:11px;opacity:0.7">classes: ${el.className}</span>
+  `;
+  document.getElementById("dynamic-output").appendChild(el);
+}
+```
+
+The moment `appendChild()` is called, the MutationObserver fires. The callback receives a `MutationRecord` with `type: "childList"` and the new `<div>` in `addedNodes`. `processElement()` runs on it, scans its classes, and applies the styles all before the browser paints the next frame. From the user's perspective, the element appears already styled.
+
+### Runtime register() demo
+
+The "Register chai-custom-card" button calls:
+
+```javascript
+ChaiWind.register({
+  "chai-custom-card": `
+    background-color: #ff9149;
+    border: 4px solid #0a0a0a;
+    border-radius: 0px;
+    box-shadow: 5px 5px 0 #0a0a0a;
+  `,
+});
+```
+
+The element with `class="chai-custom-card"` exists in the DOM from page load. But when the initial scan ran, `chai-custom-card` wasn't in `customStyles`, so it was skipped. After `register()` adds it, it immediately queries `[class~="chai-custom-card"]` and runs `processElement()` on any matching elements retroactively styling them. This demonstrates that the scan-and-match pattern is repeatable, not a one-shot operation.
+
+### The live class inspector
+
+```javascript
+function inspectClass(value) {
+  const btn = document.createElement("button");
+  btn.className = trimmed;
+  document.body.appendChild(btn);
+  ChaiWind.refresh();
+  const injected = btn.getAttribute("style") || null;
+  document.body.removeChild(btn);
+
+  if (injected) {
+    out.textContent = `✓ "${trimmed}" maps to:\n\n${...}`;
+  } else {
+    out.textContent = `✗ "${trimmed}"   no match in customStyles`;
+  }
+}
+```
+
+This is a clever trick. Instead of exposing the internal `customStyles` map directly (which would require the engine to export it), we create a throwaway element, give it the class to test, let `refresh()` process it, read back the injected `style` attribute, then immediately remove the element. The element is never rendered visibly (it's removed before a paint cycle), so the user sees nothing but we get the style resolution result.
+
+The honest note from the code comments: this is a hack. A cleaner design would export a `resolve(className)` method from the engine. But it works, and it demonstrates that the whole engine is just functions and data testable, inspectable, and composable.
+
+## Part 10: What This Taught Us About the Browser
+
+Building chai-wind from scratch surfaces a handful of browser API behaviors that are easy to take for granted:
+
+**The DOM is a live tree, not a snapshot.** `querySelectorAll` gives you a static NodeList at the moment of calling, but the DOM itself keeps changing. The MutationObserver is the right tool for tracking those changes, not polling with `setInterval`.
+
+**`style.setProperty()` vs `cssText` is not a trivial choice.** Overwriting `cssText` is safe only if you own the entire inline style of an element. The moment any other code touches that element's style, you have a conflict. `setProperty` is additive and cooperative.
+
+**classList is a proper API, not just a string split.** It handles edge cases in whitespace, provides `add`, `remove`, `toggle`, `contains`, and `forEach`, and fires `MutationObserver` attribute events when you use it.
+
+**`nodeType` guards matter.** The DOM tree contains many non-element nodes. Defensive guards at the top of DOM-walking functions prevent silent errors and unexpected behavior.
+
+**DOMContentLoaded vs readyState.** Scripts loaded in `<head>` without `defer` run before the body is parsed. Checking `readyState` and falling back to `DOMContentLoaded` is the defensive pattern that makes a DOM manipulation script safe regardless of where it's placed in the HTML.
+
+## Key Takeaways
+
+chai-wind is small, but it exercises a dense cluster of browser APIs: the DOM traversal model, the CSSOM style interface, the classList API, the MutationObserver API, and document loading events. Understanding how each piece fits gives you the mental model to reason about runtime styling, DOM diffing, style injection in design systems, and how utilities like Tailwind's runtime CDN version actually work.
+
+The system has four layers: a data layer (the style map), a parsing layer (`applyStyleString`), a traversal layer (`processElement`, `scanDOM`), and a reactivity layer (MutationObserver). Each layer does one thing. Each one can be understood, tested, and replaced independently. That separation is not accidental it's the design decision that makes the whole thing legible.
+
+---

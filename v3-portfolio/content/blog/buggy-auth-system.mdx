@@ -1,0 +1,776 @@
+---
+title: "I Intentionally Built a Buggy Auth System. Here's Everything That Was Wrong With It"
+publishedAt: "2026-04-18"
+tags:
+  - "authentication"
+  - "jwt"
+  - "security"
+  - "node.js"
+  - "typescript"
+  - "bcrypt"
+  - "refresh-tokens"
+  - "race-conditions"
+  - "system-design"
+  - "api-design"
+featured: "true"
+description: "A deep dive into a deliberately flawed JWT auth system, designed as a teaching exercise to surface the security holes, race conditions, and missing edge cases that survive a first-pass auth design."
+---
+
+Here's the setup: I was given an assignment to deepen my understanding of auth systems. Instead of building a correct one and explaining it, I took a different approach. I designed a complete JWT auth system with real-looking flows, real endpoints, and real security decisions. Then I had it reviewed. The goal was to see exactly what class of issues a well-intentioned but imperfect auth design would contain, and to write those issues up so that when you build your own system, you know what to look for.
+
+Think of your auth system like a bank vault. You can have the best door in the world: reinforced steel, biometric lock, time delay mechanism. But if the ventilation shaft is wide enough to crawl through, none of that matters. The attacks you didn't account for are always the ones that matter most.
+
+This post goes through every endpoint in that system, every issue the review surfaced, and the proper fix for each one. Some of these are hardening you can add incrementally. Others would have been exploitable on day one.
+
+Let's break it down endpoint by endpoint.
+
+---
+
+## The System at a Glance
+
+Before we get into the issues, here's the full shape of the system. You can view the complete auth system design diagram here: [Auth System Design on tldraw](https://www.tldraw.com/f/AYvaQiZ9ZdLIm4OyyLDxu?d=v-1896.-3973.21112.13464.page)
+
+```ascii
+Endpoints:
+  POST   /signup
+  POST   /signin
+  POST   /forgot-password
+  POST   /reset-password
+  GET    /verify-email
+  POST   /resend-verification
+  POST   /logout
+  POST   /refresh
+
+Token Strategy:
+  Access Token  : JWT, 15 min, { userId, email, role }
+  Refresh Token : JWT, 7 days, { userId, tokenVersion, jti }
+                  stored as SHA-256 hash in DB
+                  delivered via httpOnly, Secure, SameSite=Strict cookie
+
+Security Tokens (verify/reset):
+  crypto.randomBytes(32) -> raw token sent in email
+  SHA-256(raw) stored in DB
+  Always cleared from DB on use
+```
+```ascii
+┌──────────────────────────────────────────────────────┐
+│                    CLIENT (SPA)                      │
+│                                                      │
+│  localStorage: accessToken (15 min JWT)              │
+│  httpOnly cookie: refreshToken (7 day JWT)           │
+└───────────────┬──────────────────────────────────────┘
+                │
+                │  API calls with Bearer token
+                │  Cookie auto-sent on every request
+                ▼
+┌──────────────────────────────────────────────────────┐
+│                   API SERVER                         │
+│                                                      │
+│  Auth Middleware: verify accessToken on each req     │
+│  /refresh: silently rotate refreshToken              │
+└───────────┬──────────────────────────┬───────────────┘
+            │                          │
+            ▼                          ▼
+┌───────────────────┐      ┌───────────────────────┐
+│     PostgreSQL    │      │        Redis          │
+│                   │      │                       │
+│  users            │      │  token blacklist      │
+│  refresh_tokens   │      │  rate limit counters  │
+│  reset_tokens     │      │  refresh locks        │
+└───────────────────┘      └───────────────────────┘
+```
+
+The design is solid in principle. The problems are in the details.
+
+---
+
+## POST /signup
+
+### Issue 1: bcrypt Silently Truncates at 72 Bytes
+
+This one is subtle enough that many senior devs miss it. bcrypt does not hash your full password if it exceeds 72 bytes. It silently truncates. So a 200-character password and a 73-character password that share the first 72 bytes will produce the same hash.
+
+The consequence: a user who sets a 150-character password could later sign in with only the first 72 characters of it, which is not what they intended. Worse, it's unpredictable because most characters are 1 byte (ASCII), but Unicode characters can be 2 to 4 bytes. The user never knows where their password gets cut off.
+
+Fix: add a max length check in your validation layer before you ever touch bcrypt.
+
+```typescript
+// Validation: add alongside your existing strength rules
+const MAX_PASSWORD_BYTES = 72;
+
+if (Buffer.byteLength(password, "utf8") > MAX_PASSWORD_BYTES) {
+  return res.status(400).json({
+    field: "password",
+    message: "Password must not exceed 72 bytes",
+  });
+}
+```
+
+72 is exactly the bcrypt truncation limit. Note the check uses `Buffer.byteLength` (bytes), not `.length` (characters) - a single Unicode character can be 2–4 bytes, so a "short" password with emoji or non-ASCII characters can exceed the limit sooner than expected. The error message should reflect bytes, not characters.
+
+### Issue 2: Race Condition on Duplicate Email
+
+The flow for duplicate detection looks like this:
+
+```text
+Check email in DB -> not found -> insert user
+```
+
+That works perfectly in a sequential world. In production, two signup requests for the same email can arrive within milliseconds. Both hit the "email exists?" check before either has inserted. Both get "not found." Both try to insert.
+
+```text
+Request A: SELECT * FROM users WHERE email = 'x@y.com' -> not found
+Request B: SELECT * FROM users WHERE email = 'x@y.com' -> not found
+Request A: INSERT INTO users (email, ...) -> success
+Request B: INSERT INTO users (email, ...) -> UNIQUE CONSTRAINT VIOLATION
+```
+
+Your DB-level UNIQUE constraint catches this, but only if you handle the error correctly. A generic `catch (err)` that returns 500 will swallow it.
+
+```typescript
+try {
+  await db.query("INSERT INTO users ...", [email, passwordHash, name]);
+} catch (err: any) {
+  // PostgreSQL unique violation code
+  if (err.code === "23505") {
+    return res.status(409).json({
+      message: "Email already registered",
+    });
+  }
+  // Everything else is a real 500
+  throw err;
+}
+```
+
+Your UNIQUE index on email is not optional. The application-level check is for a good user experience. The DB constraint is what actually prevents the duplicate.
+
+### Issue 3: Email Normalization
+
+`User@Example.com`, `user@example.com`, and `USER@EXAMPLE.COM` are the same address. Without normalization, a user who signs up with `User@Gmail.com` and tries to sign in with `user@gmail.com` hits a 401 because you're doing a case-sensitive lookup.
+
+```typescript
+// Do this before every DB lookup and before storage
+const normalizedEmail = email.toLowerCase().trim();
+```
+
+If you want to go further, Gmail ignores dots in the local part (`a.b.c@gmail.com` and `abc@gmail.com` are the same inbox). Whether you normalize those is a product decision, but basic lowercase normalization is non-negotiable.
+
+### Issue 4: No Rate Limiting on Signup
+
+Without rate limiting, your signup endpoint is open to:
+
+- Bulk account creation (spam, abuse)
+- Username/email enumeration via timing differences
+- Resource exhaustion (bcrypt at cost factor 12 is intentionally slow, and an attacker can force 1000 concurrent hashes)
+
+Add IP-based rate limiting as middleware. Express + `express-rate-limit` is the quickest path:
+
+```typescript
+import rateLimit from "express-rate-limit";
+
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // 10 signups per IP per hour
+  message: {
+    message: "Too many accounts created from this IP, please try again later",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.post("/signup", signupLimiter, signupHandler);
+```
+
+### Issue 5: The `role` Field Is Missing From Our User Schema
+
+The JWT payload includes `role`, but the user schema defined in the system has no `role` field:
+
+```typescript
+// What the schema says
+{
+  email,
+  passwordHash,
+  name,
+  isVerified: false,
+  failedAttempts: 0,
+  lockedUntil: null,
+  tokenVersion: 0
+}
+
+// What the signin token generation uses
+{ userId, email, role, iat, exp }
+```
+
+Where does `role` come from? If it's silently defaulting to `'user'` at token generation time, that needs to be explicit in both the schema and the signup logic:
+
+```typescript
+// Schema: add role field
+role: "user"; // default at creation
+
+// Token generation: read from the actual user record
+const accessToken = jwt.sign(
+  { userId: user.id, email: user.email, role: user.role },
+  ACCESS_TOKEN_SECRET,
+  { expiresIn: "15m" },
+);
+```
+
+---
+
+## POST /signin
+
+### Issue 6: Timing Attack via Email Enumeration
+
+Right now, when an email is not found in the DB, the handler returns 401 immediately. When a wrong password is provided, it runs bcrypt.compare first (which takes ~300ms at cost factor 12) and then returns 401.
+
+```ascii
+┌────────────────────────────────────────────────────┐
+│  email not found  →  instant response (~2ms)       │
+│  wrong password   →  bcrypt compare (~300ms)       │
+│                                                    │
+│  Attacker measures response time:                  │
+│  fast = email not registered                       │
+│  slow = email registered, wrong password           │
+└────────────────────────────────────────────────────┘
+```
+
+The error messages match. The response times don't. Fix: always run bcrypt against a static dummy hash when the user is not found, so the timing is consistent.
+
+```typescript
+// Module-level static hash, generated once at startup
+// This is just a pre-computed hash of a dummy string
+const DUMMY_HASH = "$2b$12$LQv3c1yqBWVHxkd0LQ1Ns.PLACEHOLDER.HASH.VALUE.HERE";
+
+const user = await findUserByEmail(normalizedEmail);
+
+if (!user) {
+  // Burn the same time as a real bcrypt compare
+  await bcrypt.compare(password, DUMMY_HASH);
+  return res.status(401).json({ message: "Invalid credentials" });
+}
+```
+
+Generate the actual dummy hash once in a startup script and hardcode it. Never regenerate it per request (that defeats the purpose).
+
+### Issue 7: No Session Cap on New Signin
+
+Every signin creates a new refresh token row in the DB. There's no cleanup of old sessions. After 50 signins, you have 50 active token rows for one user. The old ones expire naturally after 7 days, but in the window before expiry, they're all valid.
+
+This also means: if credentials are stolen, the attacker signs in and gets a valid session. The real user signs in again. Both sessions are now active simultaneously.
+
+Fix: either enforce a max session count or give users visibility into active sessions.
+
+```typescript
+// Option 1: cap active sessions at N
+const sessionCount = await db.query(
+  "SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1 AND expires_at > NOW()",
+  [userId],
+);
+
+if (sessionCount > MAX_SESSIONS) {
+  // Delete the oldest session before creating the new one
+  await db.query(
+    `DELETE FROM refresh_tokens WHERE id = (
+      SELECT id FROM refresh_tokens
+      WHERE user_id = $1
+      ORDER BY created_at ASC
+      LIMIT 1
+    )`,
+    [userId],
+  );
+}
+```
+
+### Issue 8: Unverified User Can Get Locked Out
+
+The account lock check happens before bcrypt. The verification check happens after bcrypt success. So an unverified user who doesn't know their password (or someone testing random passwords against an unverified account) can trigger `failedAttempts >= 5` and lock the account.
+
+Now the user tries to verify their email, clicks the link, verification succeeds, but they can't sign in because `lockedUntil > now`. They have to wait 15 minutes or use `/forgot-password` to escape a lock they didn't earn.
+
+This should be a documented policy decision. The cleanest fix: block sign in for unverified accounts early, before you increment `failedAttempts`.
+
+```text
+Find user -> check isVerified -> if false, return 403 immediately (no failedAttempts change)
+```
+
+This prevents lock accumulation on unverified accounts entirely.
+
+---
+
+## POST /forgot-password
+
+### Issue 9: Locked Account Behavior Is an Undocumented Escape Hatch
+
+A user with `lockedUntil > now` can still request a password reset. The reset flow doesn't check `lockedUntil`. After a successful reset, `failedAttempts` and `lockedUntil` are cleared.
+
+This is actually the right behavior. Forgot-password is the recovery mechanism. But because it's undocumented, a developer maintaining this system might "fix" it later and accidentally remove the only way out of a lock.
+
+Document it explicitly in your system spec. The chain is: forgot-password -> reset-password -> lock cleared. That's intentional.
+
+### Issue 10: Unverified Account Can Reset Password
+
+The forgot-password flow doesn't check `isVerified`. An unverified user can request a reset, set a new password, and now has a working account without ever clicking the verification link.
+
+Depending on our threat model, this is either fine (verification is just about confirming email ownership, separate from being able to use the system) or a problem (email verification is a prerequisite for account activation).
+
+We can pick one and document it. If verification is required before any access, add this:
+
+```typescript
+if (!user.isVerified) {
+  // Don't hint that the email is unverified to avoid enumeration
+  // Just treat it like "user not found"
+  return res.status(200).json({
+    message: "If this email is registered, you will receive a reset link",
+  });
+}
+```
+
+### Issue 11: Rate Limit Check Is Not Atomic
+
+The 5-minute rate limit on reset emails works like this in the current design:
+
+```text
+Check lastResetSentAt -> not within 5 min -> generate token -> write lastResetSentAt
+```
+
+Two concurrent requests both hit the check before either writes `lastResetSentAt`. Both pass. Both generate tokens. The "invalidate previous token" step only fires sequentially, so the second write may partially overlap.
+
+Fix: wrap the check and write in a DB transaction, or use Redis SET NX for atomic "claim the slot" behavior.
+
+```typescript
+// Redis approach: atomic rate limit check
+const rateLimitKey = `forgot-password:${userId}`;
+const claimed = await redis.set(rateLimitKey, "1", {
+  NX: true, // Only set if not exists
+  EX: 300, // 5 minute expiry
+});
+
+if (!claimed) {
+  return res.status(429).json({
+    message: "Please wait before requesting another reset link",
+  });
+}
+
+// Safe to proceed: slot claimed atomically
+```
+
+---
+
+## POST /reset-password
+
+### Issue 12: Token Use Is Not Atomic (Race Condition)
+
+Two requests with the same valid token:
+
+```ascii
+Request A: lookup token -> valid, not expired
+Request B: lookup token -> valid, not expired
+Request A: update password, clear token fields
+Request B: update password (now with a different value), clear token fields (already null)
+```
+
+The user's password ends up as whatever the last write was. This is a real attack surface if a reset link gets forwarded or opened in two tabs simultaneously.
+
+Fix: use an optimistic lock or a DB transaction with a condition.
+
+```typescript
+// Atomic: only update if the token field still matches
+const result = await db.query(
+  `UPDATE users
+   SET password_hash = $1,
+       reset_token_hash = NULL,
+       reset_token_expiry = NULL,
+       token_version = token_version + 1,
+       failed_attempts = 0,
+       locked_until = NULL
+   WHERE reset_token_hash = $2
+     AND reset_token_expiry > NOW()
+   RETURNING id`,
+  [newPasswordHash, tokenHash],
+);
+
+if (result.rows.length === 0) {
+  // Token was already used (or expired between lookup and update)
+  return res.status(400).json({ message: "Invalid or expired token" });
+}
+```
+
+The WHERE clause on `reset_token_hash` means only one concurrent request can succeed. The second gets zero rows back and returns 400.
+
+### Issue 13: Notification Email Failure Is Unhandled
+
+The "password changed" notification email at the end of the reset flow has no error branch. The /signup and /resend-verification flows both document "email failed: log + continue with 200." This one just ends at 200.
+
+This isn't a security issue, it's a reliability one. Add the same pattern:
+
+```typescript
+try {
+  await sendPasswordChangedEmail(user.email, { ip, userAgent, timestamp });
+} catch (err) {
+  logger.error("Password change notification email failed", {
+    userId: user.id,
+    err,
+  });
+  // Do NOT throw. The password was reset successfully. This is a best-effort notification.
+}
+
+return res.status(200).json({ message: "Password reset successful" });
+```
+
+### Issue 14: Old Password Check Exists in the Spec but Not the Flow
+
+The original system spec says "new password = old password -> 400", but the actual implementation flow jumps from validating password strength straight to hashing. That check was never implemented.
+
+```typescript
+// After fetching the user record for the token lookup:
+const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
+if (isSamePassword) {
+  return res.status(400).json({
+    field: "newPassword",
+    message: "New password must be different from your current password",
+  });
+}
+```
+
+---
+
+## GET /verify-email
+
+### Issue 15: Raw JSON Response on a Browser Link Click
+
+Users click this link from their email client. Their browser hits a GET endpoint and gets back raw JSON like `{"message": "Email verified successfully!"}`. That's not a UX, that's a debug screen.
+
+The fix depends on your architecture. If the backend and frontend are separate:
+
+```typescript
+// Option A: Redirect to frontend with a query param
+if (success) {
+  return res.redirect(`${FRONTEND_URL}/auth/verified?status=success`);
+}
+
+if (alreadyVerified) {
+  return res.redirect(`${FRONTEND_URL}/auth/verified?status=already-verified`);
+}
+
+if (expired) {
+  return res.redirect(`${FRONTEND_URL}/auth/verified?status=expired`);
+}
+```
+
+The frontend reads the `status` param and shows the right screen. This is the standard pattern.
+
+### Issue 16: Double-Click Race Condition
+
+Two simultaneous requests with the same token (double-click, two browser tabs):
+
+```ascii
+Request A: lookup hash -> found, isVerified = false, not expired
+Request B: lookup hash -> found, isVerified = false, not expired
+Request A: set isVerified = true, clear token -> 200
+Request B: hash not found now (A cleared it) -> 400 "Tampered link"
+```
+
+The user gets a 400 error even though their email was successfully verified. The "already verified" guard only catches the case where `isVerified` was already true at lookup time, not the concurrent case.
+
+Fix: use the same conditional update pattern as the reset-password race condition:
+
+```typescript
+const result = await db.query(
+  `UPDATE users
+   SET is_verified = true,
+       verification_token = NULL,
+       verification_expiry = NULL,
+       verified_at = NOW()
+   WHERE verification_token_hash = $1
+     AND verification_expiry > NOW()
+     AND is_verified = false
+   RETURNING id`,
+  [tokenHash],
+);
+
+if (result.rows.length === 0) {
+  // Could be: already verified (concurrent), expired, or not found
+  // Check current state to give the right response
+  const user = await findUserByVerificationToken(tokenHash);
+  if (!user) {
+    const alreadyVerifiedUser = await findUserByEmail(/* ... */);
+    if (alreadyVerifiedUser?.isVerified) {
+      return res.status(200).json({ message: "Email already verified" });
+    }
+    return res.status(400).json({ message: "Invalid verification token" });
+  }
+}
+```
+
+---
+
+## POST /resend-verification
+
+### Issue 17: Email Enumeration via Already-Verified Response
+
+```ascii
+POST /resend-verification { email: "victim@example.com" }
+
+400 Email is already verified -> email exists AND is verified
+200 with silent stop          -> email doesn't exist in DB
+```
+
+An attacker can enumerate our entire user base: any email that returns 400 is a confirmed, verified account. Compare this to `/forgot-password` which correctly returns 200 always.
+
+The fix: return 200 in all cases except the rate limit. Make the "already verified" message visible only to the authenticated user, not to an anonymous caller.
+
+```typescript
+// Before: leaks account state
+if (user.isVerified) {
+  return res.status(400).json({ message: "Email already verified" });
+}
+
+// After: same response regardless
+if (!user || user.isVerified) {
+  return res.status(200).json({
+    message:
+      "If this email is registered and unverified, you will receive an email",
+  });
+}
+```
+
+---
+
+## POST /logout
+
+### Issue 18: Access Token Stays Valid After Logout
+
+This is the classic JWT tradeoff and it's documented nowhere in the system. Logout blacklists the refresh token and clears the cookie. But the access token (stored in memory or localStorage on the client) remains valid for up to 15 minutes.
+
+```ascii
+┌────────────────────────────────────────────────┐
+│  User logs out at 10:00:00                     │
+│  Access token expires at 10:15:00              │
+│                                                │
+│  Stolen access token is valid until 10:15:00   │
+│  There is no server-side check to stop it      │
+└────────────────────────────────────────────────┘
+```
+
+There are three ways to handle this depending on your requirements:
+
+1. **Accept it**: document the 15-minute window. Most systems do this. It's only a problem if the access token is stolen, which requires XSS or a similar attack.
+
+2. **Shorten the TTL**: drop the access token to 1-2 minutes. More frequent refreshes, but a much smaller theft window.
+
+3. **Access token blacklist**: on logout, put the access token's `jti` in Redis with a TTL equal to its remaining lifetime. Your auth middleware checks the blacklist on every request.
+
+```typescript
+// Option 3: blacklist the access token on logout
+// Use jwt.verify (not jwt.decode) to validate the signature before trusting any claims.
+// ignoreExpiration: true because expired tokens should still be processable on logout.
+const decoded = jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
+  ignoreExpiration: true,
+}) as { jti: string; exp: number };
+const remainingTTL = decoded.exp - Math.floor(Date.now() / 1000);
+
+if (remainingTTL > 0) {
+  await redis.set(`blacklist:${decoded.jti}`, "1", { EX: remainingTTL });
+}
+
+// In auth middleware:
+const isBlacklisted = await redis.get(`blacklist:${decoded.jti}`);
+if (isBlacklisted) {
+  return res.status(401).json({ message: "Token has been revoked" });
+}
+```
+
+Note: this requires `jti` (JWT ID) in your access token payload and adds a Redis lookup to every authenticated request.
+
+### Issue 19: Expired-but-Valid-Signature Token Path Is Missing
+
+The logout flow says "Verify JWT signature (expiry check optional here)" but doesn't show what happens when a token has a valid signature but is expired. In the diagram, an invalid signature clears the cookie and returns 200. But an expired token is structurally different: the signature is valid, the token is just past its `exp`.
+
+For logout, expiry shouldn't block you. The goal is to invalidate whatever token the client is sending. The flow should be:
+
+```ascii
+Valid signature, not expired -> hash -> DB lookup -> delete -> clear cookie -> 200
+Valid signature, expired     -> hash -> DB lookup -> delete if found -> clear cookie -> 200
+Invalid signature            -> clear cookie -> 200
+No token                     -> clear cookie -> 200
+```
+
+All paths succeed. Logout is idempotent.
+
+---
+
+## POST /refresh
+
+This endpoint has the most complex edge cases in the entire system.
+
+### Issue 20: Parallel Requests Trigger a False Reuse Attack
+
+This is the most critical issue in the whole design, and it's a normal network behavior that causes it.
+
+In a single-page application, multiple API calls fire simultaneously. If the access token is expired, all of them will try to refresh. Without client-side deduplication:
+
+```ascii
+┌────────────────────────────────────────────────────────┐
+│  t=0ms:  Request A fires -> sends refreshToken cookie  │
+│  t=10ms: Request B fires -> sends same cookie          │
+│                                                        │
+│  Request A: finds token in DB -> deletes it            │
+│             stores new token -> responds               │
+│                                                        │
+│  Request B: token not in DB (A deleted it)             │
+│             REUSE ATTACK TRIGGERED                     │
+│             ALL sessions nuked                         │
+│             User forcefully logged out                 │
+└────────────────────────────────────────────────────────┘
+```
+
+A legitimate user gets logged out because of a completely normal parallel request pattern.
+
+There are three real solutions:
+
+**Option 1: Client-side request queuing (recommended for SPAs)**
+
+```typescript
+// Axios interceptor: deduplicate in-flight refresh calls
+let refreshPromise: Promise<string> | null = null;
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status !== 401) throw error;
+
+    if (!refreshPromise) {
+      refreshPromise = refreshAccessToken().finally(() => {
+        refreshPromise = null;
+      });
+    }
+
+    const newToken = await refreshPromise;
+    error.config.headers.Authorization = `Bearer ${newToken}`;
+    return axiosInstance(error.config);
+  },
+);
+```
+
+All concurrent 401s share a single refresh call. Only one request ever hits `/refresh`.
+
+**Option 2: Per-user mutex on the server**
+
+```typescript
+const userLock = await redis.set(
+  `refresh-lock:${userId}`,
+  "1",
+  { NX: true, EX: 10 }, // 10-second lock
+);
+
+if (!userLock) {
+  // Another refresh is in progress for this user
+  // Wait briefly and retry, or return 429
+  return res
+    .status(429)
+    .json({ message: "Refresh in progress, retry shortly" });
+}
+```
+
+**Option 3: Grace window for recently-rotated tokens**
+
+Store the old token hash in a "recently rotated" cache with a 5-second TTL and return the already-issued new token if a request comes in with a recently-rotated-away token.
+
+### Issue 21: Non-Atomic Token Rotation
+
+The rotation process has five steps:
+
+```ascii
+1. SHA-256(old) -> add to blacklist with remaining TTL
+2. Delete old token from DB
+3. Generate new refresh JWT
+4. SHA-256(new) -> store in DB
+5. Set new token in httpOnly cookie
+```
+
+If step 2 succeeds but step 4 fails (DB write error), neither the old nor the new token is valid. The user is permanently logged out with no recourse except using forgot-password.
+
+All five steps need to run inside a DB transaction:
+
+```typescript
+await db.transaction(async (trx) => {
+  // Steps 1 + 2: blacklist old, delete from DB
+  await redis.set(`blacklist:${oldTokenHash}`, "1", {
+    EX: oldTokenRemainingTTL,
+  });
+  await trx.query("DELETE FROM refresh_tokens WHERE token_hash = $1", [
+    oldTokenHash,
+  ]);
+
+  // Steps 3 + 4: generate new, store in DB
+  const newRefreshToken = generateRefreshJWT(user);
+  const newTokenHash = sha256(newRefreshToken);
+  await trx.query(
+    "INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ...) VALUES ($1, $2, $3, ...)",
+    [userId, newTokenHash, newExpiry],
+  );
+
+  // Step 5 happens after transaction commits
+  return newRefreshToken;
+});
+
+// Only set the cookie if the transaction succeeded
+res.cookie("refreshToken", newRefreshToken, cookieOptions);
+```
+
+The Redis blacklist write happening outside the transaction is acceptable: if the transaction rolls back, the blacklisted token is just over-invalidated for a short window. It's safe.
+
+### Issue 22: tokenVersion Check Is Unreachable for the Password Reset Path
+
+After a password reset, the flow deletes all refresh tokens from the DB and bumps `tokenVersion`. In `/refresh`, the order of checks is:
+
+```ascii
+1. Is token in blacklist?
+2. Verify JWT signature + expiry
+3. Is token hash in DB?   <-- post-reset tokens fail HERE
+4. Check tokenVersion     <-- never reached
+```
+
+Refresh tokens invalidated by password reset get caught at step 3 (not in DB anymore). Step 4 is never reached for that case. The `tokenVersion` in the refresh token payload is only useful if you have refresh tokens that exist in the DB with a stale tokenVersion, which this design doesn't allow.
+
+The `tokenVersion` check in `/refresh` is effectively dead code for the password reset scenario. Where it does matter is protecting access tokens, but your access token payload doesn't include `tokenVersion`. So after a password reset, existing access tokens are valid for their remaining lifetime (up to 15 minutes).
+
+This is documented behavior in most JWT systems. The important thing is to know and communicate that this window exists, not pretend the tokenVersion in the refresh JWT solves it.
+
+---
+
+## The Full Issues Reference
+
+| Endpoint | Issues |
+| :--- | :--- |
+| **POST /signup** | • bcrypt 72-byte truncation<br />• Race condition on duplicate email<br />• Email normalization missing<br />• No rate limiting<br />• Role field missing from schema |
+| **POST /signin** | • Timing attack on email not found<br />• No session cap<br />• Unverified user can be locked out |
+| **POST /forgot-pw** | • Locked account behavior undocumented<br />• Unverified account behavior undocumented<br />• Rate limit check not atomic |
+| **POST /reset-pw** | • Token use not atomic<br />• Notification email failure unhandled<br />• Old password check not implemented |
+| **GET /verify-email** | • Raw JSON on browser link click<br />• Double-click race condition |
+| **POST /resend-verify** | • Email enumeration via 400 response |
+| **POST /logout** | • Access token valid post-logout (undocumented)<br />• Expired-but-valid-signature token path missing |
+| **POST /refresh** | • Parallel requests trigger false reuse attack<br />• Non-atomic token rotation<br />• tokenVersion check unreachable (dead code) |
+
+
+---
+
+## Key Takeaways
+
+Designing auth feels like one of those problems where you can clearly see the goal: verify the user is who they say they are, keep sessions alive securely, and invalidate them cleanly. The happy path practically writes itself.
+
+The hard part is never the happy path.
+
+Every endpoint in this system had at least one issue that only showed up when you asked "what if two requests arrive at the same time?" or "what if this step fails halfway through?" or "what does the response time reveal to an attacker?"
+
+A few patterns show up repeatedly across all the fixes:
+
+First, **atomicity matters more than you think**. Any time you check a condition and then modify state based on it, those two operations need to be atomic. Separate check + write is a race condition waiting to happen. Use DB transactions, conditional updates with WHERE clauses, and Redis NX operations.
+
+Second, **every response time is a signal**. Even when your error messages are identical, the time it takes to return them can leak information. Any path that bypasses slow operations (like bcrypt) needs a dummy equivalent to equalize timing.
+
+Third, **document your tradeoffs explicitly or someone will break them**. The 15-minute access token window after logout is a known, acceptable tradeoff. The forgot-password escape from account lockout is intentional behavior. If these aren't written down, a future developer sees them as bugs and "fixes" them into security holes.
+
+Fourth, **the client is part of the security model**. The refresh token reuse attack false positive is unsolvable purely on the server side without accepting either false positives or weakening the security model. The right fix lives in the Axios interceptor, not the backend. Auth is a distributed system. Design it like one.
+
+---
