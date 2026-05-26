@@ -6,7 +6,7 @@ export function About() {
       <TerminalLabel command="cat about.md" />
       <div className="flex flex-col gap-3 text-fg leading-relaxed text-lg">
         <p>
-          I’m a Full Stack Developer based in Pune, India. I build production
+          I’m a Full Stack Engineer based in Pune, India. I build production
           systems end-to-end - from auth protocols and API design to the
           interfaces people actually use.
         </p>

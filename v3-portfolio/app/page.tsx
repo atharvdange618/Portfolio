@@ -28,7 +28,7 @@ export default function Home() {
       addressCountry: "India",
     },
     description:
-      "Full Stack Developer based in Pune, India. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
+      "Full Stack Engineer based in Pune, India. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
   };
 
   return (
