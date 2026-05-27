@@ -69,6 +69,16 @@ export async function markdownToHtml(markdown: string) {
                 },
               ],
             };
+          } else if (child.type === "element" && child.tagName === "a") {
+            if (!child.properties) {
+              child.properties = {};
+            }
+            const href = child.properties.href;
+            if (typeof href === "string" && !href.startsWith("#")) {
+              child.properties.target = "_blank";
+              child.properties.rel = "noopener noreferrer";
+            }
+            walk(child);
           } else {
             walk(child);
           }
