@@ -1,0 +1,406 @@
+---
+title: "I Built All 4 Web Rendering Strategies From Scratch. Here's What I Actually Learned"
+publishedAt: "2026-05-28"
+tags:
+  - "ssr"
+  - "csr"
+  - "isr"
+  - "ssg"
+  - "nodejs"
+  - "javascript"
+  - "web-performance"
+  - "architecture"
+  - "from-scratch"
+featured: "true"
+description: "A from-first-principles case study on all four web rendering strategies - Static Site Generation, Server-Side Rendering, Client-Side Rendering, and Incremental Static Regeneration - built with zero frameworks using Node.js's built-in http module."
+---
+
+There's a version of this post that's just a table comparing four acronyms with checkmarks under "SEO" and "Performance." You've seen it. Everyone has. It doesn't teach you anything you can actually use.
+
+This is a different kind of post. I built all four rendering strategies from scratch, in the same project, sharing the same templates and data layer, using nothing but Node.js's built-in `http` module. No Next.js, no Express, no framework magic hiding what's actually happening. And the thing I kept running into was this: the implementations are almost embarrassingly simple. The concepts are not. So let's talk about both.
+
+The full source is at [github.com/atharvdange618/rendering-strategies](https://github.com/atharvdange618/rendering-strategies).
+
+## The One Question Every Strategy Answers
+
+Before we get into any code, you need the right mental model. Every rendering strategy is just an answer to one question:
+
+**Where and when does HTML get generated?**
+
+That's it. Everything else, the performance characteristics, the SEO tradeoffs, the infrastructure requirements, flows from that answer. Once you have it, the four strategies stop feeling like a grab bag of acronyms and start feeling like a spectrum of deliberate choices.
+
+```ascii
+                    WHO generates the HTML?
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+           SERVER                    BROWSER
+              │                         │
+            WHEN?                      CSR
+              │
+    ┌─────────┴──────────┐
+    │                    │
+BUILD TIME          REQUEST TIME
+    │                    │
+   SSG                  SSR
+    │
+    + STALENESS WINDOW?
+    │
+   ISR
+```
+
+CSR moves HTML generation into the browser entirely. SSG and SSR both generate on the server but at completely different times. ISR sits between SSG and SSR, using staleness as the trigger for regeneration. Once you see them arranged this way, the tradeoffs follow naturally.
+
+## The Project Architecture
+
+The key architectural decision in this project was building a shared template layer that all four strategies call into. Not four separate codebases, not four separate template functions. One `templates.js` file, four strategies that invoke it at different times and in different contexts.
+
+```ascii
+rendering-strategies/
+├── data/
+│   └── posts.json          ← single source of truth
+├── dist/                   ← SSG and ISR write pre-built files here
+│   ├── ssg.html
+│   └── isr.html
+├── client/
+│   └── app.js              ← runs in the browser for CSR
+└── src/
+    ├── server.js           ← HTTP server, routes all four strategies
+    ├── build.js            ← SSG build script, run manually
+    ├── templates.js        ← SHARED: renderPostList(), htmlShell()
+    ├── isr-cache.js        ← ISR cache state + revalidation logic
+    └── strategies/
+        ├── ssg.js          ← reads dist/ssg.html, serves it
+        ├── ssr.js          ← generates HTML per request, serves it
+        ├── csr.js          ← serves empty shell + script tag
+        └── isr.js          ← ISR state machine
+```
+
+`templates.js` exports a `renderPostList(posts)` function. It takes an array of posts and returns an HTML string. It has no knowledge of what strategy is calling it, no side effects, no I/O. It's a pure function.
+
+Here's the thing that clicked for me while building this: the strategy is not about _what_ you render. It's about _when_ you call the render function. The same `renderPostList(posts)` call appears in `build.js` (SSG), inside the request handler (SSR), inside the background job (ISR), and its equivalent lives in `client/app.js` as DOM node construction (CSR). Four strategies, one template, four different call sites.
+
+## SSG: Baking Bread the Night Before
+
+Static Site Generation is the simplest strategy to understand and implement. You run a script before any users arrive, it generates HTML files, and those files sit on disk until you regenerate them.
+
+Think of a bakery that preps everything the night before opening. When the first customer walks in at 7am, you don't start mixing flour. You just hand them a loaf that's already done. The tradeoff is clear: if the recipe changes after the loaves are baked, customers get yesterday's recipe until you bake again.
+
+```ascii
+BUILD TIME (before any users arrive)
+──────────────────────────────────────────────────────
+
+  posts.json ──► renderPostList() ──► ssg.html (disk)
+
+──────────────────────────────────────────────────────
+REQUEST TIME (when user visits /ssg)
+──────────────────────────────────────────────────────
+
+  User ──► Server reads ssg.html ──► User gets HTML
+
+  (No template logic. No data fetching. Just a file read.)
+
+──────────────────────────────────────────────────────
+```
+
+The build script (`src/build.js`) is the entire SSG implementation. The server handler (`src/strategies/ssg.js`) is almost nothing: read a file, send it. Notice the handler doesn't import posts data and doesn't call `renderPostList()`. All that template logic already ran during the build. The request handler is just a file server with a helpful error message for when the build hasn't been run yet (which is the only reason it imports `htmlShell` from templates - to render a "build required" page).
+
+```javascript
+// The ENTIRE SSG request handler
+const fs = require("fs");
+const path = require("path");
+const { htmlShell } = require("../templates");
+
+const DIST_PATH = path.join(__dirname, "../../dist/ssg.html");
+
+module.exports = function handleSSG(req, res) {
+  fs.readFile(DIST_PATH, "utf-8", (err, html) => {
+    if (err) {
+      // Build hasn't been run yet - show a helpful error
+      const errorHtml = htmlShell({
+        title: "SSG - Build Required",
+        body: `<h1>Build not found</h1><p>Run <code>node src/build.js</code> first.</p>`,
+        strategy: "SSG",
+        generatedAt: new Date().toISOString(),
+      });
+      res.writeHead(404, { "Content-Type": "text/html" });
+      res.end(errorHtml);
+      return;
+    }
+    res.writeHead(200, {
+      "Content-Type": "text/html",
+      "Cache-Control": "no-cache",
+    });
+    res.end(html);
+  });
+};
+```
+
+The "frozen timestamp" is the observable proof of SSG. Every page has a visible "HTML generated at" timestamp. With SSG, that timestamp doesn't change no matter how many times you refresh. It only changes when you run `node src/build.js` again.
+
+The real-world implication: SSG sites can be served entirely from a CDN with no application server. Netlify, GitHub Pages, Vercel's static hosting: they're all just very fast file servers. If your server goes down, the files still serve. That's resilience you get for free.
+
+## SSR: Cooking Fresh on Every Order
+
+Server-Side Rendering moves HTML generation from build time into the request handler. Every time a user hits your server, the server runs your template logic, builds fresh HTML, and sends it.
+
+Back to the bakery analogy: SSR is made-to-order. The customer arrives, you cook fresh. Better quality, guaranteed freshness, but the kitchen is doing work for every single customer. Scale that to 10,000 simultaneous customers and you understand why SSR servers need to be sized for traffic.
+
+```ascii
+REQUEST TIME (runs on EVERY request)
+──────────────────────────────────────────────────────
+
+  User hits /ssr
+       │
+       ▼
+  posts.json ──► renderPostList() ──► HTML string ──► User
+
+  (Same template call as SSG build.
+   Different timing: per-request, not per-build.)
+
+──────────────────────────────────────────────────────
+```
+
+The SSR handler is actually shorter than the SSG handler because there's no error case for "file not found." The data is always available, and the render always runs.
+
+```javascript
+module.exports = function handleSSR(req, res) {
+  const posts = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
+  const generatedAt = new Date().toISOString();
+
+  const html = htmlShell({
+    title: "Blog Posts - SSR",
+    body: renderPostList(posts),
+    strategy: "SSR",
+    generatedAt, // changes on every single request
+  });
+
+  res.writeHead(200, {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+  });
+  res.end(html);
+};
+```
+
+Here's something I found interesting while testing: I simulated three back-to-back requests in about 25ms total, and all three had different timestamps to the millisecond. The function re-ran three times. That's both the power and the cost of SSR. Power: absolute freshness. Cost: you're paying compute on every request, even when nothing has changed.
+
+The `Cache-Control: no-cache, no-store, must-revalidate` header is important. If you cache an SSR response at the browser level, you've accidentally built SSG with extra steps and worse performance. Don't cache SSR responses unless you've intentionally layered a caching strategy on top (which is basically what ISR is).
+
+## CSR: Sending the Recipe Instead of the Bread
+
+Client-Side Rendering flips the entire model. The server sends almost no HTML. Instead it sends a JavaScript file. That file runs in the browser, fetches data from a JSON API, and builds the DOM directly. The server is not in the rendering business at all.
+
+This is the model that React made mainstream. Your browser is doing the work your server used to do.
+
+```ascii
+Server side                         Browser side
+─────────────────                   ──────────────────────────────────
+
+User hits /csr
+       │
+       ▼
+Server sends HTML shell             HTML arrives (nearly empty)
+<html>                                    │
+  <div id="app"></div>    ─────────►      │ Script tag fires (defer)
+  <script src="/client/app.js" defer>     │
+</html>                                   ▼
+                                    Fetch /api/posts
+       │◄───────────────────────────────── │ (second HTTP request)
+       │  JSON: { posts: [...] }           │
+       ├──────────────────────────────────►│
+                                           ▼
+                                    Build DOM nodes
+                                    Insert into #app
+                                    User sees content
+```
+
+Two HTTP requests for one page load. That's the key cost of CSR. The first gets the shell, the second gets the data. Content cannot appear until both complete.
+
+The most visceral way to experience this: open `/csr`, right-click, View Page Source. You'll see an empty `<div id="app">` with a comment inside it. No posts, no titles, no content at all. Now open DevTools, go to Elements. The posts are there. That difference between View Source and Inspect is CSR in one observation. View Source shows what the server sent. Inspect shows what JavaScript built.
+
+```javascript
+// client/app.js - runs in the browser, not Node.js
+async function main() {
+  const response = await fetch("/api/posts");
+  const { posts } = await response.json();
+
+  // Build DOM nodes manually (what React does via VDOM + reconciliation)
+  const list = el(
+    "ul",
+    { className: "post-list" },
+    ...posts.map(renderPostCard),
+  );
+
+  document.getElementById("app").appendChild(list);
+}
+```
+
+The `el()` function here is a stripped-down version of the `h()` hyperscript helper from my [Virtual DOM](https://github.com/atharvdange618/React-Vdom) project. SSG, SSR, and ISR produce HTML strings on the server. CSR builds DOM nodes in the browser. Same conceptual template, different output type, different execution environment.
+
+The SEO implication is real. When Googlebot fetches your CSR page, it gets an empty shell. Google does run JavaScript, but it's slower and less reliable than reading HTML directly. If your content needs to be indexed, CSR alone is not enough.
+
+## ISR: The Stale-While-Revalidate Pattern
+
+Incremental Static Regeneration is not a fundamentally different rendering approach. It's SSG with a staleness clock. You start with a static file, but you define a revalidation window. After that window expires, the next request gets the stale file immediately, and a background job regenerates the cache for the request after that.
+
+If you've seen the `stale-while-revalidate` HTTP Cache-Control directive, this is that pattern implemented in application logic rather than browser cache headers.
+
+```ascii
+Timeline (revalidation window = 10s)
+─────────────────────────────────────────────────────
+
+  t=0s   Build runs, dist/isr.html created
+         │
+  t=2s   Request A ──► "fresh" ──► served instantly from cache
+  t=5s   Request B ──► "fresh" ──► served instantly from cache
+  t=9s   Request C ──► "fresh" ──► served instantly from cache
+         │
+  t=10s  Window expires
+         │
+  t=12s  Request D ──► "STALE" ──► served instantly (old file)
+         │              └── triggers background regen (async, non-blocking)
+         │
+  t=12s+ε  Background job runs: read data, render, write new file to disk
+         │
+  t=14s  Request E ──► "fresh" ──► served instantly (new file)
+
+─────────────────────────────────────────────────────
+         Request D gets stale content.
+         Request E gets fresh content.
+         Neither request WAITS for the other's work.
+```
+
+That diagram is the whole thing. Request D is the "sacrificial" request that pays the revalidation trigger cost (but not the rebuild cost, since the rebuild is async). Request E reaps the benefit.
+
+The implementation has four distinct states:
+
+```javascript
+module.exports = async function handleISR(req, res, posts) {
+  const cachedHtml = readCache();
+
+  // State 1: No cache exists yet (cold start)
+  if (!cachedHtml) {
+    const html = await generateAndCache(posts); // wait, user waits too
+    res.end(html);
+    return;
+  }
+
+  // State 2: Cache is fresh (within window)
+  if (isCacheValid()) {
+    res.end(cachedHtml); // instant serve, nothing else
+    return;
+  }
+
+  // State 3 & 4: Cache is stale - serve it NOW, revalidate AFTER
+  res.end(cachedHtml); // ← response sent first
+  revalidateInBackground(posts); // ← THEN background work starts
+  //  ^ no await. intentional.
+};
+```
+
+The line ordering in State 3 is the entire ISR mechanic. `res.end()` fires before `revalidateInBackground()`. The user's response is sent, then the rebuild happens. If you reverse that order, you've built SSR: the user waits for the rebuild to finish. The `await` being absent on `revalidateInBackground` is not an oversight, it's the implementation.
+
+One subtle thing to get right: cache state needs to persist across requests. In Node.js, module-level variables are singletons within a process. The `isr-cache.js` module holds the `lastGeneratedAt` timestamp at module scope, meaning all requests share that value. It also syncs from disk on startup via `fs.statSync`, so a server restart doesn't lose track of an existing cache file.
+
+## The Shared Template: What This Architecture Proves
+
+I want to return to `templates.js` because it's doing something conceptually important.
+
+```javascript
+// templates.js
+function renderPostList(posts) {
+  if (!posts || posts.length === 0) {
+    return `<p style="color: #64748b;">No posts found.</p>`;
+  }
+
+  const items = posts
+    .map((post) => {
+      const tags = (post.tags || [])
+        .map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`)
+        .join(" ");
+
+      return `
+      <li class="post-card">
+        <div class="post-title">${escapeHtml(post.title)}</div>
+        <div class="post-excerpt">${escapeHtml(post.excerpt)}</div>
+        <div class="post-meta">
+          <span>${escapeHtml(post.author)}</span>
+          <span>${escapeHtml(post.date)}</span>
+          <span>${tags}</span>
+        </div>
+      </li>`;
+    })
+    .join("\n");
+
+  return `
+    <h1>Blog Posts</h1>
+    <p class="subtitle">${posts.length} articles on JavaScript, architecture, and building things.</p>
+    <ul class="post-list">
+      ${items}
+    </ul>`;
+}
+```
+
+This function is called by:
+
+- `build.js` at build time (SSG)
+- `strategies/ssr.js` inside the request handler (SSR)
+- `isr-cache.js` inside the background job (ISR)
+- An equivalent in `client/app.js` in the browser, producing DOM nodes instead of HTML strings (CSR)
+
+Strip out the strategy-specific values (timestamp, badge color, page title) and SSG and SSR produce byte-for-byte identical HTML from the same posts data. I verified this by normalizing both outputs and running a strict equality check. They matched. One character difference, just the title string length.
+
+This is what Next.js, Nuxt, and SvelteKit are actually doing when they let you use the same component for SSG, SSR, and CSR. The component is a pure function. The framework decides when and where to call it.
+
+## Comparing the Strategies: What the Code Teaches
+
+The comparison tables online give you checkmarks. Building the code gives you something better: intuition for _why_ each tradeoff exists.
+
+```ascii
+Strategy   Where rendered   When rendered        Server cost/req   Freshness
+─────────────────────────────────────────────────────────────────────────────
+SSG        Server           Build time           ~0 (file read)    Stale until rebuild
+SSR        Server           Every request        Render + data     Always fresh
+CSR        Browser          After JS runs        ~0 (shell send)   Fresh (per fetch)
+ISR        Server           Build + background   ~0 (file read)*   Stale until reval
+─────────────────────────────────────────────────────────────────────────────
+                                                 * except cold start and reval
+```
+
+A few things pop out from this table that aren't obvious from just reading about the strategies:
+
+SSG and ISR have the same server cost per request. The difference is entirely in the regeneration trigger: SSG is manual (you run the build script), ISR is automatic (time-based window). If you're trying to choose between them, ask whether your data changes frequently enough to justify the background revalidation infrastructure.
+
+CSR has near-zero server cost per page request, but it trades that for a second HTTP request (the API call) and a blank page window while JavaScript loads. On a 4G connection this might be 100ms. On a slow device with a large JS bundle it might be 2-3 seconds. The server wins, the user potentially loses.
+
+SSR is the only strategy that is always fresh at zero extra complexity. You pay for that with compute per request, which means horizontal scaling instead of CDN distribution.
+
+## The Timestamp Trick
+
+One design decision in this project that I'd recommend to anyone building a similar learning project: every rendered page displays a "HTML generated at" timestamp, and that timestamp is baked into the HTML itself.
+
+This makes the behavior of each strategy immediately observable without needing to understand the code. SSG's timestamp freezes until you rebuild. SSR's timestamp changes on every refresh. ISR's timestamp stays the same within the window, then updates on the request after a stale one. CSR has two timestamps: when the shell was sent, and when the API response came back.
+
+You could describe all of this in words. But staring at two browser tabs side by side, one SSG and one SSR, refreshing them repeatedly and watching one timestamp change while the other stays frozen, that teaches it faster than any explanation.
+
+## What I Would Build Next
+
+The natural next step is hydration, which is what Next.js and Nuxt actually ship in production. Hydration combines SSR and CSR: the server sends full HTML (fast first paint, good SEO), then the browser's JavaScript "takes over" the existing DOM and makes it interactive without rebuilding it from scratch. It's the best of both, at the cost of shipping both the server-rendered HTML and the client-side JavaScript that describes the same UI.
+
+The other thing worth exploring is streaming SSR, where instead of waiting for the entire HTML to render before sending anything, the server flushes HTML in chunks as each part renders. React 18's `renderToPipeableStream`, which is what the Next.js App Router uses, does exactly this. The above-the-fold content arrives faster even if the full page takes longer to build.
+
+Both of those are worth building from scratch for the same reason this project was: the implementations will teach you more than the explanations.
+
+## Key Takeaways
+
+SSG generates HTML once at build time. The server is just a file server. Rebuild to update content.
+
+SSR generates HTML per request. The server is always doing render work. Always fresh, always a compute cost.
+
+CSR sends an empty shell. The browser fetches data and builds the DOM. Two HTTP requests, blank page window, excellent interactivity once loaded.
+
+ISR is SSG with a background revalidation trigger. The `stale-while-revalidate` pattern, implemented in application code. The user who hits a stale cache gets old content instantly and triggers a background rebuild. The next user gets the fresh result.
+
+The shared template pattern is the most important architectural insight in this project. Rendering strategies are about _when and where_ you call your render function, not about writing four different versions of it.
+
+Build it yourself. The concepts become obvious once you've seen the code.
