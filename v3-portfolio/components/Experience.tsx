@@ -37,7 +37,7 @@ export function Experience() {
             <li className="flex items-start gap-2">
               <span className="text-purple shrink-0 mt-[0.35em]">▸</span>
               Entered a profit-share agreement reflecting expanded ownership and
-              responsibility over the firm's technical direction
+              responsibility over the firm&apos;s technical direction
             </li>
           </ul>
         </div>

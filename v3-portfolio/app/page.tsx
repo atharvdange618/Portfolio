@@ -8,7 +8,7 @@ import { Blogs } from "@/components/Blogs";
 
 export default function Home() {
   const featuredProjects = getFeaturedProjects();
-  const recentPosts = getRecentPosts(3);
+  const recentPosts = getRecentPosts(2);
 
   const jsonLd = {
     "@context": "https://schema.org",
