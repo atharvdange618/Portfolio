@@ -56,6 +56,7 @@ export function Projects({
                     href={project.github}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="View source code on GitHub"
                     className="text-base text-comment hover:text-fg transition-colors duration-200 flex items-center gap-1"
                   >
                     <FaGithub className="w-4 h-4" />
@@ -66,6 +67,7 @@ export function Projects({
                     href={project.live}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="View live project"
                     className="text-base text-comment hover:text-fg transition-colors duration-200 flex items-center gap-1"
                   >
                     <RiExternalLinkFill className="w-4 h-4" />

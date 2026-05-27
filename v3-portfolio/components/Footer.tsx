@@ -24,7 +24,7 @@ const links = [
     modeHover: "LINKEDIN" as Mode,
   },
   {
-    label: "",
+    label: "Twitter",
     href: "https://x.com/atharvdangedev",
     icon: FaXTwitter,
     modeHover: "TWITTER" as Mode,
