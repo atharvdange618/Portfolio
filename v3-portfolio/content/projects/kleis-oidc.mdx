@@ -16,7 +16,7 @@ startedAt: "2026-04-19"
 updatedAt: "2026-05-23"
 github: "https://github.com/atharvdange618/OIDC"
 live: "https://kleis.atharvdangedev.in"
-description: "Kleis OIDC is a custom, zero-dependency OpenID Connect (OIDC) Identity Provider and Single Sign-On (SSO) engine built entirely from scratch."
+description: "Built a production-grade OpenID Connect identity provider from scratch - implemented the OAuth 2.0 Authorization Code Flow with PKCE, RS256 asymmetric JWT signing, automatic refresh token rotation with theft detection, and shipped a plug-and-play Next.js SDK for client apps."
 ---
 
 Kleis OIDC is a custom, zero-dependency OpenID Connect (OIDC) Identity Provider and Single Sign-On (SSO) engine built entirely from scratch.
@@ -30,6 +30,7 @@ By bypassing third-party authentication frameworks (such as NextAuth, Auth0, or 
 Modern web applications rely heavily on external Identity Providers (IdPs) for user management and authentication. However, treating security and identity as a "black box" hides the critical mechanics of protocol security. Furthermore, integrating SSO and token exchange flows between multiple client platforms is complex and prone to high-severity vulnerabilities like CSRF, session hijack, token replay, and race conditions.
 
 The challenge was to design and implement a fully compliant OIDC provider from the ground up, ensuring:
+
 - Absolute adherence to OAuth 2.0 and OIDC core specifications without using third-party auth libraries.
 - Secure session management, refresh token rotation, and credential protection.
 - A seamless developer experience with an integrated client-side SDK and management portal.
@@ -223,15 +224,21 @@ return prisma.$transaction(async (tx) => {
 ## Technical Challenges & Trade-offs
 
 ### 1. From-Scratch Protocol Compliance vs. Off-the-Shelf Packages
+
 Integrating pre-built frameworks like `oidc-provider` abstracts the specifications but makes the authentication flow a black box. Writing standard-compliant OAuth 2.0 and OIDC endpoints required building custom parsing for `application/x-www-form-urlencoded` payloads, handling strict redirect URI wildcard matching, and organizing error payloads (RFC 6749) with proper `error` and `error_description` response variables.
+
 - **Decision**: Building from scratch was selected to gain direct control of the data layers and security states. While this increased initial development time, it ensured a lightweight codebase and full visibility into token signing and validation pipelines.
 
 ### 2. State Management: Stateful SSO Sessions vs. Stateless REST APIs
+
 Modern web development favors stateless APIs. However, implementing Single Sign-On requires a central session management system.
+
 - **Decision**: We implemented stateful sessions inside `apps/idp` using Express Sessions backed by a PostgreSQL session store. While this requires a database call during the initial `/authorize` redirection, it enables robust multi-app logout and immediate session revocation capabilities.
 
 ### 3. Cryptographic Performance: RS256 vs. HS256
+
 Symmetric signing (HS256) is highly performant and easy to set up. However, sharing the secret signature key with multiple client applications creates a single point of failure.
+
 - **Decision**: We opted for RS256 asymmetric signing. Although asymmetric key verification uses slightly more CPU cycles, exposing only the public key via JWKS prevents clients from forging tokens, protecting the identity server from compromised client environments.
 
 ---

@@ -40,8 +40,8 @@ export default function Home() {
       <Hero />
       <About />
       <Experience />
-      <Stack />
       <Projects projects={featuredProjects} />
+      <Stack />
       <Blogs posts={recentPosts} />
     </div>
   );
