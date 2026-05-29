@@ -1,18 +1,19 @@
 ---
-title: "I Built All 4 Web Rendering Strategies From Scratch. Here's What I Actually Learned"
+title: "I Built All 5 Web Rendering Strategies From Scratch. Here's What I Actually Learned"
 publishedAt: "2026-05-28"
 tags:
   - "ssr"
   - "csr"
   - "isr"
   - "ssg"
+  - "ppr"
   - "nodejs"
   - "javascript"
   - "web-performance"
   - "architecture"
-  - "from-scratch"
+  - "streaming-ssr"
 featured: "true"
-description: "A from-first-principles case study on all four web rendering strategies - Static Site Generation, Server-Side Rendering, Client-Side Rendering, and Incremental Static Regeneration - built with zero frameworks using Node.js's built-in http module."
+description: "A from-first-principles case study on all five web rendering strategies - Static Site Generation, Server-Side Rendering, Client-Side Rendering, Incremental Static Regeneration, and Partial Pre-Rendering - built with zero frameworks using Node.js's built-in http module."
 ---
 
 There's a version of this post that's just a table comparing four acronyms with checkmarks under "SEO" and "Performance." You've seen it. Everyone has. It doesn't teach you anything you can actually use.
@@ -383,22 +384,267 @@ This makes the behavior of each strategy immediately observable without needing 
 
 You could describe all of this in words. But staring at two browser tabs side by side, one SSG and one SSR, refreshing them repeatedly and watching one timestamp change while the other stays frozen, that teaches it faster than any explanation.
 
-## What I Would Build Next
+## Then a Mock Interview Asked About PPR
 
-The natural next step is hydration, which is what Next.js and Nuxt actually ship in production. Hydration combines SSR and CSR: the server sends full HTML (fast first paint, good SEO), then the browser's JavaScript "takes over" the existing DOM and makes it interactive without rebuilding it from scratch. It's the best of both, at the cost of shipping both the server-rendered HTML and the client-side JavaScript that describes the same UI.
+After finishing all four strategies, I got asked about Partial Pre-Rendering in a mock interview and had nothing to say. I'd never heard of it. So naturally I went and built it too.
 
-It is worth building from scratch for the same reason this project was: the implementations will teach you more than the explanations.
+PPR is a newer idea, first shipped experimentally in Next.js 14. It's not widely talked about yet, which is why it catches people off guard. But once you've built SSG, SSR, CSR, and ISR, you're actually in the best position to understand it - because PPR is a direct response to a problem none of the four strategies solve cleanly.
+
+## The Gap That Four Strategies Couldn't Fill
+
+Here's the thing: every strategy we built applies uniformly to an entire page. SSG makes the whole page static. SSR makes the whole page dynamic. ISR gives the whole page one revalidation window. CSR puts the whole page in the browser.
+
+But real pages aren't uniform. Take the blog post listing page we built. The post list itself - titles, excerpts, authors, dates - never changes unless you publish something new. That content would love to be SSG. Pre-render it once, stick it on a CDN, zero server compute per request.
+
+But imagine the same page also shows a "Trending this week" widget with live view counts. That's inherently request-time data. It changes constantly. It can't be pre-rendered.
+
+So you're forced to choose. Make the whole page SSR because of one dynamic widget, and now you're paying per-request render cost for content that hasn't changed in days. Or make it SSG and accept that the trending widget is always stale.
+
+PPR's answer: stop treating the rendering strategy as a page-level decision. The post list is static. The trending widget is a dynamic hole. Pre-render the former at build time, fill the latter at request time, and deliver both in a single HTTP response.
+
+```ascii
+PPR page anatomy
+─────────────────────────────────────────────────────
+  ┌─────────────────────────────────────────┐
+  │  Nav, header                            │  ← pre-built at build time
+  │  Blog post list (5 posts)               │  ← pre-built at build time
+  │  ┌─────────────────────────────────┐    │
+  │  │  [shimmer skeleton]             │    │  ← placeholder, pre-built
+  │  │  → fills with: Trending widget  │    │  ← resolved at request time
+  │  └─────────────────────────────────┘    │
+  └─────────────────────────────────────────┘
+
+Delivery: one HTTP connection
+  Chunk 1 (instant, from disk):   everything above the skeleton
+  Chunk 2 (~150ms later):         the resolved trending data
+─────────────────────────────────────────────────────
+```
+
+The updated mental model now has a fifth entry:
+
+```ascii
+                    WHO generates the HTML?
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+           SERVER                    BROWSER
+              │                         │
+            WHEN?                      CSR
+              │
+    ┌─────────┴──────────┐
+    │                    │
+BUILD TIME          REQUEST TIME
+    │                    │
+   SSG                  SSR
+    │                    │
+   ISR           ONLY THE DYNAMIC HOLES
+    │                    │
+    └─────────┬──────────┘
+              │
+             PPR
+     (both, on the same page,
+      in the same response)
+```
+
+## Wait, Isn't This Just Astro Islands?
+
+When I first started discussing about `PPR` with a friend, while we were discussing, a thought flashed in mind: "Wait, isn't that just `Astro`'s Island architecture?" Like it's an understandable comparison. Both architectures reject the dogmatic view that a webpage must use a single, uniform rendering mode from top to bottom. However, they operate on entirely different dimensions. Conflating them confuses the distinct engineering problems they are trying to solve.
+
+`Astro Islands` split along the **client axis**: static HTML that ships zero JavaScript vs interactive components (islands) that need JavaScript to function. The question `Astro` answers is: "does this component need JS?" A carousel needs JS. An article body doesn't. `Astro` ships HTML for the article and a JavaScript bundle only for the carousel.
+
+`PPR` splits along the **server timing axis**: content that can be pre-rendered at build time vs content that requires data available only at request time. The question `PPR` answers is: "does this section need fresh data?" A post list doesn't (publish rarely). A view counter does (updates constantly). `PPR` pre-renders the post list and fetches the counter live.
+
+```ascii
+                    Static                Dynamic
+                 (pre-built)           (request-time)
+                ┌──────────────────────────────────────┐
+  Server-side   │  SSG / PPR shell   │  SSR / PPR hole │  ← PPR lives here
+                ├──────────────────────────────────────┤
+  Client-side   │  Static HTML       │  JS Islands     │  ← Astro Islands here
+                └──────────────────────────────────────┘
+```
+
+`Astro Islands`: "does this need JavaScript?"
+`PPR`: "does this need fresh server data?"
+
+They're orthogonal questions. A page could need both - and in fact `Next.js`'s implementation of `PPR` with `React Server Components` essentially combines them. The `Server Component` renders HTML (`PPR` hole), and if it contains a `Client Component`, that `Client Component` hydrates in the browser (island behavior). `React Server Components` is the framework-level unification of both patterns. But conceptually, they start as separate concerns.
+
+## Three Attempts at Implementing PPR
+
+This is where it got interesting. I didn't get `PPR` right the first time, or the second. Each failed attempt taught something specific.
+
+### v1: The Lie (Just Streaming SSR)
+
+The first implementation looked like this: the request handler called `buildStaticShell(posts, generatedAt)` to generate the HTML for chunk 1, wrote it with `res.write()`, did the async fetch, then wrote the dynamic chunk with `res.end()`.
+
+This was wrong in a fundamental way. `buildStaticShell()` was being called inside the request handler. That means on every single request, the server was running the full template logic - reading data, building the post list, assembling the HTML. The timestamp in the "static" shell banner showed the request arrival time, not a build time.
+
+That's not `PPR`. That's streaming `SSR`. I'd added chunked transfer encoding and a two-phase response, but I hadn't actually pre-built anything. The name said "static shell" but the behavior was entirely dynamic. The streaming mechanic was real. The "pre-built" claim was false.
+
+The learning: if you've actually pre-rendered something, the server handler should have no need to import your template functions. It should just read a file. My v1 handler was importing `buildStaticShell`, which meant it was doing rendering work. That's the wrong contract.
+
+### v2: The Hack (Half-Open HTML)
+
+But there was a new problem. Every other file we'd written to disk - `ssg.html`, `isr.html` - was a complete HTML document with proper closing tags. The PPR shell couldn't be complete, because we needed to stream dynamic content after it. So the solution I reached for was to intentionally write a broken document - no `</body>`, no `</html>` - and rely on the browser's lenient parsing to handle it.
+
+```ascii
+dist/ppr-shell.html (v2)
+─────────────────────────────────────
+<!DOCTYPE html>
+<html>
+<head>...</head>
+<body>
+  <nav>...</nav>
+  <ul class="post-list">...</ul>
+  <div id="dynamic-hole">
+    [shimmer skeleton]
+  </div>
+  <!-- document intentionally left open -->
+                                        ← NO </body> NO </html>
+─────────────────────────────────────
+```
+
+This worked. Browsers handle open documents gracefully during streaming. But it felt wrong because it _was_ wrong. You're exploiting browser leniency, not doing something intentional. If I opened this file directly in a browser without the server streaming anything after it, it would render in an unclosed state. The file on disk wasn't a real HTML document.
+
+More importantly, it raised an obvious question: is there a way to do this with a complete, valid HTML document? No half-open hacks?
+
+### v3: The Realization (Complete HTML + Post-Document Script)
+
+This came from someone asking a sharp question: why can't we just send the full, complete HTML with the placeholder elements, and then in the next chunk send the JavaScript that fills in the holes?
+
+The proposal was to use `<script src="resolver.js">` in the shell and send the script file as chunk 2. That won't work - `<script src="">` fires a new HTTP request entirely separate from the current stream. The browser doesn't look at the next bytes in the current response to fulfill it.
+
+But the instinct was right. The fix is `<script>inline code here</script>` instead of `<script src="">`. Inline scripts are read directly from the current response stream. And here's the part that isn't immediately obvious: browsers execute inline `<script>` tags that appear _after `</html>`_. Browsers parse the entire HTTP response stream progressively, not just up to the closing tag. Content after `</html>` is handled gracefully. This is intentional, spec-compliant behavior.
+
+So the v3 approach:
+
+```ascii
+dist/ppr-shell.html (v3)
+─────────────────────────────────────
+<!DOCTYPE html>
+<html>
+<head>...</head>
+<body>
+  <div id="dynamic-hole">[skeleton]</div>
+
+  <script>
+    // contract between shell and dynamic chunk
+    window.__pprResolve = function(id, html) {
+      document.getElementById(id).innerHTML = html;
+    };
+  </script>
+</body>
+</html>        ← PROPER CLOSING TAGS. Real document.
+─────────────────────────────────────
+
+Chunk 2 (streamed after async fetch, appended after </html>):
+─────────────────────────────────────
+<script>
+  window.__pprResolve('dynamic-hole', '<div class="trending-widget">...</div>');
+</script>
+─────────────────────────────────────
+```
+
+The shell defines `window.__pprResolve` as a global function before `</body></html>`. That function is available the moment the browser parses the shell. When chunk 2 arrives - an inline script after the document's closing tags - the browser executes it, it calls `__pprResolve()`, and the skeleton is replaced with real content.
+
+Complete, valid HTML on disk. Real file you can open in a browser standalone. No broken document structure. The dynamic injection happens via the stream, using a function that was pre-registered in the shell.
+
+Then it clicked: this is exactly what React's streaming SSR does. When a `Suspense` boundary resolves, React injects `<template>` tags and inline `<script>` calls to `$RC()` (its internal replacer function) into the response stream, often appearing after `</html>`. We independently arrived at the same mechanism.
+
+## Streaming SSR vs PPR: The Question That Wouldn't Go Away
+
+After implementing v3, the question came up: what exactly is the difference between PPR and streaming SSR now? They both use chunked transfer. They both deliver content in two moments. They both use inline scripts to swap placeholders. The code looks structurally similar.
+
+The difference is not in the delivery mechanism. It's in the origin of the first chunk.
+
+With streaming SSR, every single request triggers the full render pipeline for the static portions. The server reads data, runs template functions, builds HTML strings - for every request, even when the output is identical to the last thousand requests. The streaming is an optimization in how you deliver work that's being done _right now_. Like a chef who sends your starter while your main is still on the stove - both items are being cooked for your specific order, right now.
+
+With PPR, the static shell was computed once, at deploy time, and written to disk. When a request arrives, `renderPostList()` is never called. `htmlShell()` is never called. The handler does a file read - the same operation SSG's handler does - and forwards those bytes. The chef grabbed a bread basket that was baked this morning off the shelf and handed it to you instantly. The stove only turns on for the one item that genuinely needs to be made fresh.
+
+The test that makes this concrete: if you removed your origin server entirely and left only a file server, what would happen?
+
+Streaming SSR breaks completely. Every request requires the origin to run the template pipeline.
+
+PPR gracefully degrades. The static shell - the post list, the nav, the styles - still serves correctly from disk. Users see the skeleton placeholder instead of the trending widget, but the vast majority of the page still works. The static portion is genuinely independent of the application server.
+
+That independence is what "pre-rendered" means in the PPR context. Not just "looks fast." Not just "feels static." Actually independent. The application server doesn't need to exist for it to be served.
+
+```ascii
+Streaming SSR - per request:
+
+  request → origin server
+               │
+               ├── read data
+               ├── render post list     ← happens every request
+               ├── build HTML string    ← happens every request
+               │
+               ├── res.write(chunk1)
+               ├── await dynamicFetch()
+               └── res.end(chunk2)
+
+PPR - per request:
+
+  request → read ppr-shell.html        ← disk read, no compute
+               │
+               ├── res.write(shellHtml)
+               ├── await dynamicFetch() ← only this is per-request compute
+               └── res.end(resolverScript)
+```
+
+In production Next.js, the separation is even more explicit. The pre-built shell lives on a CDN edge node physically close to the user. The first chunk doesn't even touch your origin server - it streams from the edge immediately. The origin server only handles the dynamic holes. Our `fs.readFileSync` approximates the CDN step: it's serving pre-built content without computation, just like an edge node would.
+
+## The Full Updated Picture
+
+Adding PPR to the comparison table:
+
+```ascii
+Strategy  Where rendered     When (static)   When (dynamic)    Server cost/req
+──────────────────────────────────────────────────────────────────────────────
+SSG       Server             Build time       -                 ~0 (file read)
+SSR       Server             -                Every request     Render + data
+CSR       Browser            -                After JS runs     ~0 (shell send)
+ISR       Server             Build time       Background reval  ~0 (file read)*
+PPR       Server (both)      Build time       Every request     ~0 + dynamic only
+──────────────────────────────────────────────────────────────────────────────
+                                              * except cold start and reval
+```
+
+PPR is the only strategy with entries in both the "build time" and "every request" columns. That's the whole point. Different sections of the same page have different answers.
+
+## Challenges and Things That Didn't Work
+
+**The half-open HTML temptation.** v2's broken document actually worked in every browser I tested. Chrome, Firefox, Safari - all handled it fine. That's the danger. Something can work and still be wrong. The question isn't whether the browser tolerates it, it's whether the artifact on disk is correct. A file that can't be opened standalone without being in a broken state is a bad file, even if the downstream consumer is lenient about it.
+
+**Script delivery confusion.** The instinct to use `<script src="resolver.js">` is natural. External script references are how you normally load JS. Understanding why it fails here - that `src=""` fires an entirely new HTTP request, separate from the current stream - requires knowing how the browser's resource loader works independently of the HTML parser. These are different subsystems. The HTML parser reads the stream. The resource loader makes new requests. Inline scripts are read by the parser from the same stream. That distinction matters for PPR.
+
+**The streaming SSR confusion was productive.** The question "isn't this just streaming SSR now?" initially felt like a gotcha. It turned out to be the most clarifying question of the whole project. Answering it precisely - the origin of the first chunk, the file-server independence test, the per-request compute comparison - produced clearer understanding of PPR than any article I read about it.
+
+**Timestamps as a debugging tool paid off.** The "HTML generated at" timestamp that every page shows was added for educational reasons. It ended up being the fastest way to verify each implementation was actually correct. The PPR shell's frozen build timestamp vs the dynamic section's per-request timestamp made the two-phase nature immediately visible. Recommend this for any rendering project.
 
 ## Key Takeaways
 
 SSG generates HTML once at build time. The server is just a file server. Rebuild to update content.
 
-SSR generates HTML per request. The server is always doing render work. Always fresh, always a compute cost.
+SSR generates HTML per request. Always fresh, always a compute cost. The only strategy that's trivially fresh at zero extra infrastructure.
 
-CSR sends an empty shell. The browser fetches data and builds the DOM. Two HTTP requests, blank page window, excellent interactivity once loaded.
+CSR sends an empty shell. The browser fetches data and builds the DOM. Two HTTP requests per page load, blank page window while JS runs, excellent interactivity once loaded.
 
-ISR is SSG with a background revalidation trigger. The `stale-while-revalidate` pattern, implemented in application code. The user who hits a stale cache gets old content instantly and triggers a background rebuild. The next user gets the fresh result.
+ISR is SSG with a staleness clock. `stale-while-revalidate` implemented in application logic. The user who triggers revalidation gets the stale page; the next user gets fresh content.
 
-The shared template pattern is the most important architectural insight in this project. Rendering strategies are about _when and where_ you call your render function, not about writing four different versions of it.
+PPR is the only strategy that applies different rendering modes to different sections of the same page. Pre-render what's static, resolve what's dynamic, deliver both in one HTTP response via chunked streaming.
 
-Build it yourself. The concepts become obvious once you've seen the code.
+The shared template pattern is the most important architectural insight in the whole project. Rendering strategies are about _when and where_ you call your render function, not about writing different versions of it. The same `renderPostList(posts)` function gets called by the build script, the request handler, the background job, and the browser. The strategy is just the call site.
+
+PPR's v1 failure taught something concrete: if your "static shell" handler imports template functions and generates HTML at runtime, you haven't pre-rendered anything. The tell is the imports. A true pre-render handler has no need for rendering logic - it just reads a file.
+
+The distinction between streaming SSR and PPR isn't about chunked transfer encoding or two-phase responses. It's about whether the first chunk required any per-request computation. Streaming SSR: yes, every time. PPR: no, it was computed at build time. The file-server independence test makes this crisp - if you turned off the origin server, would the static portions still serve? SSR: no. PPR: yes.
+
+Build it yourself. Every concept in this post became obvious the moment the code existed. The implementations are simple. The understanding that comes from writing them is not.
+
+---
+
+## What I Would Build Next
+
+The natural next step is hydration, which is what Next.js and Nuxt actually ship in production. Hydration combines SSR and CSR: the server sends full HTML (fast first paint, good SEO), then the browser's JavaScript "takes over" the existing DOM and makes it interactive without rebuilding it from scratch. It's the best of both, at the cost of shipping both the server-rendered HTML and the client-side JavaScript that describes the same UI.
+
+It is worth building from scratch for the same reason this project was: the implementations will teach you more than the explanations.
