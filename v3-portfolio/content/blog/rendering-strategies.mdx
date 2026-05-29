@@ -387,9 +387,7 @@ You could describe all of this in words. But staring at two browser tabs side by
 
 The natural next step is hydration, which is what Next.js and Nuxt actually ship in production. Hydration combines SSR and CSR: the server sends full HTML (fast first paint, good SEO), then the browser's JavaScript "takes over" the existing DOM and makes it interactive without rebuilding it from scratch. It's the best of both, at the cost of shipping both the server-rendered HTML and the client-side JavaScript that describes the same UI.
 
-The other thing worth exploring is streaming SSR, where instead of waiting for the entire HTML to render before sending anything, the server flushes HTML in chunks as each part renders. React 18's `renderToPipeableStream`, which is what the Next.js App Router uses, does exactly this. The above-the-fold content arrives faster even if the full page takes longer to build.
-
-Both of those are worth building from scratch for the same reason this project was: the implementations will teach you more than the explanations.
+It is worth building from scratch for the same reason this project was: the implementations will teach you more than the explanations.
 
 ## Key Takeaways
 
