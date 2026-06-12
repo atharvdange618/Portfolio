@@ -1,6 +1,7 @@
 import { getAllPosts, getPostBySlug } from "@/lib/mdx";
 import { BlogFrontmatter } from "@/lib/types";
-import { formatDate, markdownToHtml } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { MdxRenderer } from "@/components/mdx/MdxRenderer";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { FaClock, FaArrowLeftLong } from "react-icons/fa6";
@@ -87,8 +88,6 @@ export default async function BlogPostPage({
     },
   };
 
-  const content = await markdownToHtml(post.content || "");
-
   return (
     <article className="flex flex-col gap-8">
       <script
@@ -131,10 +130,9 @@ export default async function BlogPostPage({
       </div>
 
       <div className="max-w-full w-full min-w-0">
-        <div
-          className={markdownStyles["markdown"]}
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
+        <div className={markdownStyles["markdown"]}>
+          <MdxRenderer source={post.content || ""} />
+        </div>
       </div>
     </article>
   );

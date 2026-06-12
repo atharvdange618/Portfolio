@@ -18,12 +18,12 @@ export function MermaidInitializer() {
         theme: "dark",
         securityLevel: "loose",
         themeVariables: {
-          background: "#1e1e2e",
-          primaryColor: "#f5c2e7",
-          lineColor: "#cdd6f4",
-          textColor: "#cdd6f4",
-          nodeBorder: "#cdd6f4",
-          mainBkg: "#1e1e2e",
+          background: "#1a1b26",
+          primaryColor: "#24283b",
+          lineColor: "#7aa2f7",
+          textColor: "#c0caf5",
+          nodeBorder: "#bb9af7",
+          mainBkg: "#24283b",
         },
       });
 

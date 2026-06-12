@@ -43,3 +43,23 @@
 .markdown :not(pre) > code {
     @apply bg-surface text-cyan font-mono text-[0.875em] px-1.5 py-0.5 rounded border border-border;
 }
+
+.markdown table {
+    @apply w-full border-collapse my-6 text-sm text-left overflow-x-auto block md:table;
+}
+
+.markdown th {
+    @apply font-semibold text-purple border-b border-border py-2 px-4 bg-surface/50;
+}
+
+.markdown td {
+    @apply border-b border-border/50 py-2.5 px-4;
+}
+
+.markdown tr:hover {
+    @apply bg-surface/20;
+}
+
+.markdown hr {
+    @apply my-10 border-t border-border;
+}

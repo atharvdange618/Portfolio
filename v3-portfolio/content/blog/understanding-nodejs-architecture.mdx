@@ -261,6 +261,10 @@ When you call `fs.readFile`, Node doesn't magically do it on one thread. It offl
 
 This is why doing many parallel `fs.readFile` calls beyond 4 will see the 5th request wait for a thread to free up. You can increase the thread pool size with the `UV_THREADPOOL_SIZE` environment variable, up to 128, but there are trade-offs (more threads means more OS context switching).
 
+<Callout type="warning">
+  **Thread pool saturation is a silent killer.** The default pool size of 4 is a common source of latency spikes that are hard to diagnose. Under moderate load, requests queue up silently. Your response times spike without any obvious error in your logs. Monitor `UV_THREADPOOL_SIZE` and profile under realistic concurrency.
+</Callout>
+
 ```bash
 UV_THREADPOOL_SIZE=16 node server.js
 ```
@@ -446,6 +450,10 @@ recurse();
 
 This is why the Node.js docs say `setImmediate` is usually preferred over `process.nextTick` for most use cases.
 
+<Callout type="warning">
+  **`process.nextTick` recursion starves I/O.** If a `nextTick` callback schedules another `nextTick`, the event loop will keep processing them before moving on. No I/O callbacks, no timers, no setImmediate - nothing else runs. Use `setImmediate` for most cases. It fires after I/O callbacks, so it can't starve the system.
+</Callout>
+
 ### Event Loop Lag: Measuring How Healthy Your Loop Is
 
 The event loop runs continuously, but its iteration time is not fixed. If a callback takes 200ms to complete, every other callback that was waiting has to wait at least 200ms longer. This accumulated delay is called **event loop lag**, and it's the primary health metric for any Node.js server.
@@ -539,6 +547,10 @@ for (let i = 0; i < 10_000_000; i++) {
 ```
 
 The fix is the same in all cases: move the work off the main thread. For I/O, use the async API. For CPU work, use `worker_threads`. For large JSON, consider streaming parsers like `stream-json`. For regex, validate and limit input length at the boundary before it gets near a complex pattern.
+
+<Callout type="error">
+  **Blocking the event loop is the #1 Node.js performance mistake.** A single synchronous operation that takes 200ms blocks every other pending callback for at least 200ms. On a server handling thousands of requests, one blocking call can cascade into widespread latency. If you can't avoid CPU-intensive work, offload it to a worker thread.
+</Callout>
 
 ## Node.js Bindings: The Glue Layer
 
@@ -687,6 +699,10 @@ Partially true. Your JavaScript code and the event loop run on one thread. But l
 
 More accurate: the JavaScript execution model is single-threaded. The runtime is not.
 
+<Callout type="info">
+  **"Node.js is single-threaded" is a dangerous oversimplification.** Your JavaScript runs on one thread. But libuv has a thread pool (default 4 workers), the OS handles network I/O via kernel threads, and `worker_threads` gives you actual multi-threading. The JavaScript execution model is single-threaded. The runtime is not.
+</Callout>
+
 ### "Node.js is bad for CPU-intensive tasks"
 
 Also partially true. The problem isn't Node.js specifically. It's that blocking the event loop with CPU-intensive JS code prevents anything else from running. If a request triggers a complex computation that takes 2 seconds of pure CPU work, the event loop is stuck for 2 seconds.
@@ -700,6 +716,10 @@ Not always. Async adds overhead: scheduling callbacks, going through the event l
 ### "setTimeout(fn, 0) runs immediately after the current code"
 
 No. `setTimeout(fn, 0)` schedules the callback in the timers phase of the next event loop iteration. Before it runs, the current synchronous code finishes, then `process.nextTick` queue drains, then the Promise microtask queue drains, then the timer phase runs.
+
+<Callout type="warning">
+  **`setTimeout(fn, 0)` does not mean "run immediately after current code."** It means "schedule for the timers phase of the next event loop iteration." Before it runs: synchronous code finishes, `process.nextTick` queue drains, Promise microtask queue drains. The delay is a minimum, not a guarantee - if the event loop is busy, your timer fires late.
+</Callout>
 
 ## Worker Threads: Real Multi-threading in Node.js
 

@@ -95,6 +95,10 @@ Once we match a class name and retrieve its CSS string, we can't just dump it so
 
 `setProperty(property, value)` sets a single property and leaves everything else alone. That's what we want.
 
+<Callout type="warning">
+  **`cssText` is destructive.** Setting `el.style.cssText = "padding: 8px"` replaces ALL inline styles on that element. If any other code set `color: red` inline, it's gone. Use `el.style.setProperty(property, value)` to set one property without touching the rest. This is the correct choice for any runtime style injection system.
+</Callout>
+
 ### applyStyleString()
 
 ```javascript
@@ -384,6 +388,10 @@ observer.observe(document.body, {
 `subtree: true` is what makes this work across the entire document, not just direct children of `<body>`. Without it, adding a `<div>` inside a nested component would go undetected.
 
 `attributeFilter: ["class"]` is a performance optimization. Without it, every `style`, `id`, `data-*` mutation would trigger the callback. Since we only care about class changes, we filter down.
+
+<Callout type="info">
+  **RAF batching prevents redundant work.** Without batching, inserting 50 nodes at once fires the MutationObserver callback 50 times, calling `processElement()` 50 times separately. With RAF batching, all 50 nodes are collected into a Set (automatic deduplication), and a single `requestAnimationFrame` processes them all in one pass. This is the difference between O(n) callbacks and O(1) callback per frame.
+</Callout>
 
 ## Part 6: The Initialization Flow
 

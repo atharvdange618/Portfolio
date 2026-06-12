@@ -90,6 +90,10 @@ The design is solid in principle. The problems are in the details.
 
 This one is subtle enough that many senior devs miss it. bcrypt does not hash your full password if it exceeds 72 bytes. It silently truncates. So a 200-character password and a 73-character password that share the first 72 bytes will produce the same hash.
 
+<Callout type="error">
+  **bcrypt truncation is silent and dangerous.** A 200-character password and a 73-character password sharing the first 72 bytes produce the same hash. The user never knows their password got cut off. Always validate password length in bytes (not characters) before hashing.
+</Callout>
+
 The consequence: a user who sets a 150-character password could later sign in with only the first 72 characters of it, which is not what they intended. Worse, it's unpredictable because most characters are 1 byte (ASCII), but Unicode characters can be 2 to 4 bytes. The user never knows where their password gets cut off.
 
 Fix: add a max length check in your validation layer before you ever touch bcrypt.
@@ -235,6 +239,10 @@ Right now, when an email is not found in the DB, the handler returns 401 immedia
 ```
 
 The error messages match. The response times don't. Fix: always run bcrypt against a static dummy hash when the user is not found, so the timing is consistent.
+
+<Callout type="warning">
+  **Timing attacks are real.** An attacker can measure response times to determine whether an email exists in your database. Fast response = email not registered. Slow response (bcrypt compare) = email registered, wrong password. Always run bcrypt against a dummy hash for non-existent users to equalize timing.
+</Callout>
 
 ```typescript
 // Module-level static hash, generated once at startup
@@ -626,6 +634,10 @@ In a single-page application, multiple API calls fire simultaneously. If the acc
 
 A legitimate user gets logged out because of a completely normal parallel request pattern.
 
+<Callout type="error">
+  **This is the most critical issue in the entire system.** A normal SPA fires multiple API calls simultaneously. When the access token expires, all of them try to refresh. Without client-side deduplication, the second request triggers a false reuse attack and logs the user out. The fix lives in the Axios interceptor, not the backend. Auth is a distributed system - design it like one.
+</Callout>
+
 There are three real solutions:
 
 **Option 1: Client-side request queuing (recommended for SPAs)**
@@ -766,6 +778,10 @@ Every endpoint in this system had at least one issue that only showed up when yo
 A few patterns show up repeatedly across all the fixes:
 
 First, **atomicity matters more than you think**. Any time you check a condition and then modify state based on it, those two operations need to be atomic. Separate check + write is a race condition waiting to happen. Use DB transactions, conditional updates with WHERE clauses, and Redis NX operations.
+
+<Callout type="info">
+  **The atomicity rule:** Any time you check a condition and then modify state based on it, those two operations need to be atomic. Separate check + write is a race condition waiting to happen. Use DB transactions, conditional updates with WHERE clauses, and Redis NX operations.
+</Callout>
 
 Second, **every response time is a signal**. Even when your error messages are identical, the time it takes to return them can leak information. Any path that bypasses slow operations (like bcrypt) needs a dummy equivalent to equalize timing.
 

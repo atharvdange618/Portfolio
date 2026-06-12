@@ -81,6 +81,10 @@ rendering-strategies/
 
 Here's the thing that clicked for me while building this: the strategy is not about _what_ you render. It's about _when_ you call the render function. The same `renderPostList(posts)` call appears in `build.js` (SSG), inside the request handler (SSR), inside the background job (ISR), and its equivalent lives in `client/app.js` as DOM node construction (CSR). Four strategies, one template, four different call sites.
 
+<Callout type="info">
+  **The core insight:** Rendering strategies are about _when and where_ you call your render function, not about writing different versions of it. The same `renderPostList(posts)` function gets called by the build script, the request handler, the background job, and the browser. The strategy is just the call site.
+</Callout>
+
 ## SSG: Baking Bread the Night Before
 
 Static Site Generation is the simplest strategy to understand and implement. You run a script before any users arrive, it generates HTML files, and those files sit on disk until you regenerate them.
@@ -483,6 +487,10 @@ That's not `PPR`. That's streaming `SSR`. I'd added chunked transfer encoding an
 
 The learning: if you've actually pre-rendered something, the server handler should have no need to import your template functions. It should just read a file. My v1 handler was importing `buildStaticShell`, which meant it was doing rendering work. That's the wrong contract.
 
+<Callout type="error">
+  **The streaming SSR trap:** If your "static shell" handler imports template functions and generates HTML at runtime, you haven't pre-rendered anything. The tell is the imports. A true pre-render handler has no need for rendering logic - it just reads a file. This is the most common mistake when implementing PPR.
+</Callout>
+
 ### v2: The Hack (Half-Open HTML)
 
 But there was a new problem. Every other file we'd written to disk - `ssg.html`, `isr.html` - was a complete HTML document with proper closing tags. The PPR shell couldn't be complete, because we needed to stream dynamic content after it. So the solution I reached for was to intentionally write a broken document - no `</body>`, no `</html>` - and rely on the browser's lenient parsing to handle it.
@@ -568,6 +576,10 @@ Streaming SSR breaks completely. Every request requires the origin to run the te
 PPR gracefully degrades. The static shell - the post list, the nav, the styles - still serves correctly from disk. Users see the skeleton placeholder instead of the trending widget, but the vast majority of the page still works. The static portion is genuinely independent of the application server.
 
 That independence is what "pre-rendered" means in the PPR context. Not just "looks fast." Not just "feels static." Actually independent. The application server doesn't need to exist for it to be served.
+
+<Callout type="info">
+  **The PPR vs Streaming SSR test:** If you removed your origin server entirely and left only a file server, what would happen? Streaming SSR breaks completely - every request requires the origin to run the template pipeline. PPR gracefully degrades - the static shell still serves correctly from disk. That independence is what "pre-rendered" means.
+</Callout>
 
 ```ascii
 Streaming SSR - per request:
