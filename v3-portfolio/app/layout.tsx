@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Fira_Code } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { CodeCopyButtonInitializer } from "@/components/mdx/CodeCopyButtonInitializer";
@@ -79,6 +80,13 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          defer
+          src="https://cloud.umami.is/script.js"
+          data-website-id="f3a4ea92-8d39-423d-ae69-deb762fd3b13"
+        />
+      </head>
       <body
         className={`${firaCode.variable} ${geist.variable} antialiased min-h-screen flex flex-col`}
       >
