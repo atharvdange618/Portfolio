@@ -18,7 +18,7 @@ description: "I'm building a client-side router from scratch to understand what 
 
 I've used React Router and TanStack Router in production for last 1-2 years. They work great. But I never really understood _how_ they work. Not the API, not the docs-level understanding - the actual internals. What happens between the click and the render. How does the URL change without a reload. How does a pattern like `/user/$id` turn into something that actually matches `/user/atharv`. What keeps two components from seeing different URLs in the same render pass.
 
-So I started building one. Michi is a client-side router from scratch - same spirit as React Router and TanStack Router, but stripped down to the essentials. TypeScript, the browser's History API, and React's `useSyncExternalStore`. No magic, no abstraction hiding. Just enough code that every line has a reason.
+So I started building one. [Michi](https://github.com/atharvdange618/Michi) is a client-side router from scratch - same spirit as React Router and TanStack Router, but stripped down to the essentials. TypeScript, the browser's History API, and React's `useSyncExternalStore`. No magic, no abstraction hiding. Just enough code that every line has a reason.
 
 This post covers the first two foundational slices: how navigation actually works under the hood, and how route patterns become the regex that decides what renders. If you've ever wondered what your router is doing when you're not looking, this is the answer.
 
@@ -433,6 +433,10 @@ This is the foundation. The core loop - History notifies Router, Router matches 
 ## References
 
 Everything I learned building slices 1 and 2 came from these. Organized by topic if you want to go deeper.
+
+### Michi
+
+- [Michi GitHub Repository](https://github.com/atharvdange618/Michi) - the source code for everything described in this post
 
 ### History API
 
