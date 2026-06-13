@@ -16,7 +16,7 @@ export type BlogFrontmatter = {
   title: string;
   publishedAt: string;
   tags: string[];
-  featured: string;
+  featured: boolean;
   description: string;
 };
 

@@ -29,6 +29,8 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) var(--color-bg);
   }
 
   html, body {

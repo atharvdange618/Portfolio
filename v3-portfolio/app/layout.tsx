@@ -92,7 +92,13 @@ export default function RootLayout({
       >
         <CodeCopyButtonInitializer />
         <MermaidInitializer />
-        <main className="max-w-5xl w-full mx-auto px-6 py-16 flex-1">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-surface focus:border focus:border-purple focus:text-purple focus:text-sm focus:font-mono focus:rounded"
+        >
+          Skip to content
+        </a>
+        <main id="main-content" className="max-w-5xl w-full mx-auto px-6 py-16 flex-1">
           {children}
         </main>
         <Footer />

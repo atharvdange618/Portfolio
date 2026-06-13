@@ -9,9 +9,16 @@ interface MdxRendererProps {
   source: string;
 }
 
-// Custom rehype plugin to transform mermaid blocks
-const customMermaidPlugin = () => (tree: any) => {
-  function walk(node: any) {
+interface MdxNode {
+  type: string;
+  tagName?: string;
+  properties?: Record<string, unknown>;
+  children?: MdxNode[];
+  value?: string;
+}
+
+const customMermaidPlugin = () => (tree: MdxNode) => {
+  function walk(node: MdxNode) {
     if (!node.children) return;
     for (let i = 0; i < node.children.length; i++) {
       const child = node.children[i];
@@ -22,13 +29,18 @@ const customMermaidPlugin = () => (tree: any) => {
         child.children.length === 1 &&
         child.children[0].tagName === "code" &&
         child.children[0].properties &&
-        Array.isArray(child.children[0].properties.className) &&
-        child.children[0].properties.className.includes("language-mermaid")
+        Array.isArray(
+          (child.children[0].properties as { className?: string[] }).className,
+        ) &&
+        (
+          (child.children[0].properties as { className?: string[] }).className ||
+          []
+        ).includes("language-mermaid")
       ) {
         const codeNode = child.children[0];
         const rawText = (codeNode.children || [])
-          .filter((c: any) => c.type === "text")
-          .map((c: any) => c.value || "")
+          .filter((c: MdxNode) => c.type === "text")
+          .map((c: MdxNode) => c.value || "")
           .join("");
 
         node.children[i] = {
@@ -54,7 +66,11 @@ const customMermaidPlugin = () => (tree: any) => {
 
 const components = {
   Callout,
-  a: ({ href, children, ...props }: any) => {
+  a: ({
+    href,
+    children,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href?: string }) => {
     const isAnchor = href?.startsWith("#");
     const isRelative = href?.startsWith("/");
     if (isAnchor) {
@@ -66,7 +82,7 @@ const components = {
     }
     if (isRelative) {
       return (
-        <Link href={href} {...props}>
+        <Link href={href!} {...props}>
           {children}
         </Link>
       );
