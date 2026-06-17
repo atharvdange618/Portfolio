@@ -11,10 +11,10 @@ tags:
   - "web-scraping"
 
 featured: false
-description: "Traditional sitemap generators break on React, Next.js, and Vue apps. I built one from scratch that doesn't, and audited it three times to find out how wrong my initial assumptions were."
+description: "Traditional sitemap generators break on React, Next.js, and Vue apps. I built one from scratch that handles Clerk auth loops, redirect oscillations, and framework-specific rendering - and audited it three times to find out how wrong my initial assumptions were."
 ---
 
-At a startup I worked at, every client project came with the same sitemap problem. React SPAs were invisible to crawlers. Next.js sites were being run through a headless browser on every single page. 500 pages, 500 Chrome launches, 40 minutes. It was a solved problem that nobody had actually solved.
+At a startup where I worked, every client project came with the same sitemap problem. React SPAs were invisible to crawlers. Next.js sites were being run through a headless browser on every single page. 500 pages, 500 Chrome launches, 40 minutes. It was a solved problem that nobody had actually solved.
 
 So I built one from scratch. The project started in March 2025 as a single JavaScript file. Over the next 15 months, it evolved into a TypeScript monorepo with a BullMQ job queue, a `RecyclableBrowser` abstraction, and a crawler that correctly identifies how a framework renders before deciding whether to use HTTP or Puppeteer. The real story isn't the final architecture. It's the three self-audits I ran that exposed just how wrong my initial assumptions were.
 
@@ -115,7 +115,7 @@ await Promise.race([
 ```
 
 <Callout type="info">
-  **Why `domcontentloaded` instead of `networkidle2`?** `networkidle` waits
+  **Why `domcontentloaded` instead of `networkidle2`?** `networkidle2` waits
   until there are no more than 2 in-flight network requests for 500ms. On a
   modern app, that never happens. Analytics, hydration chunks, WebSockets, and
   service workers keep the network permanently busy. Switching this alone cut
@@ -123,6 +123,80 @@ await Promise.race([
 </Callout>
 
 The result: on a typical Next.js site, the vast majority of pages are resolved via HTTP in under 100ms each. Only the truly CSR pages touch Puppeteer.
+
+---
+
+## The Clerk Problem (And Why Auth Middleware Is a Crawling Nightmare)
+
+Then I hit a class of problem I hadn't anticipated. Sites using Clerk for authentication started failing with `Maximum number of redirects exceeded` on every single HTTP request. Not just protected pages. Everything. The homepage. `robots.txt`. The sitemap.
+
+Clerk's auth middleware intercepts non-browser HTTP requests and injects a `__clerk_handshake` query parameter. The server responds with a redirect. Axios follows it. Clerk injects another handshake. Another redirect. An infinite loop that hits the redirect limit and kills the request.
+
+The fix was a `beforeRedirect` handler that fingerprints the handshake and stops immediately:
+
+```typescript
+if (details.url.includes("__clerk_handshake")) {
+  throw new Error(`Clerk auth redirect detected, stopping`);
+}
+```
+
+But the real impact was cascading. If HTTP is blocked, the sitemap probe (`/sitemap.xml`) also fails. The crawler would miss every page only listed in the sitemap. The solution: Puppeteer fallback for sitemap discovery. When HTTP probes all fail, the crawler opens a headless browser to fetch `/sitemap.xml` directly. Puppeteer handles Clerk's auth handshake like a real browser. The sitemap's `<loc>` tags are extracted from the rendered page content, and individual URLs are fetched with the same Puppeteer fallback.
+
+This taught me something important: **auth middleware is the new firewall for crawlers.** Clerk, NextAuth, Auth.js, Supabase Auth - they all intercept requests at the edge. A modern crawler needs to detect and handle these patterns, not just retry harder.
+
+---
+
+## Redirect Loops Beyond Clerk
+
+Clerk was the most dramatic, but redirect loops are everywhere. `http→https→http`. `www→non-www→www`. The `follow-redirects` library (axios) only detects exact URL duplicates. It doesn't catch hostname+path oscillations.
+
+The fix fingerprints each redirect by `hostname + pathname`, ignoring protocol and query params:
+
+```typescript
+const fingerprint = `${u.hostname}${u.pathname.replace(/\/+$/, "")}`;
+if (seenHostPaths.has(fingerprint)) {
+  throw new Error(`Redirect loop detected: ${details.url}`);
+}
+seenHostPaths.add(fingerprint);
+```
+
+This catches the common patterns: protocol flips, www stripping, and trailing slash redirects that bounce forever. Combined with `maxRedirects: 5` (fail fast - legitimate chains are 1-2 hops), the crawler stops before wasting time on broken redirect configurations.
+
+---
+
+## HEAD-Only Requests: Don't Download What You Don't Need
+
+When processing URLs from a sitemap, the crawler doesn't need to download the full page body. It just needs to check: is this URL indexable? A HEAD request is enough.
+
+`fetchWithRetry` gained a `headOnly` flag that switches between `http.get` and `http.head`. `getUrlMetadata` uses it for sitemap-discovered URLs, checking the `x-robots-tag` header for noindex directives without downloading the HTML:
+
+```typescript
+if (headOnly) {
+  const xRobots = response.headers["x-robots-tag"];
+  if (xRobots && /noindex/i.test(String(xRobots)))
+    return { lastmod: null, isIndexable: false, images: [] };
+  return { lastmod: null, isIndexable: true, images: [] };
+}
+```
+
+This cuts bandwidth and latency in half for sitemap URL verification. On a 10,000-page sitemap, that's meaningful.
+
+---
+
+## Sitemap `<lastmod>`: Don't Throw Away Free Data
+
+Sitemaps include `<lastmod>` dates for every URL. But HTTP requests often don't return `Last-Modified` headers. The sitemap's own data was being thrown away.
+
+`parseSitemap` now extracts `<lastmod>` from `<url>` blocks and returns `{ url, lastmod }[]` instead of plain strings. This is propagated through the crawl phase via a `lastmodMap`. When HTTP requests don't provide a lastmod, the sitemap value is used as fallback:
+
+```typescript
+const existingLastmod = lastmodMap?.get(url) || null;
+const { lastmod } = await getUrlMetadata(url, getBrowser, caches, signal, true);
+// ...
+sitemapData.set(url, { lastmod: lastmod || existingLastmod, ... });
+```
+
+Small detail. Big impact on sitemap accuracy.
 
 ---
 
@@ -184,7 +258,7 @@ graph TD
 
 The user submits a URL, the API route returns a `jobId` instantly, and a BullMQ worker picks up the job in the background. Progress streams to the browser via SSE. The worker runs on a VPS with a persistent Chromium process, while the Next.js frontend stays fast and stateless.
 
-Running headless Chrome on a 4GB VPS required careful resource management. I built a `RecyclableBrowser` class that reuses a single Chromium instance across 50 page loads, waits for all open pages to close before launching a new browser instance (preventing two Chromium processes from overlapping in memory), and force-kills the browser process after graceful close to prevent zombie processes on Linux.
+Running headless Chrome on a 4GB VPS required careful resource management. I built a `RecyclableBrowser` class that reuses a single Chromium instance across 100 page loads, waits for all open pages to close before launching a new browser instance (preventing two Chromium processes from overlapping in memory), and sends a graceful shutdown signal to the browser process after close to prevent zombie processes on Linux.
 
 ---
 
@@ -221,7 +295,7 @@ This was the one that humbled me most. I went through every API route, every fil
 
 SSRF via unvalidated URL input. The API route accepted any string as `url` and queued it directly. An attacker could submit `http://169.254.169.254/latest/meta-data/` to probe the AWS metadata endpoint, or `http://10.0.0.1:6379/` to hit Redis directly. The fix: strict URL validation with a private IP blocklist before the job ever hits the queue.
 
-Path traversal on the download endpoint. The sitemap download route built a file path from `jobId` directly. Submitting `jobId=../../../etc/passwd` would escape the intended directory. The fix: `if (!/^[a-zA-Z0-9-]+$/.test(jobId)) return 400`.
+Path traversal on the download endpoint. The sitemap download route built a file path from `jobId` directly. Submitting `jobId=../../../etc/passwd` would escape the intended directory. The fix: `if (!/^[a-zA-Z0-9_-]+$/.test(jobId)) return 400`.
 
 Unbounded `maxPages`. The API accepted any value from the client with no server-side ceiling. An attacker could submit `maxPages=1000000` and flood the queue. The worker runs forever, the VPS OOMs. The fix: `Math.min(parseInt(maxPages), MAX_PAGES_HARD_LIMIT)` plus a queue depth guard that returns 503 when more than 10 jobs are waiting.
 
@@ -233,7 +307,13 @@ And then there was the one that made me laugh. Chromium was being launched to fe
 
 ## All Fixed
 
-Every P0, P1, and P2 issue from all three audits was addressed before the public launch. SSRF protection and input validation. Per-job cache isolation. Browser recycling serialization. The worker pool replacing `Promise.all`. Hydration-aware CSR detection. Resource interception in Puppeteer. XML escaping and sitemap index chunking. Crawl logs moved outside web root. CDATA sitemap parsing. Job timeout, async gzip, and error caps. Queue depth guard and maxPages hard cap. Removed Puppeteer from robots.txt and sitemap discovery.
+Every P0, P1, and P2 issue from all three audits was addressed before the public launch:
+
+- **Security**: SSRF protection with private IP blocklist, path traversal prevention, input validation, queue depth guard, maxPages hard cap.
+- **Crawling**: Hydration-aware CSR detection, worker pool replacing `Promise.all`, resource interception in Puppeteer, per-job cache isolation.
+- **Sitemap**: XML escaping, CDATA parsing, sitemap index chunking, `<lastmod>` extraction and propagation, HEAD-only URL verification, `.gz` sitemap filtering.
+- **Infrastructure**: Browser recycling with pending-creation tracking, job timeout, async gzip, error caps, crawl logs moved outside web root.
+- **Edge cases**: Redirect loop detection with hostname+path fingerprinting, Clerk auth handshake detection, Puppeteer sitemap fallback, minimum concurrency of 10 for sitemap processing.
 
 ---
 
@@ -241,7 +321,7 @@ Every P0, P1, and P2 issue from all three audits was addressed before the public
 
 On real production crawls against sites like `chaicode.com` (16 pages, 15s) and `freeapi.app` (2 pages, 3s), average crawl time across 9 sites was **5.1 seconds with zero errors**. Before the worker pool and CSR detection fixes, a mixed SSR/SPA site would hit 30-60 seconds on the Puppeteer path for every page.
 
-CSR detection accuracy went from roughly 50% (Next.js misclassified as CSR) to 95%+ with hydration-aware scoring. Puppeteer launches went from unbounded to pooled and recycled every 50 pages. Memory went from unbounded to roughly 400MB, PM2-monitored. XML validity went from broken (URLs with `&` produced invalid XML) to properly escaped. Sitemap protocol compliance went from roughly 60% to full spec compliance. Security posture went from no guards to SSRF protection, path traversal prevention, queue depth limits, and input validation.
+CSR detection accuracy went from roughly 50% (Next.js misclassified as CSR) to 95%+ with hydration-aware scoring. Puppeteer launches went from unbounded to pooled and recycled every 100 pages. Memory went from unbounded to roughly 400MB, PM2-monitored. XML validity went from broken (URLs with `&` produced invalid XML) to properly escaped. Sitemap protocol compliance went from roughly 60% to full spec compliance. Security posture went from no guards to SSRF protection, path traversal prevention, queue depth limits, and input validation.
 
 ---
 
@@ -271,20 +351,10 @@ The hard parts are done. The rest is product work.
 
 ## Try It Yourself
 
-The project is open-source under MIT. If you're building a site with React, Next.js, Vue, or Nuxt, your sitemap is probably incomplete. Traditional tools don't understand your framework's rendering model.
+The project is available as a self-hosted tool. If you're building a site with React, Next.js, Vue, or Nuxt, your sitemap is probably incomplete. Traditional tools don't understand your framework's rendering model.
 
-**[Live Demo](https://sitemap.atharvdangedev.in/)** | **[GitHub: xml-sitemap-generator](https://github.com/atharvdange618/xml-sitemap-generator)**
-
-```bash
-git clone https://github.com/atharvdange618/xml-sitemap-generator.git
-cd xml-sitemap-generator
-pnpm install
-pnpm worker  # Start the background worker
-pnpm dev     # Start the Next.js frontend
-```
-
-Open `http://localhost:3000`, paste a URL, and watch it crawl in real-time.
+**[Live Demo](https://sitemap.atharvdangedev.in/)**
 
 ---
 
-_If this was useful, star the repo or reach out on [X/Twitter](https://x.com/atharvdange). I'm always happy to talk crawling algorithms and headless browser optimization._
+_If this was useful, reach out on [X/Twitter](https://x.com/atharvdange). I'm always happy to talk crawling algorithms and headless browser optimization._
