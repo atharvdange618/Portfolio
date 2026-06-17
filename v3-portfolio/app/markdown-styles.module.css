@@ -63,3 +63,19 @@
 .markdown hr {
     @apply my-10 border-t border-border;
 }
+
+.markdown [data-rehype-pretty-code-figure][data-language="ascii"] {
+    @apply my-8 rounded-lg overflow-hidden;
+    border: 1px solid var(--color-border);
+    background: linear-gradient(135deg, var(--color-surface) 0%, rgba(36, 40, 59, 0.8) 100%);
+}
+
+.markdown [data-rehype-pretty-code-figure][data-language="ascii"] pre {
+    @apply border-none bg-transparent px-5 py-4;
+}
+
+.markdown [data-rehype-pretty-code-figure][data-language="ascii"] code {
+    @apply text-sm;
+    color: var(--color-comment);
+    line-height: 1.9;
+}

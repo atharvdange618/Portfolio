@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --color-bg: #1a1b26;
@@ -138,4 +139,29 @@
 
 .copy-code-button .hidden {
   display: none;
+}
+
+[data-rehype-pretty-code-figure][data-language="ascii"] {
+  margin: 2rem 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: var(--color-surface);
+}
+
+[data-rehype-pretty-code-figure][data-language="ascii"] pre {
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  margin: 0;
+}
+
+[data-rehype-pretty-code-figure][data-language="ascii"] code {
+  font-size: 0.8125rem;
+  line-height: 1.8;
+  color: var(--color-fg);
+}
+
+[data-rehype-pretty-code-figure][data-language="ascii"] code:has(.line) .line {
+  white-space: pre;
 }
