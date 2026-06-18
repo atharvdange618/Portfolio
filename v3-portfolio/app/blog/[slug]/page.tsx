@@ -5,6 +5,7 @@ import { MdxRenderer } from "@/components/mdx/MdxRenderer";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { FaClock, FaArrowLeftLong, FaBookmark } from "react-icons/fa6";
+import { ShareButtons } from "@/components/ShareButtons";
 import markdownStyles from "../../markdown-styles.module.css";
 
 export async function generateStaticParams() {
@@ -116,16 +117,19 @@ export default async function BlogPostPage({
 
         <p className="text-fg/80 text-lg leading-relaxed">{fm.description}</p>
 
-        <div className="flex flex-wrap gap-2">
-          {fm.tags.map((tag) => (
-            <Link
-              key={tag}
-              href={`/blog?tag=${tag}`}
-              className="text-sm text-purple hover:text-fg transition-colors duration-200"
-            >
-              #{tag}
-            </Link>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-2">
+            {fm.tags.map((tag) => (
+              <Link
+                key={tag}
+                href={`/blog?tag=${tag}`}
+                className="text-sm text-purple hover:text-fg transition-colors duration-200"
+              >
+                #{tag}
+              </Link>
+            ))}
+          </div>
+          <ShareButtons title={fm.title} description={fm.description} slug={slug} />
         </div>
       </div>
 
