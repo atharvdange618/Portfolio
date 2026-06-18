@@ -13,7 +13,7 @@ tags:
   - "system-design"
   - "api-design"
 featured: true
-description: "A deep dive into a deliberately flawed JWT auth system, designed as a teaching exercise to surface the security holes, race conditions, and missing edge cases that survive a first-pass auth design."
+description: "A deliberately flawed JWT auth system, designed as a teaching exercise to surface the security holes, race conditions, and missing edge cases that survive a first-pass auth design."
 summary: "I intentionally built a broken JWT auth system to see what class of issues a well-intentioned but imperfect design would contain. The review surfaced security holes like missing token rotation, race conditions on concurrent refresh requests, and edge cases around token revocation. Building it wrong first teaches more than building it right from the start."
 ---
 
@@ -53,6 +53,7 @@ Security Tokens (verify/reset):
   SHA-256(raw) stored in DB
   Always cleared from DB on use
 ```
+
 ```ascii
 ┌──────────────────────────────────────────────────────┐
 │                    CLIENT (SPA)                      │
@@ -92,7 +93,10 @@ The design is solid in principle. The problems are in the details.
 This one is subtle enough that many senior devs miss it. bcrypt does not hash your full password if it exceeds 72 bytes. It silently truncates. So a 200-character password and a 73-character password that share the first 72 bytes will produce the same hash.
 
 <Callout type="error">
-  **bcrypt truncation is silent and dangerous.** A 200-character password and a 73-character password sharing the first 72 bytes produce the same hash. The user never knows their password got cut off. Always validate password length in bytes (not characters) before hashing.
+  **bcrypt truncation is silent and dangerous.** A 200-character password and a
+  73-character password sharing the first 72 bytes produce the same hash. The
+  user never knows their password got cut off. Always validate password length
+  in bytes (not characters) before hashing.
 </Callout>
 
 The consequence: a user who sets a 150-character password could later sign in with only the first 72 characters of it, which is not what they intended. Worse, it's unpredictable because most characters are 1 byte (ASCII), but Unicode characters can be 2 to 4 bytes. The user never knows where their password gets cut off.
@@ -242,7 +246,11 @@ Right now, when an email is not found in the DB, the handler returns 401 immedia
 The error messages match. The response times don't. Fix: always run bcrypt against a static dummy hash when the user is not found, so the timing is consistent.
 
 <Callout type="warning">
-  **Timing attacks are real.** An attacker can measure response times to determine whether an email exists in your database. Fast response = email not registered. Slow response (bcrypt compare) = email registered, wrong password. Always run bcrypt against a dummy hash for non-existent users to equalize timing.
+  **Timing attacks are real.** An attacker can measure response times to
+  determine whether an email exists in your database. Fast response = email not
+  registered. Slow response (bcrypt compare) = email registered, wrong password.
+  Always run bcrypt against a dummy hash for non-existent users to equalize
+  timing.
 </Callout>
 
 ```typescript
@@ -636,7 +644,12 @@ In a single-page application, multiple API calls fire simultaneously. If the acc
 A legitimate user gets logged out because of a completely normal parallel request pattern.
 
 <Callout type="error">
-  **This is the most critical issue in the entire system.** A normal SPA fires multiple API calls simultaneously. When the access token expires, all of them try to refresh. Without client-side deduplication, the second request triggers a false reuse attack and logs the user out. The fix lives in the Axios interceptor, not the backend. Auth is a distributed system - design it like one.
+  **This is the most critical issue in the entire system.** A normal SPA fires
+  multiple API calls simultaneously. When the access token expires, all of them
+  try to refresh. Without client-side deduplication, the second request triggers
+  a false reuse attack and logs the user out. The fix lives in the Axios
+  interceptor, not the backend. Auth is a distributed system - design it like
+  one.
 </Callout>
 
 There are three real solutions:
@@ -748,23 +761,22 @@ Refresh tokens invalidated by password reset get caught at step 3 (not in DB any
 
 The `tokenVersion` check in `/refresh` is effectively dead code for the password reset scenario. Where it does matter is protecting access tokens, but your access token payload doesn't include `tokenVersion`. So after a password reset, existing access tokens are valid for their remaining lifetime (up to 15 minutes).
 
-This is documented behavior in most JWT systems. The important thing is to know and communicate that this window exists, not pretend the tokenVersion in the refresh JWT solves it.
+This is documented behavior in most JWT systems. Know this window exists and communicate it - don't assume tokenVersion in the refresh JWT solves it.
 
 ---
 
 ## The Full Issues Reference
 
-| Endpoint | Issues |
-| :--- | :--- |
-| **POST /signup** | • bcrypt 72-byte truncation<br />• Race condition on duplicate email<br />• Email normalization missing<br />• No rate limiting<br />• Role field missing from schema |
-| **POST /signin** | • Timing attack on email not found<br />• No session cap<br />• Unverified user can be locked out |
-| **POST /forgot-pw** | • Locked account behavior undocumented<br />• Unverified account behavior undocumented<br />• Rate limit check not atomic |
-| **POST /reset-pw** | • Token use not atomic<br />• Notification email failure unhandled<br />• Old password check not implemented |
-| **GET /verify-email** | • Raw JSON on browser link click<br />• Double-click race condition |
-| **POST /resend-verify** | • Email enumeration via 400 response |
-| **POST /logout** | • Access token valid post-logout (undocumented)<br />• Expired-but-valid-signature token path missing |
-| **POST /refresh** | • Parallel requests trigger false reuse attack<br />• Non-atomic token rotation<br />• tokenVersion check unreachable (dead code) |
-
+| Endpoint                | Issues                                                                                                                                                                |
+| :---------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **POST /signup**        | • bcrypt 72-byte truncation<br />• Race condition on duplicate email<br />• Email normalization missing<br />• No rate limiting<br />• Role field missing from schema |
+| **POST /signin**        | • Timing attack on email not found<br />• No session cap<br />• Unverified user can be locked out                                                                     |
+| **POST /forgot-pw**     | • Locked account behavior undocumented<br />• Unverified account behavior undocumented<br />• Rate limit check not atomic                                             |
+| **POST /reset-pw**      | • Token use not atomic<br />• Notification email failure unhandled<br />• Old password check not implemented                                                          |
+| **GET /verify-email**   | • Raw JSON on browser link click<br />• Double-click race condition                                                                                                   |
+| **POST /resend-verify** | • Email enumeration via 400 response                                                                                                                                  |
+| **POST /logout**        | • Access token valid post-logout (undocumented)<br />• Expired-but-valid-signature token path missing                                                                 |
+| **POST /refresh**       | • Parallel requests trigger false reuse attack<br />• Non-atomic token rotation<br />• tokenVersion check unreachable (dead code)                                     |
 
 ---
 
@@ -781,7 +793,10 @@ A few patterns show up repeatedly across all the fixes:
 First, **atomicity matters more than you think**. Any time you check a condition and then modify state based on it, those two operations need to be atomic. Separate check + write is a race condition waiting to happen. Use DB transactions, conditional updates with WHERE clauses, and Redis NX operations.
 
 <Callout type="info">
-  **The atomicity rule:** Any time you check a condition and then modify state based on it, those two operations need to be atomic. Separate check + write is a race condition waiting to happen. Use DB transactions, conditional updates with WHERE clauses, and Redis NX operations.
+  **The atomicity rule:** Any time you check a condition and then modify state
+  based on it, those two operations need to be atomic. Separate check + write is
+  a race condition waiting to happen. Use DB transactions, conditional updates
+  with WHERE clauses, and Redis NX operations.
 </Callout>
 
 Second, **every response time is a signal**. Even when your error messages are identical, the time it takes to return them can leak information. Any path that bypasses slow operations (like bcrypt) needs a dummy equivalent to equalize timing.

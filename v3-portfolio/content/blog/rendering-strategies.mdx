@@ -14,7 +14,7 @@ tags:
   - "streaming-ssr"
 featured: true
 description: "A from-first-principles case study on all five web rendering strategies - Static Site Generation, Server-Side Rendering, Client-Side Rendering, Incremental Static Regeneration, and Partial Pre-Rendering - built with zero frameworks using Node.js's built-in http module."
-summary: "I built all five web rendering strategies from scratch using only Node.js's http module. SSG bakes HTML at build time, SSR renders per request, CSR sends an empty shell to the browser, ISR adds a staleness clock to SSG, and PPR combines build-time and request-time rendering on the same page. The key insight: rendering strategies are about when and where you call the same render function, not about writing different versions of it."
+summary: "I built all five web rendering strategies from scratch using only Node.js's http module. SSG bakes HTML at build time, SSR renders per request, CSR sends an empty shell to the browser, ISR adds a staleness clock to SSG, and PPR combines build-time and request-time rendering on the same page. Rendering strategies are about when and where you call the same render function, not about writing different versions of it."
 ---
 
 There's a version of this post that's just a table comparing four acronyms with checkmarks under "SEO" and "Performance." You've seen it. Everyone has. It doesn't teach you anything you can actually use.
@@ -29,7 +29,7 @@ Before we get into any code, you need the right mental model. Every rendering st
 
 **Where and when does HTML get generated?**
 
-That's it. Everything else, the performance characteristics, the SEO tradeoffs, the infrastructure requirements, flows from that answer. Once you have it, the four strategies stop feeling like a grab bag of acronyms and start feeling like a spectrum of deliberate choices.
+Everything else - the performance characteristics, the SEO tradeoffs, the infrastructure requirements - flows from that answer. Once you have it, the four strategies stop feeling like a grab bag of acronyms and start feeling like a spectrum of deliberate choices.
 
 ```ascii
                     WHO generates the HTML?
@@ -55,7 +55,7 @@ CSR moves HTML generation into the browser entirely. SSG and SSR both generate o
 
 ## The Project Architecture
 
-The key architectural decision in this project was building a shared template layer that all four strategies call into. Not four separate codebases, not four separate template functions. One `templates.js` file, four strategies that invoke it at different times and in different contexts.
+The key architectural decision in this project was building a shared template layer that all four strategies call into. One `templates.js` file, four strategies that invoke it at different times and in different contexts.
 
 ```ascii
 rendering-strategies/
@@ -80,11 +80,7 @@ rendering-strategies/
 
 `templates.js` exports a `renderPostList(posts)` function. It takes an array of posts and returns an HTML string. It has no knowledge of what strategy is calling it, no side effects, no I/O. It's a pure function.
 
-Here's the thing that clicked for me while building this: the strategy is not about _what_ you render. It's about _when_ you call the render function. The same `renderPostList(posts)` call appears in `build.js` (SSG), inside the request handler (SSR), inside the background job (ISR), and its equivalent lives in `client/app.js` as DOM node construction (CSR). Four strategies, one template, four different call sites.
-
-<Callout type="info">
-  **The core insight:** Rendering strategies are about _when and where_ you call your render function, not about writing different versions of it. The same `renderPostList(posts)` function gets called by the build script, the request handler, the background job, and the browser. The strategy is just the call site.
-</Callout>
+The strategy is not about _what_ you render. It's about _when_ you call the render function. The same `renderPostList(posts)` call appears in `build.js` (SSG), inside the request handler (SSR), inside the background job (ISR), and its equivalent lives in `client/app.js` as DOM node construction (CSR). Four strategies, one template, four different call sites.
 
 ## SSG: Baking Bread the Night Before
 
@@ -188,7 +184,7 @@ module.exports = function handleSSR(req, res) {
 };
 ```
 
-Here's something I found interesting while testing: I simulated three back-to-back requests in about 25ms total, and all three had different timestamps to the millisecond. The function re-ran three times. That's both the power and the cost of SSR. Power: absolute freshness. Cost: you're paying compute on every request, even when nothing has changed.
+I simulated three back-to-back requests in about 25ms total, and all three had different timestamps to the millisecond. The function re-ran three times. That's both the power and the cost of SSR. Power: absolute freshness. Cost: you're paying compute on every request, even when nothing has changed.
 
 The `Cache-Control: no-cache, no-store, must-revalidate` header is important. If you cache an SSR response at the browser level, you've accidentally built SSG with extra steps and worse performance. Don't cache SSR responses unless you've intentionally layered a caching strategy on top (which is basically what ISR is).
 
@@ -397,7 +393,7 @@ PPR is a newer idea, first shipped experimentally in Next.js 14. It's not widely
 
 ## The Gap That Four Strategies Couldn't Fill
 
-Here's the thing: every strategy we built applies uniformly to an entire page. SSG makes the whole page static. SSR makes the whole page dynamic. ISR gives the whole page one revalidation window. CSR puts the whole page in the browser.
+Every strategy we built applies uniformly to an entire page. SSG makes the whole page static. SSR makes the whole page dynamic. ISR gives the whole page one revalidation window. CSR puts the whole page in the browser.
 
 But real pages aren't uniform. Take the blog post listing page we built. The post list itself - titles, excerpts, authors, dates - never changes unless you publish something new. That content would love to be SSG. Pre-render it once, stick it on a CDN, zero server compute per request.
 
@@ -489,7 +485,11 @@ That's not `PPR`. That's streaming `SSR`. I'd added chunked transfer encoding an
 The learning: if you've actually pre-rendered something, the server handler should have no need to import your template functions. It should just read a file. My v1 handler was importing `buildStaticShell`, which meant it was doing rendering work. That's the wrong contract.
 
 <Callout type="error">
-  **The streaming SSR trap:** If your "static shell" handler imports template functions and generates HTML at runtime, you haven't pre-rendered anything. The tell is the imports. A true pre-render handler has no need for rendering logic - it just reads a file. This is the most common mistake when implementing PPR.
+  **The streaming SSR trap:** If your "static shell" handler imports template
+  functions and generates HTML at runtime, you haven't pre-rendered anything.
+  The tell is the imports. A true pre-render handler has no need for rendering
+  logic - it just reads a file. This is the most common mistake when
+  implementing PPR.
 </Callout>
 
 ### v2: The Hack (Half-Open HTML)
@@ -568,19 +568,15 @@ The difference is not in the delivery mechanism. It's in the origin of the first
 
 With streaming SSR, every single request triggers the full render pipeline for the static portions. The server reads data, runs template functions, builds HTML strings - for every request, even when the output is identical to the last thousand requests. The streaming is an optimization in how you deliver work that's being done _right now_. Like a chef who sends your starter while your main is still on the stove - both items are being cooked for your specific order, right now.
 
-With PPR, the static shell was computed once, at deploy time, and written to disk. When a request arrives, `renderPostList()` is never called. `htmlShell()` is never called. The handler does a file read - the same operation SSG's handler does - and forwards those bytes. The chef grabbed a bread basket that was baked this morning off the shelf and handed it to you instantly. The stove only turns on for the one item that genuinely needs to be made fresh.
+With PPR, the static shell was computed once, at deploy time, and written to disk. When a request arrives, `renderPostList()` is never called. `htmlShell()` is never called. The handler does a file read - the same operation SSG's handler does - and forwards those bytes. The chef grabbed a bread basket that was baked this morning off the shelf and handed it to you instantly. The stove only turns on for the one item that needs to be made fresh.
 
 The test that makes this concrete: if you removed your origin server entirely and left only a file server, what would happen?
 
 Streaming SSR breaks completely. Every request requires the origin to run the template pipeline.
 
-PPR gracefully degrades. The static shell - the post list, the nav, the styles - still serves correctly from disk. Users see the skeleton placeholder instead of the trending widget, but the vast majority of the page still works. The static portion is genuinely independent of the application server.
+PPR gracefully degrades. The static shell - the post list, the nav, the styles - still serves correctly from disk. Users see the skeleton placeholder instead of the trending widget, but the vast majority of the page still works. The static portion is independent of the application server.
 
-That independence is what "pre-rendered" means in the PPR context. Not just "looks fast." Not just "feels static." Actually independent. The application server doesn't need to exist for it to be served.
-
-<Callout type="info">
-  **The PPR vs Streaming SSR test:** If you removed your origin server entirely and left only a file server, what would happen? Streaming SSR breaks completely - every request requires the origin to run the template pipeline. PPR gracefully degrades - the static shell still serves correctly from disk. That independence is what "pre-rendered" means.
-</Callout>
+That independence is what "pre-rendered" means in the PPR context. The application server doesn't need to exist for it to be served.
 
 ```ascii
 Streaming SSR - per request:
@@ -636,28 +632,22 @@ PPR is the only strategy with entries in both the "build time" and "every reques
 
 ## Key Takeaways
 
-SSG generates HTML once at build time. The server is just a file server. Rebuild to update content.
+SSG bakes HTML at build time. Update means rebuild.
 
-SSR generates HTML per request. Always fresh, always a compute cost. The only strategy that's trivially fresh at zero extra infrastructure.
+CSR sends an empty shell. The browser fetches data and builds the DOM. Two HTTP requests per page load.
 
-CSR sends an empty shell. The browser fetches data and builds the DOM. Two HTTP requests per page load, blank page window while JS runs, excellent interactivity once loaded.
+ISR is SSG with a staleness clock. The user who triggers revalidation gets the stale page; the next user gets fresh content.
 
-ISR is SSG with a staleness clock. `stale-while-revalidate` implemented in application logic. The user who triggers revalidation gets the stale page; the next user gets fresh content.
+PPR is the only strategy that applies different rendering modes to different sections of the same page.
 
-PPR is the only strategy that applies different rendering modes to different sections of the same page. Pre-render what's static, resolve what's dynamic, deliver both in one HTTP response via chunked streaming.
+The shared template pattern is the real architectural takeaway. Rendering strategies are about _when and where_ you call your render function, not about writing different versions of it.
 
-The shared template pattern is the most important architectural insight in the whole project. Rendering strategies are about _when and where_ you call your render function, not about writing different versions of it. The same `renderPostList(posts)` function gets called by the build script, the request handler, the background job, and the browser. The strategy is just the call site.
+If your "static shell" handler imports template functions and generates HTML at runtime, you haven't pre-rendered anything. The tell is the imports.
 
-PPR's v1 failure taught something concrete: if your "static shell" handler imports template functions and generates HTML at runtime, you haven't pre-rendered anything. The tell is the imports. A true pre-render handler has no need for rendering logic - it just reads a file.
-
-The distinction between streaming SSR and PPR isn't about chunked transfer encoding or two-phase responses. It's about whether the first chunk required any per-request computation. Streaming SSR: yes, every time. PPR: no, it was computed at build time. The file-server independence test makes this crisp - if you turned off the origin server, would the static portions still serve? SSR: no. PPR: yes.
-
-Build it yourself. Every concept in this post became obvious the moment the code existed. The implementations are simple. The understanding that comes from writing them is not.
+The file-server independence test distinguishes streaming SSR from PPR: if you turned off the origin server, would the static portions still serve? SSR: no. PPR: yes.
 
 ---
 
 ## What I Would Build Next
 
-The natural next step is hydration, which is what Next.js and Nuxt actually ship in production. Hydration combines SSR and CSR: the server sends full HTML (fast first paint, good SEO), then the browser's JavaScript "takes over" the existing DOM and makes it interactive without rebuilding it from scratch. It's the best of both, at the cost of shipping both the server-rendered HTML and the client-side JavaScript that describes the same UI.
-
-It is worth building from scratch for the same reason this project was: the implementations will teach you more than the explanations.
+Hydration - the combination of SSR and CSR - is what Next.js and Nuxt ship in production. The server sends full HTML, then the browser's JavaScript takes over the existing DOM and makes it interactive. The cost: shipping both the server-rendered HTML and the client-side JavaScript that describes the same UI.

@@ -13,19 +13,19 @@ tags:
   - "web-apis"
   - "cssom"
 featured: true
-description: "A deep-dive into how chai-wind works, covering DOM scanning, inline style injection, multi-property parsing, MutationObserver-based dynamic watching, and a runtime class registration API, all built without a bundler, build step, or stylesheet."
+description: "How chai-wind works, covering DOM scanning, inline style injection, multi-property parsing, MutationObserver-based dynamic watching, and a runtime class registration API, all built without a bundler, build step, or stylesheet."
 summary: "I built a Tailwind-like CSS engine that skips stylesheets entirely. A JavaScript runtime scans the DOM for known class names, looks them up in a style map, and injects inline styles via setProperty(). A MutationObserver watches for new elements and styles them live. The whole system is four layers: data (style map), parsing (applyStyleString), traversal (processElement, scanDOM), and reactivity (MutationObserver). No build step, no bundler, no stylesheet."
 ---
 
 Imagine you're a hotel attendant. Guests walk in wearing name badges. Some badges you recognize you have a list of known guests and their preferences. When you spot a match, you immediately hand that person their favorite room key, preferred newspaper, and coffee order without them saying a word. Guests with unrecognized badges? You wave them through without comment. That's exactly what chai-wind does to your HTML elements. It reads their class "badges," looks them up in a known list, and silently applies everything it knows about them.
 
-This document walks through every part of that system, explaining the concepts, the code, the design decisions, and the gotchas.
+This post walks through the system, covering the concepts, the code, the design decisions, and the gotchas.
 
 ## The Problem Statement
 
 Standard CSS workflow: you write classes in HTML, then separately write rules targeting those classes in a stylesheet. The browser links them at render time. Tailwind took this further by generating a stylesheet at build time containing only the classes you actually used in your markup.
 
-chai-wind takes a different path entirely. There is no stylesheet. There is no build step. Instead, a JavaScript engine runs in the browser, finds elements with known class names, and writes their styles directly into the element's `style` attribute as inline styles. The result is functionally identical, but the mechanism is completely different.
+chai-wind takes a different path entirely. There is no stylesheet. There is no build step. Instead, a JavaScript engine runs in the browser, finds elements with known class names, and writes their styles directly into the element's `style` attribute as inline styles. The result is functionally identical; the mechanism is completely different.
 
 This is not how you'd build a production CSS framework. What it is, though, is an excellent way to understand the DOM, browser APIs, and runtime JavaScript deeply. Every concept involved here maps to something real that comes up constantly in frontend engineering.
 
@@ -44,7 +44,7 @@ const customStyles = {
 };
 ```
 
-That's it. A key-value store. Keys are strings that match what you'd put in a `class` attribute. Values are CSS declaration strings the same thing that goes inside a style block, minus the selector.
+A key-value store. Keys are strings that match what you'd put in a `class` attribute. Values are CSS declaration strings the same thing that goes inside a style block, minus the selector.
 
 ### Why a plain object and not a Map?
 
@@ -63,7 +63,7 @@ But string format is simpler to write and mirrors what you'd actually write in a
 
 ### Multi-property classes
 
-This is a key design point. A single class can map to multiple CSS declarations, separated by semicolons:
+A single class can map to multiple CSS declarations, separated by semicolons:
 
 ```javascript
 "chai-text-lg": "font-size: 18px; line-height: 28px"
@@ -248,7 +248,7 @@ function scanDOM(root = document.body) {
 
 One subtle point: `querySelectorAll` returns descendants only, not the element you call it on. So we call `processElement(root)` separately afterward. If you ever call `scanDOM` on a specific subtree (like a newly inserted component's container element), that container itself would be skipped without this line.
 
-`NodeList` vs `Array` is worth understanding here. The return value of `querySelectorAll` is a `NodeList`, not an Array. Modern `NodeList`s support `.forEach()` directly, so our code works. But they don't support `.map()`, `.filter()`, or `.reduce()`. If you need those, convert first: `Array.from(elements).filter(...)`. We only need `forEach` here so we're fine.
+`NodeList` vs `Array`: the return value of `querySelectorAll` is a `NodeList`, not an Array. Modern `NodeList`s support `.forEach()` directly, so our code works. But they don't support `.map()`, `.filter()`, or `.reduce()`. If you need those, convert first: `Array.from(elements).filter(...)`. We only need `forEach` here so we're fine.
 
 ### Why `[class*="chai-"]` and not `[class="chai-"]`
 
@@ -505,7 +505,7 @@ listClasses() {
 },
 ```
 
-`console.table()` is an underused DevTools feature. It renders a JavaScript object as a formatted table in the console with "Key" and "Value" columns, sortable and searchable. For a framework like this, being able to glance at the full style map while debugging is genuinely useful.
+`console.table()` is an underused DevTools feature. It renders a JavaScript object as a formatted table in the console with "Key" and "Value" columns, sortable and searchable. For a framework like this, being able to glance at the full style map while debugging is useful.
 
 ## Part 8: The Full Data Flow
 
@@ -628,7 +628,7 @@ Building chai-wind from scratch surfaces a handful of browser API behaviors that
 
 **`style.setProperty()` vs `cssText` is not a trivial choice.** Overwriting `cssText` is safe only if you own the entire inline style of an element. The moment any other code touches that element's style, you have a conflict. `setProperty` is additive and cooperative.
 
-**classList is a proper API, not just a string split.** It handles edge cases in whitespace, provides `add`, `remove`, `toggle`, `contains`, and `forEach`, and fires `MutationObserver` attribute events when you use it.
+**classList is a proper API, a Set-like interface, not a raw string split.** It handles edge cases in whitespace, provides `add`, `remove`, `toggle`, `contains`, and `forEach`, and fires `MutationObserver` attribute events when you use it.
 
 **`nodeType` guards matter.** The DOM tree contains many non-element nodes. Defensive guards at the top of DOM-walking functions prevent silent errors and unexpected behavior.
 
@@ -638,6 +638,6 @@ Building chai-wind from scratch surfaces a handful of browser API behaviors that
 
 chai-wind is small, but it exercises a dense cluster of browser APIs: the DOM traversal model, the CSSOM style interface, the classList API, the MutationObserver API, and document loading events. Understanding how each piece fits gives you the mental model to reason about runtime styling, DOM diffing, style injection in design systems, and how utilities like Tailwind's runtime CDN version actually work.
 
-The system has four layers: a data layer (the style map), a parsing layer (`applyStyleString`), a traversal layer (`processElement`, `scanDOM`), and a reactivity layer (MutationObserver). Each layer does one thing. Each one can be understood, tested, and replaced independently. That separation is not accidental it's the design decision that makes the whole thing legible.
+The system has four layers: a data layer (the style map), a parsing layer (`applyStyleString`), a traversal layer (`processElement`, `scanDOM`), and a reactivity layer (MutationObserver). Each layer does one thing and can be understood, tested, and replaced independently. That separation is a design choice that makes the whole thing legible.
 
 ---

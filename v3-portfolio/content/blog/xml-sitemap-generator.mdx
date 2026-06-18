@@ -17,7 +17,7 @@ summary: "Traditional sitemap tools break on JS-heavy apps. I built one from scr
 
 At a startup where I worked, every client project came with the same sitemap problem. React SPAs were invisible to crawlers. Next.js sites were being run through a headless browser on every single page. 500 pages, 500 Chrome launches, 40 minutes. It was a solved problem that nobody had actually solved.
 
-So I built one from scratch. The project started in March 2025 as a single JavaScript file. Over the next 15 months, it evolved into a TypeScript monorepo with a BullMQ job queue, a `RecyclableBrowser` abstraction, and a crawler that correctly identifies how a framework renders before deciding whether to use HTTP or Puppeteer. The real story isn't the final architecture. It's the three self-audits I ran that exposed just how wrong my initial assumptions were.
+So I built one from scratch. The project started in March 2025 as a single JavaScript file. Over the next 15 months, it evolved into a TypeScript monorepo with a BullMQ job queue, a `RecyclableBrowser` abstraction, and a crawler that correctly identifies how a framework renders before deciding whether to use HTTP or Puppeteer. The three self-audits I ran exposed just how wrong my initial assumptions were.
 
 ---
 
@@ -30,13 +30,13 @@ A traditional crawler sends an HTTP request, parses the HTML, and extracts `<a h
 Now throw a Next.js app into the mix. It renders full HTML on the server, so the HTTP crawler does see content. But the DOM contains `<div id="__next">`, the same root element React SPAs use. A naive CSR detector flags it as "JavaScript required" and fires up a headless browser for no reason. On a 500-page Next.js site, that's 500 unnecessary Chrome launches.
 
 <Callout type="info">
-  **The real challenge isn't just CSR vs SSR.** It's that modern frameworks blur
+  The real challenge is that modern frameworks blur
   the line. Next.js does SSR with hydration. Nuxt does the same. Remix streams
   HTML. Astro ships islands. A crawler needs to understand how each framework
   delivers content, not just whether JavaScript is present.
 </Callout>
 
-The tools that exist today fall into two camps. Pure HTTP crawlers that fail on JavaScript apps. And headless browser crawlers that are unbearably slow. I wanted something in the middle: a system that makes a smart decision per URL, not per site.
+The tools that exist today fall into two camps. Pure HTTP crawlers that fail on JavaScript apps. And headless browser crawlers that are unbearably slow. I wanted something in the middle: a system that makes a smart decision per URL, adapting to each page's rendering strategy.
 
 ---
 
@@ -46,7 +46,7 @@ The algorithm has one rule: **every URL starts as a cheap HTTP request, and only
 
 The first version was a boolean check. `if (html.length < 200) useBrowser()`. It was wrong in ways I didn't expect. A landing page with 100KB of inline Tailwind CSS has a massive `html.length` but only 30 characters of visible content. The length check said "this is fine" while the page was actually an empty shell wrapped in styles.
 
-The fix was a scoring system. Instead of a binary "is this CSR?" check, every page gets a score based on multiple signals. The key insight was thinking about it in reverse: instead of asking "is this CSR?", ask "is there evidence the server already rendered this successfully?"
+The fix was a scoring system. Instead of a binary "is this CSR?" check, every page gets a score based on multiple signals. Thinking about it in reverse helped: instead of asking "is this CSR?", ask "is there evidence the server already rendered this successfully?"
 
 ```typescript
 function detectCSR(html: string, root: HTMLElement): boolean {
@@ -143,7 +143,7 @@ if (details.url.includes("__clerk_handshake")) {
 
 But the real impact was cascading. If HTTP is blocked, the sitemap probe (`/sitemap.xml`) also fails. The crawler would miss every page only listed in the sitemap. The solution: Puppeteer fallback for sitemap discovery. When HTTP probes all fail, the crawler opens a headless browser to fetch `/sitemap.xml` directly. Puppeteer handles Clerk's auth handshake like a real browser. The sitemap's `<loc>` tags are extracted from the rendered page content, and individual URLs are fetched with the same Puppeteer fallback.
 
-This taught me something important: **auth middleware is the new firewall for crawlers.** Clerk, NextAuth, Auth.js, Supabase Auth - they all intercept requests at the edge. A modern crawler needs to detect and handle these patterns, not just retry harder.
+Auth middleware is the new firewall for crawlers. Clerk, NextAuth, Auth.js, Supabase Auth - they all intercept requests at the edge. A modern crawler needs to detect and handle these patterns, adapting to the auth layer rather than retrying blindly.
 
 ---
 
@@ -265,7 +265,7 @@ Running headless Chrome on a 4GB VPS required careful resource management. I bui
 
 ## The Three Audits
 
-After shipping the initial working version, I did something most developers skip. I audited my own code. Not a quick code review. Three separate deep analyses against industry standards, comparing against how Crawlee, Scrapy-Playwright, Screaming Frog, and Sitebulb actually work.
+After shipping the initial working version, I audited my own code. Three separate deep analyses against industry standards, comparing against how Crawlee, Scrapy-Playwright, Screaming Frog, and Sitebulb actually work.
 
 ### Audit 1: The Crawling Algorithm
 
@@ -306,7 +306,7 @@ And then there was the one that made me laugh. Chromium was being launched to fe
 
 ---
 
-## All Fixed
+## Every Issue Addressed
 
 Every P0, P1, and P2 issue from all three audits was addressed before the public launch:
 
@@ -322,7 +322,7 @@ Every P0, P1, and P2 issue from all three audits was addressed before the public
 
 On real production crawls against sites like `chaicode.com` (16 pages, 15s) and `freeapi.app` (2 pages, 3s), average crawl time across 9 sites was **5.1 seconds with zero errors**. Before the worker pool and CSR detection fixes, a mixed SSR/SPA site would hit 30-60 seconds on the Puppeteer path for every page.
 
-CSR detection accuracy went from roughly 50% (Next.js misclassified as CSR) to 95%+ with hydration-aware scoring. Puppeteer launches went from unbounded to pooled and recycled every 100 pages. Memory went from unbounded to roughly 400MB, PM2-monitored. XML validity went from broken (URLs with `&` produced invalid XML) to properly escaped. Sitemap protocol compliance went from roughly 60% to full spec compliance. Security posture went from no guards to SSRF protection, path traversal prevention, queue depth limits, and input validation.
+CSR detection accuracy went from roughly 50% (Next.js misclassified as CSR) to 95%+ with hydration-aware scoring. Puppeteer launches went from unbounded to pooled and recycled every 100 pages. Memory went from unbounded to roughly 400MB, PM2-monitored. XML validity went from broken (URLs with `&` produced invalid XML) to escaped. Sitemap protocol compliance went from roughly 60% to full spec compliance. Security posture went from no guards to SSRF protection, path traversal prevention, queue depth limits, and input validation.
 
 ---
 
@@ -358,4 +358,4 @@ The project is available as a self-hosted tool. If you're building a site with R
 
 ---
 
-_If this was useful, reach out on [X/Twitter](https://x.com/atharvdange). I'm always happy to talk crawling algorithms and headless browser optimization._
+_Reach out on [X/Twitter](https://x.com/atharvdange) if you want to talk crawling algorithms or headless browser optimization._
