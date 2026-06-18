@@ -14,6 +14,7 @@ tags:
   - "api-design"
 featured: true
 description: "A deep dive into a deliberately flawed JWT auth system, designed as a teaching exercise to surface the security holes, race conditions, and missing edge cases that survive a first-pass auth design."
+summary: "I intentionally built a broken JWT auth system to see what class of issues a well-intentioned but imperfect design would contain. The review surfaced security holes like missing token rotation, race conditions on concurrent refresh requests, and edge cases around token revocation. Building it wrong first teaches more than building it right from the start."
 ---
 
 Here's the setup: I was given an assignment to deepen my understanding of auth systems. Instead of building a correct one and explaining it, I took a different approach. I designed a complete JWT auth system with real-looking flows, real endpoints, and real security decisions. Then I had it reviewed. The goal was to see exactly what class of issues a well-intentioned but imperfect auth design would contain, and to write those issues up so that when you build your own system, you know what to look for.

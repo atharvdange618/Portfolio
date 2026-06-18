@@ -4,7 +4,7 @@ import { formatDate } from "@/lib/utils";
 import { MdxRenderer } from "@/components/mdx/MdxRenderer";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { FaClock, FaArrowLeftLong } from "react-icons/fa6";
+import { FaClock, FaArrowLeftLong, FaBookmark } from "react-icons/fa6";
 import markdownStyles from "../../markdown-styles.module.css";
 
 export async function generateStaticParams() {
@@ -128,6 +128,16 @@ export default async function BlogPostPage({
           ))}
         </div>
       </div>
+
+      {fm.summary && (
+        <div className="bg-surface/50 border border-border rounded-lg p-5 my-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-purple mb-3">
+            <FaBookmark className="w-4 h-4" />
+            Summary
+          </div>
+          <p className="text-fg/80 text-base leading-relaxed m-0">{fm.summary}</p>
+        </div>
+      )}
 
       <div className="max-w-full w-full min-w-0">
         <div className={markdownStyles["markdown"]}>

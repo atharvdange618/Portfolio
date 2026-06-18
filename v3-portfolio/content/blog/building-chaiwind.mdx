@@ -14,6 +14,7 @@ tags:
   - "cssom"
 featured: true
 description: "A deep-dive into how chai-wind works, covering DOM scanning, inline style injection, multi-property parsing, MutationObserver-based dynamic watching, and a runtime class registration API, all built without a bundler, build step, or stylesheet."
+summary: "I built a Tailwind-like CSS engine that skips stylesheets entirely. A JavaScript runtime scans the DOM for known class names, looks them up in a style map, and injects inline styles via setProperty(). A MutationObserver watches for new elements and styles them live. The whole system is four layers: data (style map), parsing (applyStyleString), traversal (processElement, scanDOM), and reactivity (MutationObserver). No build step, no bundler, no stylesheet."
 ---
 
 Imagine you're a hotel attendant. Guests walk in wearing name badges. Some badges you recognize you have a list of known guests and their preferences. When you spot a match, you immediately hand that person their favorite room key, preferred newspaper, and coffee order without them saying a word. Guests with unrecognized badges? You wave them through without comment. That's exactly what chai-wind does to your HTML elements. It reads their class "badges," looks them up in a known list, and silently applies everything it knows about them.

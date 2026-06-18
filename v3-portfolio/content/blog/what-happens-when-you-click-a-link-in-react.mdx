@@ -14,6 +14,7 @@ tags:
 
 featured: true
 description: "I'm building a client-side router from scratch to understand what React Router and TanStack Router do under the hood. This post walks through what I've found so far: the History API that makes navigation work without reloads, why useState breaks in concurrent mode, how route patterns become regex, and the `useSyncExternalStore` hook that ties it all together."
+summary: "I built a client-side router from scratch to understand TanStack and React Router internals. The History API changes URLs without page reloads. Route patterns get compiled into regex for matching. useState breaks in concurrent mode because it can tear across renders. useSyncExternalStore is the hook that solves this by subscribing to the router's external state and guaranteeing consistency."
 ---
 
 I've used React Router and TanStack Router in production for last 1-2 years. They work great. But I never really understood _how_ they work. Not the API, not the docs-level understanding - the actual internals. What happens between the click and the render. How does the URL change without a reload. How does a pattern like `/user/$id` turn into something that actually matches `/user/atharv`. What keeps two components from seeing different URLs in the same render pass.
@@ -239,7 +240,11 @@ Component A and Component B rendered in the same pass but read different values 
 The `useState + useEffect` approach has zero protection against this because React does not know you are reading from an external store mid-render.
 
 <Callout type="warning">
-  **Why this matters:** In concurrent mode, React can interleave renders from different components. Without `useSyncExternalStore`, two components reading the same external store in the same render pass can see different snapshots. This is not a theoretical edge case - it's the default behavior in React 18 with any external store.
+  **Why this matters:** In concurrent mode, React can interleave renders from
+  different components. Without `useSyncExternalStore`, two components reading
+  the same external store in the same render pass can see different snapshots.
+  This is not a theoretical edge case - it's the default behavior in React 18
+  with any external store.
 </Callout>
 
 ## The Right Solution: useSyncExternalStore
@@ -265,7 +270,11 @@ One critical constraint: `getSnapshot` must return the same reference if nothing
 In our router, `this.state` is only replaced with a new object when the URL actually changes. The same reference comes back from `getState()` on every call in between. That stability is what makes `useSyncExternalStore` work correctly.
 
 <Callout type="info">
-  **The reference equality rule:** `getSnapshot` must return the same object reference when nothing has changed - not a copy, not a new object with the same values. React uses `Object.is` for comparison. Returning `{ ...state }` every time creates infinite re-renders. This is the most common mistake when implementing `useSyncExternalStore`.
+  **The reference equality rule:** `getSnapshot` must return the same object
+  reference when nothing has changed - not a copy, not a new object with the
+  same values. React uses `Object.is` for comparison. Returning `{...state}`
+  every time creates infinite re-renders. This is the most common mistake when
+  implementing `useSyncExternalStore`.
 </Callout>
 
 ## Route Matching: From Find to Regex
@@ -352,7 +361,10 @@ new Router([
 This is the same behavior as TanStack Router and React Router. It is not a bug, it is a deliberate trade-off. You get predictable, explicit control over resolution order. Frameworks like Next.js avoid this problem with filesystem-based routing - the file structure inherently defines specificity. But for programmatic routers, first-match-wins keeps things simple and predictable.
 
 <Callout type="warning">
-  **The route order trap:** If you put `/user/$id` before `/user/settings`, the dynamic route will match first and `SettingsPage` will never render. Always declare static routes before dynamic ones. This is the single most common routing bug in custom routers.
+  **The route order trap:** If you put `/user/$id` before `/user/settings`, the
+  dynamic route will match first and `SettingsPage` will never render. Always
+  declare static routes before dynamic ones. This is the single most common
+  routing bug in custom routers.
 </Callout>
 
 ## The Full Chain, End to End

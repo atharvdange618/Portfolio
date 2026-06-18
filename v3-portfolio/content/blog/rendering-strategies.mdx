@@ -14,6 +14,7 @@ tags:
   - "streaming-ssr"
 featured: true
 description: "A from-first-principles case study on all five web rendering strategies - Static Site Generation, Server-Side Rendering, Client-Side Rendering, Incremental Static Regeneration, and Partial Pre-Rendering - built with zero frameworks using Node.js's built-in http module."
+summary: "I built all five web rendering strategies from scratch using only Node.js's http module. SSG bakes HTML at build time, SSR renders per request, CSR sends an empty shell to the browser, ISR adds a staleness clock to SSG, and PPR combines build-time and request-time rendering on the same page. The key insight: rendering strategies are about when and where you call the same render function, not about writing different versions of it."
 ---
 
 There's a version of this post that's just a table comparing four acronyms with checkmarks under "SEO" and "Performance." You've seen it. Everyone has. It doesn't teach you anything you can actually use.

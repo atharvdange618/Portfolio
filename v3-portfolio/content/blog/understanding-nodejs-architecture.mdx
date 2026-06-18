@@ -14,6 +14,7 @@ tags:
   - "nodejs history"
 featured: false
 description: "Node.js is more than just 'JavaScript on the server.' It's a carefully assembled runtime built on top of battle-tested components that make non-blocking I/O possible. This post breaks down how those components fit together, what they actually do, and why the design choices matter."
+summary: "Node.js is a carefully assembled runtime, not just 'JavaScript on the server.' V8 compiles JS to machine code, libuv provides the event loop and thread pool for async I/O, and the C++ bindings connect them. Understanding this architecture explains why Node.js handles concurrency with a single thread, when worker threads are actually needed, and how non-blocking I/O really works under the hood."
 ---
 
 Imagine a restaurant with a single waiter. A traditional, multi-threaded server is like having one waiter per table, where each waiter stands next to their table waiting for the food to arrive, doing nothing else. That works, but it gets expensive fast. You need 100 tables? Hire 100 waiters. Node.js is different. It's the restaurant where one waiter takes your order, hands it to the kitchen, and immediately walks over to take someone else's order. When your food is ready, the kitchen rings a bell, and the waiter brings it to you. One waiter. Many tables. No one standing around doing nothing.

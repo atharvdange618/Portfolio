@@ -18,6 +18,7 @@ export type BlogFrontmatter = {
   tags: string[];
   featured: boolean;
   description: string;
+  summary?: string;
 };
 
 export type ProjectMeta = ProjectFrontmatter & {
