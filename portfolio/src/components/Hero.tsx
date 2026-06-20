@@ -19,7 +19,7 @@ const roles = [
   "Node.js Enthusiast",
   "React Native Developer",
   "Open Source Contributor",
-  "Deep-Dive Experimenter",
+  "Framework Builder",
 ];
 
 export default function Hero() {
@@ -90,11 +90,7 @@ export default function Hero() {
               </div>
 
               <p className="font-body text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-lg leading-relaxed">
-                {personalInfo.tagline} Previously built scalable web apps and
-                explored the depths of JavaScript at SmartScripts.{" "}
-                <span className="font-semibold text-[#60B5FF]">
-                  Now open to exciting opportunities!
-                </span>
+                {personalInfo.tagline}
               </p>
 
               <div className="flex flex-wrap gap-3 pt-2">

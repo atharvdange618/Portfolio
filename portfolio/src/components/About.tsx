@@ -151,11 +151,10 @@ export default function About() {
                 </h3>
               </div>
               <p className="font-body text-gray-700 dark:text-gray-300 leading-relaxed">
-                <span className="font-semibold text-[#60B5FF]">
-                  Open to exciting opportunities!
-                </span>{" "}
-                Previously built production applications and mobile apps at
-                SmartScripts. Focused on MERN/PERN stack and React Native.
+                Previously at SmartScripts, building production applications
+                and mobile apps across the MERN/PERN stack. Currently focused
+                on frontend engineering, rendering strategies, and framework
+                internals.
               </p>
             </div>
 

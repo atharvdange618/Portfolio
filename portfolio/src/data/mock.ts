@@ -1,8 +1,8 @@
 export const personalInfo = {
   name: "Atharv Dange",
   role: "Full Stack Engineer",
-  tagline: "I don't just use things, I dig into how they work.",
-  bio: "A deep-dive experimenter at heart. My core strength is in the Node.js/Express ecosystem, but I'm constantly pushing boundaries with Bun, Hono, and Fastify. I thrive on building projects that challenge my understanding and allow me to explore new technologies. Whether it's crafting a complex backend architecture or experimenting with the latest frontend frameworks, I'm always eager to learn and grow.",
+  tagline: "I learn by building things from scratch.",
+  bio: "I'm a Full Stack Engineer who builds things from first principles. Most of my recent work dives into how frameworks work underneath - client-side routing, rendering strategies, CSS engines, and auth systems. I write about what I learn. Backend is where I started (Node.js, PostgreSQL, Prisma), but I've been spending more time on the frontend engineering side lately.",
   company: "Open to Opportunities",
   funFact:
     "When I'm not coding, you can find me watching movies, diving into a new anime series, or exploring the world around me with my girlfriend.",
@@ -86,12 +86,12 @@ export const techStack = {
   ],
   localIcons: [
     "gopher.svg",
-    "hono.svg",
+
     "clerk.svg",
     "bruno.svg",
     "expo.svg",
     "zustand.svg",
-    "fastify-icon.svg",
+
     "html-5.svg",
     "css.svg",
     "javascript.svg",

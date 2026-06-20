@@ -38,7 +38,7 @@ export default function MinimalistRedirect() {
             <div className="flex items-center gap-2">
               <Sparkles size={18} className="text-[#FF9149] fill-[#FF9149]" />
               <h4 className="font-heading text-sm sm:text-base font-bold text-black dark:text-white">
-                Minimalist Mode
+                Terminal View
               </h4>
             </div>
             <button

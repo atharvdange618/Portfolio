@@ -10,7 +10,7 @@ const navLinks = [
   { label: "Projects", href: "/projects" },
   { label: "Blog", href: "https://blog.atharvdangedev.in", target: "_blank" },
   {
-    label: "Minimalist View",
+    label: "Terminal View",
     href:
       import.meta.env.VITE_MINIMALIST_PORTFOLIO_URL || "http://localhost:3000",
     target: "_blank",

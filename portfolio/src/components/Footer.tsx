@@ -6,7 +6,7 @@ const footerLinks = [
   { label: "Projects", href: "#projects" },
   { label: "Blog", href: "https://blog.atharvdangedev.in", target: "_blank" },
   {
-    label: "Minimalist View",
+    label: "Terminal View",
     href:
       import.meta.env.VITE_MINIMALIST_PORTFOLIO_URL || "http://localhost:3000",
     target: "_blank",
@@ -79,8 +79,8 @@ export default function Footer() {
               </h4>
             </div>
             <p className="font-body text-sm text-gray-700 dark:text-gray-400 leading-relaxed">
-              Full Stack Engineer building things that matter. Deep-dive
-              experimenter at heart.
+              Full Stack Engineer. I build tools, frameworks, and systems from
+              first principles.
             </p>
           </div>
 
