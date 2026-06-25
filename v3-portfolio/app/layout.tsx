@@ -86,6 +86,13 @@ export default function RootLayout({
           src="https://cloud.umami.is/script.js"
           data-website-id="f3a4ea92-8d39-423d-ae69-deb762fd3b13"
         />
+        <Script
+          async
+          defer
+          src="https://usetelemetry.hogyoku.cloud/analytics.js"
+          data-tenant-id="cmqtvwrh10000fmgp1ckimoal"
+          data-api-key="tlv_1_8O_3O7srBQ84NJC76yg9ORbm59V_F1hP3__rdg0xPRM"
+        />
       </head>
       <body
         className={`${firaCode.variable} ${geist.variable} antialiased min-h-screen flex flex-col`}
@@ -98,7 +105,10 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <main id="main-content" className="max-w-5xl w-full mx-auto px-6 py-16 flex-1">
+        <main
+          id="main-content"
+          className="max-w-5xl w-full mx-auto px-6 py-16 flex-1"
+        >
           {children}
         </main>
         <Footer />
