@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { toast } from "sonner";
+import { trackGoal } from "@/lib/telemetry";
 
 interface BlogPost {
   title: string;
@@ -249,6 +250,9 @@ export default function BlogPosts() {
                         href={post.url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() =>
+                          trackGoal("blog_read_more", { title: post.title })
+                        }
                         className="inline-flex items-center gap-1 sm:gap-1.5 font-body text-xs sm:text-sm font-semibold text-[#60B5FF] hover:text-[#FF9149] transition-colors duration-200"
                       >
                         Read More{" "}

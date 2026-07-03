@@ -15,6 +15,7 @@ import { Label } from "./ui/label";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import emailjs from "@emailjs/browser";
+import { trackGoal } from "@/lib/telemetry";
 
 interface ContactFormData {
   name: string;
@@ -68,6 +69,8 @@ export default function Contact() {
 
       setIsSubmitted(true);
       reset();
+
+      trackGoal("contact_form_submitted");
 
       toast.success("Message sent successfully!", {
         description: "Thank you for reaching out. I'll get back to you soon.",

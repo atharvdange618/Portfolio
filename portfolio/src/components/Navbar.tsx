@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Sun, Moon, Menu, X, Github, Linkedin } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { personalInfo } from "@/data/mock";
+import { trackGoal } from "@/lib/telemetry";
 
 const navLinks = [
   { label: "About", href: "/#about" },
@@ -102,7 +103,10 @@ export default function Navbar() {
             <span>📢 Shikai App Closed Beta is active!</span>
             <a
               href="/testing"
-              onClick={(e) => handleNavClick(e, "/testing")}
+              onClick={(e) => {
+                trackGoal("shikai_testing_clicked");
+                handleNavClick(e, "/testing");
+              }}
               className="underline hover:text-white transition-colors duration-150 inline-flex items-center gap-0.5"
             >
               Join Testing Program
@@ -110,7 +114,10 @@ export default function Navbar() {
             <span className="hidden sm:inline">|</span>
             <a
               href="/feedback"
-              onClick={(e) => handleNavClick(e, "/feedback")}
+              onClick={(e) => {
+                trackGoal("shikai_feedback_clicked");
+                handleNavClick(e, "/feedback");
+              }}
               className="underline hover:text-white transition-colors duration-150 inline-flex items-center gap-0.5"
             >
               Share Feedback

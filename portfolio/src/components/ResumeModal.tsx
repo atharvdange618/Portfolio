@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { FileText, Download, Mail, Phone, ExternalLink } from "lucide-react";
+import { trackGoal } from "@/lib/telemetry";
 
 interface ResumeModalProps {
   isOpen: boolean;
@@ -95,6 +96,8 @@ export default function ResumeModal({ isOpen, onClose }: ResumeModalProps) {
                 <motion.button
                   key={card.id}
                   onClick={() => {
+                    if (card.id === "view") trackGoal("resume_viewed");
+                    if (card.id === "download") trackGoal("resume_downloaded");
                     card.action();
                     if (card.id === "download") {
                       setTimeout(() => onClose(), 300);

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ExternalLink, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { trackGoal } from "@/lib/telemetry";
 
 interface RedirectPageProps {
   url: string;
@@ -15,6 +16,8 @@ export default function RedirectPage({
   description,
 }: RedirectPageProps) {
   useEffect(() => {
+    trackGoal("shikai_redirect_shown", { destination: url });
+
     const timer = setTimeout(() => {
       window.location.replace(url);
     }, 1500);
@@ -66,6 +69,7 @@ export default function RedirectPage({
 
           <a
             href={url}
+            onClick={() => trackGoal("shikai_redirect_confirmed", { destination: url })}
             className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-[#FF9149] text-black font-body font-bold text-sm border-2 border-black shadow-[3px_3px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#000] transition-all duration-200"
           >
             Go Now <ExternalLink size={16} />
