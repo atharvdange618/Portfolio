@@ -100,13 +100,12 @@ export default function Navbar() {
       {announcementVisible && (
         <div className="w-full bg-linear-to-r from-[#FF9149] via-[#FFB494] to-[#60B5FF] text-black font-body text-xs sm:text-sm py-2 px-4 border-b-2 border-black dark:border-white flex items-center justify-between gap-4 font-bold shadow-sm select-none">
           <div className="flex-1 flex items-center justify-center gap-1.5 flex-wrap text-center">
-            <span>📢 Shikai App Closed Beta is active!</span>
+            <span>Shikai Closed Beta is live!</span>
             <a
-              href="/testing"
-              onClick={(e) => {
-                trackGoal("shikai_testing_clicked");
-                handleNavClick(e, "/testing");
-              }}
+              href="https://forms.gle/qdw2xTKfH9kGsmwt9"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackGoal("shikai_testing_clicked")}
               className="underline hover:text-white transition-colors duration-150 inline-flex items-center gap-0.5"
             >
               Join Testing Program
