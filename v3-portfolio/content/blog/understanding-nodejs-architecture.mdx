@@ -23,7 +23,7 @@ That waiter is the event loop. But before we understand the event loop, we need 
 
 ## A Brief History: Why Node.js Exists
 
-Node.js was created by **Ryan Dahl** and first announced at **JSConf** EU in November **2009**. The demo was unlike anything the web development community had seen before: a tiny HTTP server, fully non-blocking, written in JavaScript, handling thousands of concurrent connections with ease. The audience reaction was somewhere between bewilderment and excitement.
+Node.js was created by Ryan Dahl and first announced at JSConf EU in November 2009. The demo was unlike anything the web development community had seen before: a tiny HTTP server, fully non-blocking, written in JavaScript, handling thousands of concurrent connections with ease. The audience reaction was somewhere between bewilderment and excitement.
 
 But why build this at all? The answer is a specific, concrete problem that plagued web servers at the time.
 
@@ -37,7 +37,7 @@ His insight was that the combination of JavaScript's single-threaded execution m
 
 ### The Early Days and npm
 
-Node.js grew quickly. In 2010, **Isaac Schlueter** created npm (Node Package Manager), which became the central registry for the growing ecosystem. By 2011, Node.js had its first Windows release, significantly broadening its reach. By 2013, major companies including LinkedIn, Walmart, and PayPal had moved significant parts of their infrastructure to Node.js, with public reports of dramatic improvements in concurrency and resource usage.
+Node.js grew quickly. In 2010, Isaac Schlueter created npm (Node Package Manager), which became the central registry for the growing ecosystem. By 2011, Node.js had its first Windows release, significantly broadening its reach. By 2013, major companies including LinkedIn, Walmart, and PayPal had moved significant parts of their infrastructure to Node.js, with public reports of dramatic improvements in concurrency and resource usage.
 
 ### The io.js Fork and Node.js Foundation
 
@@ -92,7 +92,7 @@ The answer is its architecture: three major components working together.
 └───────────────────────┘   └─────────────────────────┘
 ```
 
-Three layers. Let's go through each one.
+Three layers.
 
 ## V8: The JavaScript Engine
 
@@ -156,7 +156,7 @@ The practical takeaway: keep your functions type-consistent. Mixing types in hot
 
 ### Memory Management and the Heap
 
-V8 also manages your memory. It has its own heap (the region of memory where objects live) and a garbage collector called **Orinoco**. The garbage collector runs in the background, finding objects with no remaining references and freeing their memory.
+V8 also manages your memory. It has its own heap (the region of memory where objects live) and a garbage collector called Orinoco. The garbage collector runs in the background, finding objects with no remaining references and freeing their memory.
 
 The heap is split into multiple generations:
 
@@ -263,7 +263,11 @@ When you call `fs.readFile`, Node doesn't magically do it on one thread. It offl
 This is why doing many parallel `fs.readFile` calls beyond 4 will see the 5th request wait for a thread to free up. You can increase the thread pool size with the `UV_THREADPOOL_SIZE` environment variable, up to 128, but there are trade-offs (more threads means more OS context switching).
 
 <Callout type="warning">
-  **Thread pool saturation is a silent killer.** The default pool size of 4 is a common source of latency spikes that are hard to diagnose. Under moderate load, requests queue up silently. Your response times spike without any obvious error in your logs. Monitor `UV_THREADPOOL_SIZE` and profile under realistic concurrency.
+  **Thread pool saturation is a silent killer.** The default pool size of 4 is a
+  common source of latency spikes that are hard to diagnose. Under moderate
+  load, requests queue up silently. Your response times spike without any
+  obvious error in your logs. Monitor `UV_THREADPOOL_SIZE` and profile under
+  realistic concurrency.
 </Callout>
 
 ```bash
@@ -336,7 +340,7 @@ The pattern: anything that requires a kernel call that blocks waiting for data g
 
 ### The Mental Model
 
-The event loop is the heart of Node.js. It's what lets a single thread handle thousands of concurrent operations. But "event loop" is often explained in hand-wavy terms. Let's be precise.
+The event loop is the heart of Node.js. It's what lets a single thread handle thousands of concurrent operations. But "event loop" is often explained in hand-wavy terms. Here is the precise version.
 
 The event loop is a loop. It runs phases. Each phase has a FIFO queue of callbacks to execute. When a phase's queue is empty (or it hits its max callback limit), the event loop moves to the next phase.
 
@@ -452,7 +456,11 @@ recurse();
 This is why the Node.js docs say `setImmediate` is usually preferred over `process.nextTick` for most use cases.
 
 <Callout type="warning">
-  **`process.nextTick` recursion starves I/O.** If a `nextTick` callback schedules another `nextTick`, the event loop will keep processing them before moving on. No I/O callbacks, no timers, no setImmediate - nothing else runs. Use `setImmediate` for most cases. It fires after I/O callbacks, so it can't starve the system.
+  **`process.nextTick` recursion starves I/O.** If a `nextTick` callback
+  schedules another `nextTick`, the event loop will keep processing them before
+  moving on. No I/O callbacks, no timers, no setImmediate - nothing else runs.
+  Use `setImmediate` for most cases. It fires after I/O callbacks, so it can't
+  starve the system.
 </Callout>
 
 ### Event Loop Lag: Measuring How Healthy Your Loop Is
@@ -550,7 +558,11 @@ for (let i = 0; i < 10_000_000; i++) {
 The fix is the same in all cases: move the work off the main thread. For I/O, use the async API. For CPU work, use `worker_threads`. For large JSON, consider streaming parsers like `stream-json`. For regex, validate and limit input length at the boundary before it gets near a complex pattern.
 
 <Callout type="error">
-  **Blocking the event loop is the #1 Node.js performance mistake.** A single synchronous operation that takes 200ms blocks every other pending callback for at least 200ms. On a server handling thousands of requests, one blocking call can cascade into widespread latency. If you can't avoid CPU-intensive work, offload it to a worker thread.
+  **Blocking the event loop is the #1 Node.js performance mistake.** A single
+  synchronous operation that takes 200ms blocks every other pending callback for
+  at least 200ms. On a server handling thousands of requests, one blocking call
+  can cascade into widespread latency. If you can't avoid CPU-intensive work,
+  offload it to a worker thread.
 </Callout>
 
 ## Node.js Bindings: The Glue Layer
@@ -701,7 +713,11 @@ Partially true. Your JavaScript code and the event loop run on one thread. But l
 More accurate: the JavaScript execution model is single-threaded. The runtime is not.
 
 <Callout type="info">
-  **"Node.js is single-threaded" is a dangerous oversimplification.** Your JavaScript runs on one thread. But libuv has a thread pool (default 4 workers), the OS handles network I/O via kernel threads, and `worker_threads` gives you actual multi-threading. The JavaScript execution model is single-threaded. The runtime is not.
+  **"Node.js is single-threaded" is a dangerous oversimplification.** Your
+  JavaScript runs on one thread. But libuv has a thread pool (default 4
+  workers), the OS handles network I/O via kernel threads, and `worker_threads`
+  gives you actual multi-threading. The JavaScript execution model is
+  single-threaded. The runtime is not.
 </Callout>
 
 ### "Node.js is bad for CPU-intensive tasks"
@@ -719,7 +735,11 @@ Not always. Async adds overhead: scheduling callbacks, going through the event l
 No. `setTimeout(fn, 0)` schedules the callback in the timers phase of the next event loop iteration. Before it runs, the current synchronous code finishes, then `process.nextTick` queue drains, then the Promise microtask queue drains, then the timer phase runs.
 
 <Callout type="warning">
-  **`setTimeout(fn, 0)` does not mean "run immediately after current code."** It means "schedule for the timers phase of the next event loop iteration." Before it runs: synchronous code finishes, `process.nextTick` queue drains, Promise microtask queue drains. The delay is a minimum, not a guarantee - if the event loop is busy, your timer fires late.
+  **`setTimeout(fn, 0)` does not mean "run immediately after current code."** It
+  means "schedule for the timers phase of the next event loop iteration." Before
+  it runs: synchronous code finishes, `process.nextTick` queue drains, Promise
+  microtask queue drains. The delay is a minimum, not a guarantee - if the event
+  loop is busy, your timer fires late.
 </Callout>
 
 ## Worker Threads: Real Multi-threading in Node.js
@@ -784,13 +804,13 @@ The trade-off versus worker threads: cluster workers are fully isolated. No shar
 
 ## Key Takeaways
 
-**V8** parses, interprets via Ignition, and JIT-compiles hot code via TurboFan. It manages your heap and runs garbage collection. Type-consistent functions perform better because V8 optimizes based on type assumptions.
+V8 parses, interprets via Ignition, and JIT-compiles hot code via TurboFan. It manages your heap and runs garbage collection. Type-consistent functions perform better because V8 optimizes based on type assumptions.
 
-**libuv** owns the event loop and the thread pool (default 4 workers) for operations the OS can't do asynchronously. Network I/O bypasses the thread pool entirely, going through OS-native async (epoll, kqueue, IOCP).
+libuv owns the event loop and the thread pool (default 4 workers) for operations the OS can't do asynchronously. Network I/O bypasses the thread pool entirely, going through OS-native async (epoll, kqueue, IOCP).
 
-**Node.js bindings** are the C++ glue between JavaScript and libuv. `fs.readFile` is JavaScript calling C++ calling libuv. Native addons extend this, and N-API keeps them stable across versions.
+Node.js bindings are the C++ glue between JavaScript and libuv. `fs.readFile` is JavaScript calling C++ calling libuv. Native addons extend this, and N-API keeps them stable across versions.
 
-**The event loop** has distinct phases. Microtasks (`nextTick`, then Promises) drain between every phase transition. The poll phase is where the loop waits for I/O.
+The event loop has distinct phases. Microtasks (`nextTick`, then Promises) drain between every phase transition. The poll phase is where the loop waits for I/O.
 
 Node.js is a smart assembly of well-designed components solving a specific problem: handling I/O-bound concurrency on a single JavaScript thread. Stay in that lane and it's exceptional. Throw long-running CPU work at it without worker threads and you're fighting its design.
 

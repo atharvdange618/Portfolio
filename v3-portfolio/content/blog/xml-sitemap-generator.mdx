@@ -17,7 +17,7 @@ summary: "Traditional sitemap tools break on JS-heavy apps. I built one from scr
 
 At a startup where I worked, every client project came with the same sitemap problem. React SPAs were invisible to crawlers. Next.js sites were being run through a headless browser on every single page. 500 pages, 500 Chrome launches, 40 minutes. It was a solved problem that nobody had actually solved.
 
-So I built one from scratch. The project started in March 2025 as a single JavaScript file. Over the next 15 months, it evolved into a TypeScript monorepo with a BullMQ job queue, a `RecyclableBrowser` abstraction, and a crawler that correctly identifies how a framework renders before deciding whether to use HTTP or Puppeteer. The three self-audits I ran exposed just how wrong my initial assumptions were.
+So I built one from scratch. The project started in March 2025 as a single JavaScript file. Over the next 15 months, it evolved into a TypeScript monorepo with a BullMQ job queue, a `RecyclableBrowser` abstraction, and a crawler that correctly identifies how a framework renders before deciding whether to use HTTP or Puppeteer. The three self-audits I ran exposed how wrong my initial assumptions were.
 
 ---
 
@@ -30,10 +30,10 @@ A traditional crawler sends an HTTP request, parses the HTML, and extracts `<a h
 Now throw a Next.js app into the mix. It renders full HTML on the server, so the HTTP crawler does see content. But the DOM contains `<div id="__next">`, the same root element React SPAs use. A naive CSR detector flags it as "JavaScript required" and fires up a headless browser for no reason. On a 500-page Next.js site, that's 500 unnecessary Chrome launches.
 
 <Callout type="info">
-  The real challenge is that modern frameworks blur
-  the line. Next.js does SSR with hydration. Nuxt does the same. Remix streams
-  HTML. Astro ships islands. A crawler needs to understand how each framework
-  delivers content, not just whether JavaScript is present.
+  The real challenge is that modern frameworks blur the line. Next.js does SSR
+  with hydration. Nuxt does the same. Remix streams HTML. Astro ships islands. A
+  crawler needs to understand how each framework delivers content, not just
+  whether JavaScript is present.
 </Callout>
 
 The tools that exist today fall into two camps. Pure HTTP crawlers that fail on JavaScript apps. And headless browser crawlers that are unbearably slow. I wanted something in the middle: a system that makes a smart decision per URL, adapting to each page's rendering strategy.
@@ -123,7 +123,7 @@ await Promise.race([
   per-page Puppeteer time by 40-60% in practice.
 </Callout>
 
-The result: on a typical Next.js site, the vast majority of pages are resolved via HTTP in under 100ms each. Only the truly CSR pages touch Puppeteer.
+The result: on a typical Next.js site, most pages are resolved via HTTP in under 100ms each. Only the pages that are actually CSR touch Puppeteer.
 
 ---
 
@@ -259,7 +259,7 @@ graph TD
 
 The user submits a URL, the API route returns a `jobId` instantly, and a BullMQ worker picks up the job in the background. Progress streams to the browser via SSE. The worker runs on a VPS with a persistent Chromium process, while the Next.js frontend stays fast and stateless.
 
-Running headless Chrome on a 4GB VPS required careful resource management. I built a `RecyclableBrowser` class that reuses a single Chromium instance across 100 page loads, waits for all open pages to close before launching a new browser instance (preventing two Chromium processes from overlapping in memory), and sends a graceful shutdown signal to the browser process after close to prevent zombie processes on Linux.
+Running headless Chrome on a 4GB VPS required careful resource management. I built a `RecyclableBrowser` class that reuses a single Chromium instance across 100 page loads, waits for all open pages to close before launching a new browser instance (so two Chromium processes don't overlap in memory), and sends a graceful shutdown signal to the browser process after close to prevent zombie processes on Linux.
 
 ---
 
@@ -273,7 +273,7 @@ I benchmarked the crawler against production tools, pulling from 16+ official so
 
 The structure was right, but the heuristics were first-principles guesses that didn't match what production crawlers actually do. The CSR detection misclassified Next.js SSR as CSR, creating a 50x cost penalty on every Next.js page. The `html.includes("loading")` substring match had a 30-50% false positive rate. Using `networkidle2` as the Puppeteer wait strategy added a 10x cost on JS-heavy pages. And the lack of a per-origin rendering cache meant 1000 redundant detections per domain crawl.
 
-The `networkidle2` finding is worth dwelling on. It's the default in most Puppeteer tutorials, and it works fine on static sites. But on a modern app, the network is never truly idle. Analytics scripts, hydration chunks, WebSocket keepalives, lazy-loaded chunks, and service worker registration all fire after the content is already rendered. Using `networkidle2` means you're waiting for none of that to stop, not for the page to be ready.
+The `networkidle2` finding is worth dwelling on. It's the default in most Puppeteer tutorials, and it works fine on static sites. But on a modern app, the network is never actually idle. Analytics scripts, hydration chunks, WebSocket keepalives, lazy-loaded chunks, and service worker registration all fire after the content is already rendered. Using `networkidle2` means you're waiting for none of that to stop, not for the page to be ready.
 
 ### Audit 2: Sitemap Protocol Compliance
 

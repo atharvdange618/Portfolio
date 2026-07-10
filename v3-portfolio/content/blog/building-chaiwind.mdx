@@ -44,7 +44,7 @@ const customStyles = {
 };
 ```
 
-A key-value store. Keys are strings that match what you'd put in a `class` attribute. Values are CSS declaration strings the same thing that goes inside a style block, minus the selector.
+A key-value store. Keys are strings that match what you'd put in a `class` attribute. Values are CSS declaration strings, the same thing that goes inside a style block, minus the selector.
 
 ### Why a plain object and not a Map?
 
@@ -97,7 +97,11 @@ Once we match a class name and retrieve its CSS string, we can't just dump it so
 `setProperty(property, value)` sets a single property and leaves everything else alone. That's what we want.
 
 <Callout type="warning">
-  **`cssText` is destructive.** Setting `el.style.cssText = "padding: 8px"` replaces ALL inline styles on that element. If any other code set `color: red` inline, it's gone. Use `el.style.setProperty(property, value)` to set one property without touching the rest. This is the correct choice for any runtime style injection system.
+  **`cssText` is destructive.** Setting `el.style.cssText = "padding: 8px"`
+  replaces ALL inline styles on that element. If any other code set `color: red`
+  inline, it's gone. Use `el.style.setProperty(property, value)` to set one
+  property without touching the rest. This is the correct choice for any runtime
+  style injection system.
 </Callout>
 
 ### applyStyleString()
@@ -118,7 +122,7 @@ function applyStyleString(el, styleStr) {
 }
 ```
 
-Let's trace through this with a concrete example.
+Here is a concrete example.
 
 Input: `el`, `"padding-left: 16px; padding-right: 16px"`
 
@@ -230,7 +234,7 @@ We iterate using `el.classList.forEach()` rather than parsing `el.className` (a 
 
 ### The data-chai-applied marker
 
-After applying styles, we stamp the element with `data-chai-applied="chai-p-2 chai-text-lg"`. This serves a few purposes. First, it's a debugging aid: you can open DevTools, select any element, and immediately see which chai classes were recognized and applied. Second, it acts as a processed marker, which matters if you later want to avoid re-processing elements. Third, it's useful for testing: you can write assertions like `expect(el.dataset.chaiApplied).toContain("chai-p-2")`.
+After applying styles, we stamp the element with `data-chai-applied="chai-p-2 chai-text-lg"`. This does a few things. It's a debugging aid: you can open DevTools, select any element, and immediately see which chai classes were recognized and applied. It acts as a processed marker, which matters if you later want to avoid re-processing elements. It's useful for testing: you can write assertions like `expect(el.dataset.chaiApplied).toContain("chai-p-2")`.
 
 ## Part 4: Scanning the Entire DOM
 
@@ -391,7 +395,12 @@ observer.observe(document.body, {
 `attributeFilter: ["class"]` is a performance optimization. Without it, every `style`, `id`, `data-*` mutation would trigger the callback. Since we only care about class changes, we filter down.
 
 <Callout type="info">
-  **RAF batching prevents redundant work.** Without batching, inserting 50 nodes at once fires the MutationObserver callback 50 times, calling `processElement()` 50 times separately. With RAF batching, all 50 nodes are collected into a Set (automatic deduplication), and a single `requestAnimationFrame` processes them all in one pass. This is the difference between O(n) callbacks and O(1) callback per frame.
+  **RAF batching prevents redundant work.** Without batching, inserting 50 nodes
+  at once fires the MutationObserver callback 50 times, calling
+  `processElement()` 50 times separately. With RAF batching, all 50 nodes are
+  collected into a Set (automatic deduplication), and a single
+  `requestAnimationFrame` processes them all in one pass. This is the difference
+  between O(n) callbacks and O(1) callback per frame.
 </Callout>
 
 ## Part 6: The Initialization Flow
@@ -618,7 +627,7 @@ function inspectClass(value) {
 
 This is a clever trick. Instead of exposing the internal `customStyles` map directly (which would require the engine to export it), we create a throwaway element, give it the class to test, let `refresh()` process it, read back the injected `style` attribute, then immediately remove the element. The element is never rendered visibly (it's removed before a paint cycle), so the user sees nothing but we get the style resolution result.
 
-The honest note from the code comments: this is a hack. A cleaner design would export a `resolve(className)` method from the engine. But it works, and it demonstrates that the whole engine is just functions and data testable, inspectable, and composable.
+The honest note from the code comments: this is a hack. A cleaner design would export a `resolve(className)` method from the engine. But it works, and it demonstrates that the whole engine is just functions and data, testable and composable.
 
 ## Part 10: What This Taught Us About the Browser
 

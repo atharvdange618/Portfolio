@@ -19,7 +19,7 @@ summary: "I built all five web rendering strategies from scratch using only Node
 
 There's a version of this post that's just a table comparing four acronyms with checkmarks under "SEO" and "Performance." You've seen it. Everyone has. It doesn't teach you anything you can actually use.
 
-This is a different kind of post. I built all four rendering strategies from scratch, in the same project, sharing the same templates and data layer, using nothing but Node.js's built-in `http` module. No Next.js, no Express, no framework magic hiding what's actually happening. And the thing I kept running into was this: the implementations are almost embarrassingly simple. The concepts are not. So let's talk about both.
+This is a different kind of post. I built all four rendering strategies from scratch, in the same project, sharing the same templates and data layer, using nothing but Node.js's built-in `http` module. No Next.js, no Express, no framework magic hiding what's actually happening. And the thing I kept running into was this: the implementations are almost embarrassingly simple. The concepts are not.
 
 The full source is at [github.com/atharvdange618/rendering-strategies](https://github.com/atharvdange618/rendering-strategies).
 
@@ -29,7 +29,7 @@ Before we get into any code, you need the right mental model. Every rendering st
 
 **Where and when does HTML get generated?**
 
-Everything else - the performance characteristics, the SEO tradeoffs, the infrastructure requirements - flows from that answer. Once you have it, the four strategies stop feeling like a grab bag of acronyms and start feeling like a spectrum of deliberate choices.
+Everything else, the performance characteristics, the SEO tradeoffs, the infrastructure requirements, flows from that answer. Once you have it, the four strategies stop feeling like a grab bag of acronyms and start feeling like a spectrum of deliberate choices.
 
 ```ascii
                     WHO generates the HTML?
@@ -389,7 +389,7 @@ You could describe all of this in words. But staring at two browser tabs side by
 
 After finishing all four strategies, I got asked about Partial Pre-Rendering in a mock interview and had nothing to say. I'd never heard of it. So naturally I went and built it too.
 
-PPR is a newer idea, first shipped experimentally in Next.js 14. It's not widely talked about yet, which is why it catches people off guard. But once you've built SSG, SSR, CSR, and ISR, you're actually in the best position to understand it - because PPR is a direct response to a problem none of the four strategies solve cleanly.
+PPR is a newer idea, first shipped experimentally in Next.js 14. It's not widely talked about yet, which is why it catches people off guard. But once you've built SSG, SSR, CSR, and ISR, you're actually in the best position to understand it, because PPR is a direct response to a problem none of the four strategies solve cleanly.
 
 ## The Gap That Four Strategies Couldn't Fill
 
@@ -468,7 +468,7 @@ When I first started discussing about `PPR` with a friend, while we were discuss
 `Astro Islands`: "does this need JavaScript?"
 `PPR`: "does this need fresh server data?"
 
-They're orthogonal questions. A page could need both - and in fact `Next.js`'s implementation of `PPR` with `React Server Components` essentially combines them. The `Server Component` renders HTML (`PPR` hole), and if it contains a `Client Component`, that `Client Component` hydrates in the browser (island behavior). `React Server Components` is the framework-level unification of both patterns. But conceptually, they start as separate concerns.
+They're orthogonal questions. A page could need both, and `Next.js`'s implementation of `PPR` with `React Server Components` essentially combines them. The `Server Component` renders HTML (`PPR` hole), and if it contains a `Client Component`, that `Client Component` hydrates in the browser (island behavior). `React Server Components` is the framework-level unification of both patterns. But conceptually, they start as separate concerns.
 
 ## Three Attempts at Implementing PPR
 
@@ -558,7 +558,7 @@ The shell defines `window.__pprResolve` as a global function before `</body></ht
 
 Complete, valid HTML on disk. Real file you can open in a browser standalone. No broken document structure. The dynamic injection happens via the stream, using a function that was pre-registered in the shell.
 
-Then it clicked: this is exactly what React's streaming SSR does. When a `Suspense` boundary resolves, React injects `<template>` tags and inline `<script>` calls to `$RC()` (its internal replacer function) into the response stream, often appearing after `</html>`. We independently arrived at the same mechanism.
+Then it clicked. This is exactly what React's streaming SSR does. When a `Suspense` boundary resolves, React injects `<template>` tags and inline `<script>` calls to `$RC()` (its internal replacer function) into the response stream, often appearing after `</html>`. We independently arrived at the same mechanism.
 
 ## Streaming SSR vs PPR: The Question That Wouldn't Go Away
 
@@ -626,9 +626,9 @@ PPR is the only strategy with entries in both the "build time" and "every reques
 
 **Script delivery confusion.** The instinct to use `<script src="resolver.js">` is natural. External script references are how you normally load JS. Understanding why it fails here - that `src=""` fires an entirely new HTTP request, separate from the current stream - requires knowing how the browser's resource loader works independently of the HTML parser. These are different subsystems. The HTML parser reads the stream. The resource loader makes new requests. Inline scripts are read by the parser from the same stream. That distinction matters for PPR.
 
-**The streaming SSR confusion was productive.** The question "isn't this just streaming SSR now?" initially felt like a gotcha. It turned out to be the most clarifying question of the whole project. Answering it precisely - the origin of the first chunk, the file-server independence test, the per-request compute comparison - produced clearer understanding of PPR than any article I read about it.
+**The streaming SSR confusion was productive.** The question "isn't this just streaming SSR now?" initially felt like a gotcha. It turned out to be the most clarifying question of the whole project. Answering it precisely, the origin of the first chunk, the file-server independence test, the per-request compute comparison, produced clearer understanding of PPR than any article I read about it.
 
-**Timestamps as a debugging tool paid off.** The "HTML generated at" timestamp that every page shows was added for educational reasons. It ended up being the fastest way to verify each implementation was actually correct. The PPR shell's frozen build timestamp vs the dynamic section's per-request timestamp made the two-phase nature immediately visible. Recommend this for any rendering project.
+**Timestamps as a debugging tool paid off.** The "HTML generated at" timestamp that every page shows was added for educational reasons. It ended up being the fastest way to verify each implementation was actually correct. The PPR shell's frozen build timestamp versus the dynamic section's per-request timestamp made the two-phase nature immediately visible. Recommend this for any rendering project.
 
 ## Key Takeaways
 
@@ -640,7 +640,7 @@ ISR is SSG with a staleness clock. The user who triggers revalidation gets the s
 
 PPR is the only strategy that applies different rendering modes to different sections of the same page.
 
-The shared template pattern is the real architectural takeaway. Rendering strategies are about _when and where_ you call your render function, not about writing different versions of it.
+The shared template pattern is the real architectural takeaway. Rendering strategies are about when and where you call your render function, not about writing different versions of it.
 
 If your "static shell" handler imports template functions and generates HTML at runtime, you haven't pre-rendered anything. The tell is the imports.
 
@@ -650,4 +650,4 @@ The file-server independence test distinguishes streaming SSR from PPR: if you t
 
 ## What I Would Build Next
 
-Hydration - the combination of SSR and CSR - is what Next.js and Nuxt ship in production. The server sends full HTML, then the browser's JavaScript takes over the existing DOM and makes it interactive. The cost: shipping both the server-rendered HTML and the client-side JavaScript that describes the same UI.
+Hydration, the combination of SSR and CSR, is what Next.js and Nuxt ship in production. The server sends full HTML, then the browser's JavaScript takes over the existing DOM and makes it interactive. The cost: shipping both the server-rendered HTML and the client-side JavaScript that describes the same UI.

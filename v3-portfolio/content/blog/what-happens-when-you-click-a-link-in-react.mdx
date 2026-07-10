@@ -265,7 +265,7 @@ Three arguments. First, a subscribe function that registers React's internal cal
 
 Internally, React reads the snapshot at the start of a render, renders all your components, then reads the snapshot again at the end. If it changed mid-render, React throws away the entire render and starts over with the new snapshot. Tearing becomes impossible by design.
 
-One critical constraint: `getSnapshot` must return the same reference if nothing changed. Not a new object with the same values. The exact same reference. React uses `Object.is` for comparison. If you returned `{ ...router.getState() }` every time, you would create a new object on every call, React would always think the state changed, and you would have an infinite re-render loop.
+One critical constraint: `getSnapshot` must return the same reference if nothing changed. Not a new object with the same values. The same reference. React uses `Object.is` for comparison. If you returned `{ ...router.getState() }` every time, you would create a new object on every call, React would always think the state changed, and you would have an infinite re-render loop.
 
 In our router, `this.state` is only replaced with a new object when the URL actually changes. The same reference comes back from `getState()` on every call in between. That stability is what makes `useSyncExternalStore` work correctly.
 
@@ -363,8 +363,8 @@ This is the same behavior as TanStack Router and React Router. It is not a bug, 
 <Callout type="warning">
   **The route order trap:** If you put `/user/$id` before `/user/settings`, the
   dynamic route will match first and `SettingsPage` will never render. Always
-  declare static routes before dynamic ones. This is the single most common
-  routing bug in custom routers.
+  declare static routes before dynamic ones. This is the most common routing
+  bug in custom routers.
 </Callout>
 
 ## The Full Chain, End to End
@@ -430,15 +430,15 @@ This is the foundation. The core loop - History notifies Router, Router matches 
 
 ## Key Takeaways
 
-**Rule of thumb for History:** If the user should be able to press Back to get here, use `pushState`. If Back should skip over this URL (redirects, search-as-you-type), use `replaceState`.
+Rule of thumb for History: If the user should be able to press Back to get here, use `pushState`. If Back should skip over this URL (redirects, search-as-you-type), use `replaceState`.
 
-**The popstate trap:** `popstate` only fires on browser back/forward. After every programmatic navigation, call your router's notify manually - that is how both paths stay in sync.
+The popstate trap: `popstate` only fires on browser back/forward. After every programmatic navigation, call your router's notify manually. That is how both paths stay in sync.
 
-**Ditch useState for external stores:** `useState + useEffect` has a subscription gap and tears in React 18 concurrent mode. Use `useSyncExternalStore` instead. React 17 users can grab the `use-sync-external-store` shim.
+Ditch useState for external stores: `useState + useEffect` has a subscription gap and tears in React 18 concurrent mode. Use `useSyncExternalStore` instead. React 17 users can grab the `use-sync-external-store` shim.
 
-**Route order = resolution order.** The first matching route wins. Put specific routes (`/user/settings`) before dynamic ones (`/user/$id`). This is deliberate - it gives you explicit control over resolution.
+Route order equals resolution order. The first matching route wins. Put specific routes (`/user/settings`) before dynamic ones (`/user/$id`). This is deliberate, it gives you explicit control over resolution.
 
-**Accessibility isn't optional.** Always render an `<a>` tag with `href`, even if you `preventDefault` on click. Screen readers, keyboard users, and crawlers all depend on it. A `<div onClick>` is not a link.
+Accessibility isn't optional. Always render an `<a>` tag with `href`, even if you `preventDefault` on click. Screen readers, keyboard users, and crawlers all depend on it. A `<div onClick>` is not a link.
 
 ---
 

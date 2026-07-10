@@ -17,13 +17,11 @@ description: "A deliberately flawed JWT auth system, designed as a teaching exer
 summary: "I intentionally built a broken JWT auth system to see what class of issues a well-intentioned but imperfect design would contain. The review surfaced security holes like missing token rotation, race conditions on concurrent refresh requests, and edge cases around token revocation. Building it wrong first teaches more than building it right from the start."
 ---
 
-Here's the setup: I was given an assignment to deepen my understanding of auth systems. Instead of building a correct one and explaining it, I took a different approach. I designed a complete JWT auth system with real-looking flows, real endpoints, and real security decisions. Then I had it reviewed. The goal was to see exactly what class of issues a well-intentioned but imperfect auth design would contain, and to write those issues up so that when you build your own system, you know what to look for.
+Here's the setup: I had an assignment to deepen my understanding of auth systems. Instead of building a correct one and explaining it, I took a different approach. I designed a complete JWT auth system with real-looking flows, real endpoints, and real security decisions. Then I had it reviewed. The goal was to find what kind of issues a well-intentioned but imperfect auth design would produce, and to write those issues up so that when you build your own system, you know what to look for.
 
-Think of your auth system like a bank vault. You can have the best door in the world: reinforced steel, biometric lock, time delay mechanism. But if the ventilation shaft is wide enough to crawl through, none of that matters. The attacks you didn't account for are always the ones that matter most.
+Think of your auth system like a bank vault. You can have the best door in the world: reinforced steel, biometric lock, time delay mechanism. But if the ventilation shaft is wide enough to crawl through, none of that matters. The attacks you didn't account for are the ones that matter most.
 
 This post goes through every endpoint in that system, every issue the review surfaced, and the proper fix for each one. Some of these are hardening you can add incrementally. Others would have been exploitable on day one.
-
-Let's break it down endpoint by endpoint.
 
 ---
 
@@ -115,7 +113,7 @@ if (Buffer.byteLength(password, "utf8") > MAX_PASSWORD_BYTES) {
 }
 ```
 
-72 is exactly the bcrypt truncation limit. Note the check uses `Buffer.byteLength` (bytes), not `.length` (characters) - a single Unicode character can be 2–4 bytes, so a "short" password with emoji or non-ASCII characters can exceed the limit sooner than expected. The error message should reflect bytes, not characters.
+72 is exactly the bcrypt truncation limit. Note the check uses `Buffer.byteLength` (bytes), not `.length` (characters). A single Unicode character can be 2 to 4 bytes, so a "short" password with emoji or non-ASCII characters can exceed the limit sooner than expected. The error message should reflect bytes, not characters.
 
 ### Issue 2: Race Condition on Duplicate Email
 
@@ -790,7 +788,7 @@ Every endpoint in this system had at least one issue that only showed up when yo
 
 A few patterns show up repeatedly across all the fixes:
 
-First, **atomicity matters more than you think**. Any time you check a condition and then modify state based on it, those two operations need to be atomic. Separate check + write is a race condition waiting to happen. Use DB transactions, conditional updates with WHERE clauses, and Redis NX operations.
+First, atomicity matters more than you think. Any time you check a condition and then modify state based on it, those two operations need to be atomic. Separate check plus write is a race condition waiting to happen. Use DB transactions, conditional updates with WHERE clauses, and Redis NX operations.
 
 <Callout type="info">
   **The atomicity rule:** Any time you check a condition and then modify state
@@ -799,10 +797,10 @@ First, **atomicity matters more than you think**. Any time you check a condition
   with WHERE clauses, and Redis NX operations.
 </Callout>
 
-Second, **every response time is a signal**. Even when your error messages are identical, the time it takes to return them can leak information. Any path that bypasses slow operations (like bcrypt) needs a dummy equivalent to equalize timing.
+Second, every response time is a signal. Even when your error messages are identical, the time it takes to return them can leak information. Any path that bypasses slow operations (like bcrypt) needs a dummy equivalent to equalize timing.
 
-Third, **document your tradeoffs explicitly or someone will break them**. The 15-minute access token window after logout is a known, acceptable tradeoff. The forgot-password escape from account lockout is intentional behavior. If these aren't written down, a future developer sees them as bugs and "fixes" them into security holes.
+Third, document your tradeoffs explicitly or someone will break them. The 15-minute access token window after logout is a known, acceptable tradeoff. The forgot-password escape from account lockout is intentional behavior. If these aren't written down, a future developer sees them as bugs and "fixes" them into security holes.
 
-Fourth, **the client is part of the security model**. The refresh token reuse attack false positive is unsolvable purely on the server side without accepting either false positives or weakening the security model. The right fix lives in the Axios interceptor, not the backend. Auth is a distributed system. Design it like one.
+Fourth, the client is part of the security model. The refresh token reuse attack false positive is unsolvable purely on the server side without accepting either false positives or weakening the security model. The right fix lives in the Axios interceptor, not the backend. Auth is a distributed system. Design it like one.
 
 ---
