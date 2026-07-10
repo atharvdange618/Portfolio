@@ -28,7 +28,7 @@ export function StatusBadge({ status }: Props) {
   return (
     <span
       className={cn(
-        "text-xs border px-2 py-0.5 font-mono tracking-wider",
+        "text-xs border px-2 py-0.5 font-mono tracking-wider rounded-sm",
         className,
       )}
     >

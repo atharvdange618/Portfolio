@@ -23,7 +23,7 @@ export function About() {
             href="https://blog.atharvdangedev.in"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue hover:text-purple transition-colors duration-200 underline decoration-dotted underline-offset-4"
+            className="text-blue hover:text-purple transition-colors duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
             blog.atharvdangedev.in
           </a>{" "}

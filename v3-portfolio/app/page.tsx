@@ -5,6 +5,7 @@ import { Experience } from "@/components/Experience";
 import { Stack } from "@/components/Stack";
 import { Projects } from "@/components/Projects";
 import { Blogs } from "@/components/Blogs";
+import { FadeIn } from "@/components/FadeIn";
 
 export default function Home() {
   const featuredProjects = getFeaturedProjects();
@@ -32,17 +33,32 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col gap-16">
+    <div className="flex flex-col">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Hero />
-      <About />
-      <Experience />
-      <Projects projects={featuredProjects} />
-      <Stack />
-      <Blogs posts={recentPosts} />
+      <div className="h-16" />
+      <FadeIn>
+        <About />
+      </FadeIn>
+      <div className="h-20" />
+      <FadeIn delay={50}>
+        <Experience />
+      </FadeIn>
+      <div className="h-20" />
+      <FadeIn delay={50}>
+        <Projects projects={featuredProjects} />
+      </FadeIn>
+      <div className="h-16" />
+      <FadeIn delay={50}>
+        <Stack />
+      </FadeIn>
+      <div className="h-20" />
+      <FadeIn delay={50}>
+        <Blogs posts={recentPosts} />
+      </FadeIn>
     </div>
   );
 }

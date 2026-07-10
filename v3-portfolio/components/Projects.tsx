@@ -26,12 +26,12 @@ export function Projects({
               <div className="flex items-center gap-3">
                 <StatusBadge status={project.status} />
                 {project.featured && (
-                  <span className="text-yellow text-xs">★</span>
+                  <span className="text-yellow text-sm" aria-label="Featured project">★</span>
                 )}
               </div>
               <Link
                 href={`/projects/${project.slug}`}
-                className="text-blue hover:text-purple transition-colors duration-200 text-lg font-medium"
+                className="text-blue hover:text-purple transition-colors duration-200 text-lg font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
               >
                 {project.title}
               </Link>
@@ -46,7 +46,7 @@ export function Projects({
               <div className="flex items-center gap-4 mt-1">
                 <Link
                   href={`/projects/${project.slug}`}
-                  className="text-sm text-fg hover:text-purple transition-colors duration-200 flex items-center gap-1 group"
+                  className="text-sm text-fg hover:text-purple transition-colors duration-200 flex items-center gap-1 group focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
                 >
                   Read the story{" "}
                   <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -57,7 +57,7 @@ export function Projects({
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="View source code on GitHub"
-                    className="text-base text-comment hover:text-fg transition-colors duration-200 flex items-center gap-1"
+                    className="text-base text-comment hover:text-fg transition-colors duration-200 flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
                   >
                     <FaGithub className="w-4 h-4" />
                   </a>
@@ -68,7 +68,7 @@ export function Projects({
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="View live project"
-                    className="text-base text-comment hover:text-fg transition-colors duration-200 flex items-center gap-1"
+                    className="text-base text-comment hover:text-fg transition-colors duration-200 flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
                   >
                     <RiExternalLinkFill className="w-4 h-4" />
                   </a>
@@ -79,7 +79,7 @@ export function Projects({
         )}
         <Link
           href="/projects"
-          className="text-base text-comment hover:text-purple transition-colors duration-200 flex items-center gap-1 w-fit group"
+          className="text-base text-comment hover:text-purple transition-colors duration-200 flex items-center gap-1 w-fit group focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
         >
           View all projects{" "}
           <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />

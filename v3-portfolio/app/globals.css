@@ -7,7 +7,7 @@
   --color-border: #414868;
 
   --color-fg: #c0caf5;
-  --color-comment: #8588a8;
+  --color-comment: #9399b2;
 
   --color-green: #9ece6a;
   --color-blue: #7aa2f7;
@@ -46,6 +46,29 @@
   ::selection {
     background-color: var(--color-purple);
     color: var(--color-bg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   ::-webkit-scrollbar {

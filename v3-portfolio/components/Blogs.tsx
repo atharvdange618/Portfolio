@@ -28,7 +28,7 @@ export function Blogs({
               </div>
               <Link
                 href={`/blog/${post.slug}`}
-                className="text-blue hover:text-purple transition-colors duration-200 text-lg font-medium"
+                className="text-blue hover:text-purple transition-colors duration-200 text-lg font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
               >
                 {post.title}
               </Link>
@@ -37,7 +37,10 @@ export function Blogs({
               </p>
               <div className="flex flex-wrap gap-2 mt-1">
                 {post.tags.slice(0, 5).map((tag) => (
-                  <span key={tag} className="text-sm text-purple">
+                  <span
+                    key={tag}
+                    className="text-sm text-purple hover:text-blue transition-colors duration-200 cursor-default"
+                  >
                     #{tag.toLowerCase()}
                   </span>
                 ))}
@@ -47,7 +50,7 @@ export function Blogs({
         )}
         <Link
           href="/blog"
-          className="text-base text-comment hover:text-purple transition-colors duration-200 flex items-center gap-1 w-fit group"
+          className="text-base text-comment hover:text-purple transition-colors duration-200 flex items-center gap-1 w-fit group focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
         >
           Read all posts{" "}
           <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
