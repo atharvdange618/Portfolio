@@ -73,6 +73,9 @@ export default async function BlogPostPage({
     headline: fm.title,
     description: fm.description,
     datePublished: fm.publishedAt,
+    dateModified: fm.publishedAt,
+    wordCount,
+    timeRequired: `PT${readingTime}M`,
     url: `https://tty.atharvdangedev.in/blog/${slug}`,
     author: {
       "@type": "Person",

@@ -6,16 +6,35 @@ import { Stack } from "@/components/Stack";
 import { Projects } from "@/components/Projects";
 import { Blogs } from "@/components/Blogs";
 import { FadeIn } from "@/components/FadeIn";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default function Home() {
   const featuredProjects = getFeaturedProjects();
-  const recentPosts = getRecentPosts(2);
+  const recentPosts = getRecentPosts(4);
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Person",
     name: "Atharv Dange",
     url: "https://tty.atharvdangedev.in",
+    jobTitle: "Full Stack Engineer",
+    knowsAbout: [
+      "TypeScript",
+      "React",
+      "Next.js",
+      "Node.js",
+      "React Native",
+      "OAuth 2.0",
+      "OIDC",
+      "PostgreSQL",
+      "REST APIs",
+    ],
     sameAs: [
       "https://github.com/atharvdange618",
       "https://linkedin.com/in/atharv-dange",
