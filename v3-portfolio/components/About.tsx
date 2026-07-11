@@ -6,19 +6,19 @@ export function About() {
       <TerminalLabel command="cat about.md" />
       <div className="flex flex-col gap-3 text-fg leading-relaxed text-lg">
         <p>
-          I’m a Full Stack Engineer based in Pune, India. I build production
+          I&apos;m a Full Stack Engineer based in Pune, India. I build production
           systems end-to-end - from auth protocols and API design to the
           interfaces people actually use.
         </p>
         <p>
-          My focus is on writing software that’s correct, maintainable, and
-          worth explaining. I care about how systems work under the hood, which
-          is why I tend to build things from scratch when I want to understand
-          them properly.
+          When I want to understand how something works, I rebuild it from first
+          principles. I&apos;ve built HTTP frameworks, client-side routers, CSS
+          engines, OIDC providers, and web rendering pipelines - not to replace
+          existing tools, but to understand the problems they solve at the
+          protocol level.
         </p>
         <p>
-          Outside of code I write about Web fundamentals, Frameworks, Tools and
-          Software Engineering at{" "}
+          Outside of code I write about what I find at{" "}
           <a
             href="https://blog.atharvdangedev.in"
             target="_blank"
