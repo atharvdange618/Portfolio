@@ -2,8 +2,9 @@ import { getAllProjects, getProjectBySlug } from "@/lib/mdx";
 import { ProjectFrontmatter } from "@/lib/types";
 import { StatusBadge } from "@/components/mdx/StatusBadge";
 import { StackTag } from "@/components/mdx/StackTag";
-import { formatDate } from "@/lib/utils";
+import { formatDate, extractHeadings } from "@/lib/utils";
 import { MdxRenderer } from "@/components/mdx/MdxRenderer";
+import { TableOfContents } from "@/components/mdx/TableOfContents";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { FaArrowLeftLong, FaGithub, FaClock } from "react-icons/fa6";
@@ -65,6 +66,7 @@ export default async function ProjectPage({
   const fm = project.data as ProjectFrontmatter;
   const wordCount = project.content.trim().split(/\s+/).length;
   const readingTime = Math.ceil(wordCount / 250);
+  const headings = extractHeadings(project.content || "");
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -151,10 +153,18 @@ export default async function ProjectPage({
         </div>
       </div>
 
-      <div className="max-w-full w-full min-w-0">
-        <div className={markdownStyles["markdown"]}>
-          <MdxRenderer source={project.content || ""} />
+      <div className="flex gap-10">
+        <div className="max-w-full w-full min-w-0 flex-1">
+          <div className={markdownStyles["markdown"]}>
+            <MdxRenderer source={project.content || ""} />
+          </div>
         </div>
+
+        {headings.length > 0 && (
+          <aside className="hidden lg:block w-64 shrink-0">
+            <TableOfContents items={headings} />
+          </aside>
+        )}
       </div>
     </article>
   );

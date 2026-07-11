@@ -1,7 +1,8 @@
 import { getAllPosts, getPostBySlug } from "@/lib/mdx";
 import { BlogFrontmatter } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, extractHeadings } from "@/lib/utils";
 import { MdxRenderer } from "@/components/mdx/MdxRenderer";
+import { TableOfContents } from "@/components/mdx/TableOfContents";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { FaClock, FaArrowLeftLong, FaBookmark } from "react-icons/fa6";
@@ -66,6 +67,7 @@ export default async function BlogPostPage({
   const fm = post.data as BlogFrontmatter;
   const wordCount = post.content.trim().split(/\s+/).length;
   const readingTime = Math.ceil(wordCount / 250);
+  const headings = extractHeadings(post.content || "");
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -132,7 +134,11 @@ export default async function BlogPostPage({
               </Link>
             ))}
           </div>
-          <ShareButtons title={fm.title} description={fm.description} slug={slug} />
+          <ShareButtons
+            title={fm.title}
+            description={fm.description}
+            slug={slug}
+          />
         </div>
       </div>
 
@@ -142,14 +148,24 @@ export default async function BlogPostPage({
             <FaBookmark className="w-4 h-4" />
             Summary
           </div>
-          <p className="text-fg/80 text-base leading-relaxed m-0">{fm.summary}</p>
+          <p className="text-fg/80 text-base leading-relaxed m-0">
+            {fm.summary}
+          </p>
         </div>
       )}
 
-      <div className="max-w-full w-full min-w-0">
-        <div className={markdownStyles["markdown"]}>
-          <MdxRenderer source={post.content || ""} />
+      <div className="flex gap-10">
+        <div className="max-w-full w-full min-w-0 flex-1">
+          <div className={markdownStyles["markdown"]}>
+            <MdxRenderer source={post.content || ""} />
+          </div>
         </div>
+
+        {headings.length > 0 && (
+          <aside className="hidden lg:block w-64 shrink-0">
+            <TableOfContents items={headings} />
+          </aside>
+        )}
       </div>
     </article>
   );

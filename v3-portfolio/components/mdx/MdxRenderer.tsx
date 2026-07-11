@@ -1,6 +1,7 @@
 import { compileMDX } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import rehypePrettyCode from "rehype-pretty-code";
+import rehypeSlug from "rehype-slug";
 import { Callout } from "./Callout";
 import Link from "next/link";
 import React from "react";
@@ -33,8 +34,8 @@ const customMermaidPlugin = () => (tree: MdxNode) => {
           (child.children[0].properties as { className?: string[] }).className,
         ) &&
         (
-          (child.children[0].properties as { className?: string[] }).className ||
-          []
+          (child.children[0].properties as { className?: string[] })
+            .className || []
         ).includes("language-mermaid")
       ) {
         const codeNode = child.children[0];
@@ -103,6 +104,7 @@ export async function MdxRenderer({ source }: MdxRendererProps) {
         remarkPlugins: [remarkGfm],
         rehypePlugins: [
           customMermaidPlugin,
+          rehypeSlug,
           [
             rehypePrettyCode,
             {
