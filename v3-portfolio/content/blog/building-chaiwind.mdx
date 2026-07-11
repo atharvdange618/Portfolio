@@ -645,8 +645,8 @@ Building chai-wind from scratch surfaces a handful of browser API behaviors that
 
 ## Key Takeaways
 
-chai-wind is small, but it exercises a dense cluster of browser APIs: the DOM traversal model, the CSSOM style interface, the classList API, the MutationObserver API, and document loading events. Understanding how each piece fits gives you the mental model to reason about runtime styling, DOM diffing, style injection in design systems, and how utilities like Tailwind's runtime CDN version actually work.
+**chai-wind is small, but it exercises a dense cluster of browser APIs:** the DOM traversal model, the CSSOM style interface, the classList API, the MutationObserver API, and document loading events. Understanding how each piece fits gives you the mental model to reason about runtime styling, DOM diffing, style injection in design systems, and how utilities like Tailwind's runtime CDN version actually work.
 
-The system has four layers: a data layer (the style map), a parsing layer (`applyStyleString`), a traversal layer (`processElement`, `scanDOM`), and a reactivity layer (MutationObserver). Each layer does one thing and can be understood, tested, and replaced independently. That separation is a design choice that makes the whole thing legible.
+**The system has four layers:** a data layer (the style map), a parsing layer (`applyStyleString`), a traversal layer (`processElement`, `scanDOM`), and a reactivity layer (MutationObserver). Each layer does one thing and can be understood, tested, and replaced independently. That separation is a design choice that makes the whole thing legible.
 
 ---

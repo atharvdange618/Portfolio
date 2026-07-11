@@ -632,19 +632,19 @@ PPR is the only strategy with entries in both the "build time" and "every reques
 
 ## Key Takeaways
 
-SSG bakes HTML at build time. Update means rebuild.
+**SSG bakes HTML at build time.** Update means rebuild.
 
-CSR sends an empty shell. The browser fetches data and builds the DOM. Two HTTP requests per page load.
+**CSR sends an empty shell.** The browser fetches data and builds the DOM. Two HTTP requests per page load.
 
-ISR is SSG with a staleness clock. The user who triggers revalidation gets the stale page; the next user gets fresh content.
+**ISR is SSG with a staleness clock.** The user who triggers revalidation gets the stale page; the next user gets fresh content.
 
-PPR is the only strategy that applies different rendering modes to different sections of the same page.
+**PPR is the only strategy that applies different rendering modes to different sections of the same page.**
 
-The shared template pattern is the real architectural takeaway. Rendering strategies are about when and where you call your render function, not about writing different versions of it.
+**The shared template pattern is the real architectural takeaway.** Rendering strategies are about when and where you call your render function, not about writing different versions of it.
 
-If your "static shell" handler imports template functions and generates HTML at runtime, you haven't pre-rendered anything. The tell is the imports.
+**If your "static shell" handler imports template functions and generates HTML at runtime, you haven't pre-rendered anything.** The tell is the imports.
 
-The file-server independence test distinguishes streaming SSR from PPR: if you turned off the origin server, would the static portions still serve? SSR: no. PPR: yes.
+**The file-server independence test distinguishes streaming SSR from PPR:** if you turned off the origin server, would the static portions still serve? SSR: no. PPR: yes.
 
 ---
 

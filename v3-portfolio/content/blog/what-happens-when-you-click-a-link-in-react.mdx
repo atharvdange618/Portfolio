@@ -430,15 +430,15 @@ This is the foundation. The core loop - History notifies Router, Router matches 
 
 ## Key Takeaways
 
-Rule of thumb for History: If the user should be able to press Back to get here, use `pushState`. If Back should skip over this URL (redirects, search-as-you-type), use `replaceState`.
+**Rule of thumb for History:** If the user should be able to press Back to get here, use `pushState`. If Back should skip over this URL (redirects, search-as-you-type), use `replaceState`.
 
-The popstate trap: `popstate` only fires on browser back/forward. After every programmatic navigation, call your router's notify manually. That is how both paths stay in sync.
+**The popstate trap:** `popstate` only fires on browser back/forward. After every programmatic navigation, call your router's notify manually. That is how both paths stay in sync.
 
-Ditch useState for external stores: `useState + useEffect` has a subscription gap and tears in React 18 concurrent mode. Use `useSyncExternalStore` instead. React 17 users can grab the `use-sync-external-store` shim.
+**Ditch useState for external stores:** `useState + useEffect` has a subscription gap and tears in React 18 concurrent mode. Use `useSyncExternalStore` instead. React 17 users can grab the `use-sync-external-store` shim.
 
-Route order equals resolution order. The first matching route wins. Put specific routes (`/user/settings`) before dynamic ones (`/user/$id`). This is deliberate, it gives you explicit control over resolution.
+**Route order equals resolution order.** The first matching route wins. Put specific routes (`/user/settings`) before dynamic ones (`/user/$id`). This is deliberate, it gives you explicit control over resolution.
 
-Accessibility isn't optional. Always render an `<a>` tag with `href`, even if you `preventDefault` on click. Screen readers, keyboard users, and crawlers all depend on it. A `<div onClick>` is not a link.
+**Accessibility isn't optional.** Always render an `<a>` tag with `href`, even if you `preventDefault` on click. Screen readers, keyboard users, and crawlers all depend on it. A `<div onClick>` is not a link.
 
 ---
 

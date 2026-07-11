@@ -782,13 +782,13 @@ This is documented behavior in most JWT systems. Know this window exists and com
 
 Designing auth feels like one of those problems where you can clearly see the goal: verify the user is who they say they are, keep sessions alive securely, and invalidate them cleanly. The happy path practically writes itself.
 
-The hard part is never the happy path.
+**The hard part is never the happy path.**
 
 Every endpoint in this system had at least one issue that only showed up when you asked "what if two requests arrive at the same time?" or "what if this step fails halfway through?" or "what does the response time reveal to an attacker?"
 
 A few patterns show up repeatedly across all the fixes:
 
-First, atomicity matters more than you think. Any time you check a condition and then modify state based on it, those two operations need to be atomic. Separate check plus write is a race condition waiting to happen. Use DB transactions, conditional updates with WHERE clauses, and Redis NX operations.
+**First, atomicity matters more than you think.** Any time you check a condition and then modify state based on it, those two operations need to be atomic. Separate check plus write is a race condition waiting to happen. Use DB transactions, conditional updates with WHERE clauses, and Redis NX operations.
 
 <Callout type="info">
   **The atomicity rule:** Any time you check a condition and then modify state
@@ -797,10 +797,10 @@ First, atomicity matters more than you think. Any time you check a condition and
   with WHERE clauses, and Redis NX operations.
 </Callout>
 
-Second, every response time is a signal. Even when your error messages are identical, the time it takes to return them can leak information. Any path that bypasses slow operations (like bcrypt) needs a dummy equivalent to equalize timing.
+**Second, every response time is a signal.** Even when your error messages are identical, the time it takes to return them can leak information. Any path that bypasses slow operations (like bcrypt) needs a dummy equivalent to equalize timing.
 
-Third, document your tradeoffs explicitly or someone will break them. The 15-minute access token window after logout is a known, acceptable tradeoff. The forgot-password escape from account lockout is intentional behavior. If these aren't written down, a future developer sees them as bugs and "fixes" them into security holes.
+**Third, document your tradeoffs explicitly or someone will break them.** The 15-minute access token window after logout is a known, acceptable tradeoff. The forgot-password escape from account lockout is intentional behavior. If these aren't written down, a future developer sees them as bugs and "fixes" them into security holes.
 
-Fourth, the client is part of the security model. The refresh token reuse attack false positive is unsolvable purely on the server side without accepting either false positives or weakening the security model. The right fix lives in the Axios interceptor, not the backend. Auth is a distributed system. Design it like one.
+**Fourth, the client is part of the security model.** The refresh token reuse attack false positive is unsolvable purely on the server side without accepting either false positives or weakening the security model. The right fix lives in the Axios interceptor, not the backend. Auth is a distributed system. Design it like one.
 
 ---

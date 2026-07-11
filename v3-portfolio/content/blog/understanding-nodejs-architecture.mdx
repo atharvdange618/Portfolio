@@ -804,14 +804,14 @@ The trade-off versus worker threads: cluster workers are fully isolated. No shar
 
 ## Key Takeaways
 
-V8 parses, interprets via Ignition, and JIT-compiles hot code via TurboFan. It manages your heap and runs garbage collection. Type-consistent functions perform better because V8 optimizes based on type assumptions.
+**V8 parses, interprets via Ignition, and JIT-compiles hot code via TurboFan.** It manages your heap and runs garbage collection. Type-consistent functions perform better because V8 optimizes based on type assumptions.
 
-libuv owns the event loop and the thread pool (default 4 workers) for operations the OS can't do asynchronously. Network I/O bypasses the thread pool entirely, going through OS-native async (epoll, kqueue, IOCP).
+**libuv owns the event loop and the thread pool (default 4 workers) for operations the OS can't do asynchronously.** Network I/O bypasses the thread pool entirely, going through OS-native async (epoll, kqueue, IOCP).
 
-Node.js bindings are the C++ glue between JavaScript and libuv. `fs.readFile` is JavaScript calling C++ calling libuv. Native addons extend this, and N-API keeps them stable across versions.
+**Node.js bindings are the C++ glue between JavaScript and libuv.** `fs.readFile` is JavaScript calling C++ calling libuv. Native addons extend this, and N-API keeps them stable across versions.
 
-The event loop has distinct phases. Microtasks (`nextTick`, then Promises) drain between every phase transition. The poll phase is where the loop waits for I/O.
+**The event loop has distinct phases.** Microtasks (`nextTick`, then Promises) drain between every phase transition. The poll phase is where the loop waits for I/O.
 
-Node.js is a smart assembly of well-designed components solving a specific problem: handling I/O-bound concurrency on a single JavaScript thread. Stay in that lane and it's exceptional. Throw long-running CPU work at it without worker threads and you're fighting its design.
+**Node.js is a smart assembly of well-designed components solving a specific problem: handling I/O-bound concurrency on a single JavaScript thread.** Stay in that lane and it's exceptional. Throw long-running CPU work at it without worker threads and you're fighting its design.
 
 ---
