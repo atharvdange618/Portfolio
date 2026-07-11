@@ -12,7 +12,7 @@ tags:
   - "promise-all"
   - "michi"
 
-featured: "true"
+featured: true
 description: "Continuing to build a client-side router from scratch. This post covers what happens after the basics: how nested routes keep your navbar mounted across navigations, why the Outlet pattern is just a context counter, and how data loaders flip fetch-on-render into render-as-you-fetch with parallel execution and race condition guards."
 summary: "Continuing the client-side router build from scratch. Nested routes use an Outlet pattern backed by React context to keep parent layouts mounted across navigations. Data loaders flip the model from fetch-on-render to render-as-you-fetch, running parallel requests with promise.all and guarding against stale responses with race condition handling."
 ---
@@ -770,21 +770,21 @@ Coming up: error boundaries for per-route error isolation, prefetching on hover 
 
 ## Key Takeaways
 
-The tree solves ownership, not URLs. Tree nesting controls layout ownership, not URL structure. A nested route like `/settings/profile` remains an absolute path but renders inside `SettingsLayout`.
+**The tree solves ownership, not URLs.** Tree nesting controls layout ownership, not URL structure. A nested route like `/settings/profile` remains an absolute path but renders inside `SettingsLayout`.
 
-matchTree flattens the tree on purpose. React renders linearly. The tree config becomes a flat array of matches, ordered depth-first. Outlet walks through this array using a depth counter in context.
+**matchTree flattens the tree on purpose.** React renders linearly. The tree config becomes a flat array of matches, ordered depth-first. Outlet walks through this array using a depth counter in context.
 
-React's reconciler does the layout stability. Same component at same position means no remount. The router just ensures `matches[0]` is `RootLayout`.
+**React's reconciler does the layout stability.** Same component at same position means no remount. The router just ensures `matches[0]` is `RootLayout`.
 
-Loaders run at navigation time, not render time. The fetch starts when you click the link, not when the component mounts. By the time React renders the page, data is already there. One render, full data.
+**Loaders run at navigation time, not render time.** The fetch starts when you click the link, not when the component mounts. By the time React renders the page, data is already there. One render, full data.
 
-Promise.all for parallel execution. All matched route loaders fire simultaneously. You wait for the slowest one, not the sum of all of them.
+**Promise.all for parallel execution.** All matched route loaders fire simultaneously. You wait for the slowest one, not the sum of all of them.
 
-navigationId prevents stale data. Rapid navigation can result in out-of-order loader resolutions. The counter ensures only the most recent navigation's results get committed to state.
+**navigationId prevents stale data.** Rapid navigation can result in out-of-order loader resolutions. The counter ensures only the most recent navigation's results get committed to state.
 
-Cache by routeId + params. If the route and its params have not changed, the loader does not re-run. Navigate from `/user/atharv` to `/user/atharv` and zero network requests fire.
+**Cache by routeId + params.** If the route and its params have not changed, the loader does not re-run. Navigate from `/user/atharv` to `/user/atharv` and zero network requests fire.
 
-Show loading UI only when the loader is slow. Immediate loading state on every navigation causes spinner flash for fast loaders. Wait a threshold. If the loader resolves before it, show nothing. If it is slow, show a spinner and keep it visible long enough to not feel like a glitch.
+**Show loading UI only when the loader is slow.** Immediate loading state on every navigation causes spinner flash for fast loaders. Wait a threshold. If the loader resolves before it, show nothing. If it is slow, show a spinner and keep it visible long enough to not feel like a glitch.
 
 ---
 
