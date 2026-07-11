@@ -3,23 +3,26 @@ import { TerminalLabel } from "./mdx/TerminalLabel";
 
 const stackGroups = [
   {
-    label: "Core",
-    items: [
-      "TypeScript",
-      "Node.js",
-      "React",
-      "Next.js",
-      "PostgreSQL",
-      "MongoDB",
-    ],
+    label: "Languages",
+    items: ["TypeScript"],
   },
-  { label: "Mobile", items: ["React Native", "Expo"] },
+  {
+    label: "Frontend",
+    items: ["React", "Next.js", "React Native", "Expo"],
+  },
+  {
+    label: "Backend",
+    items: ["Node.js", "PostgreSQL", "MongoDB", "Prisma"],
+  },
   {
     label: "Tooling",
-    items: ["TanStack Query", "Zustand", "Zod", "Prisma", "Mongoose", "Axios"],
+    items: ["React Query", "Zustand", "Zod", "Turborepo", "Oxc", "Vitest"],
   },
-  { label: "Infra", items: ["Vercel", "Git", "Hostinger"] },
-  { label: "Learning", items: ["Go"] },
+  {
+    label: "Protocols",
+    items: ["OAuth 2.0", "OIDC", "REST", "SSE"],
+  },
+  { label: "Infra", items: ["Vercel", "Git", "Render", "Hostinger"] },
 ];
 
 export function Stack() {
