@@ -7,6 +7,30 @@ export function Experience() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+            <span className="text-blue font-medium text-lg">SpaceBuilder</span>
+            <span className="text-comment text-sm">2026–present</span>
+          </div>
+          <span className="text-green text-sm">Co-Founder & CEO</span>
+          <ul className="border-l-2 border-border pl-4 flex flex-col gap-2 text-fg text-lg leading-relaxed">
+            <li className="flex items-start gap-2">
+              <span className="text-purple shrink-0 mt-[0.35em]">▸</span>
+              Co-founded an IT services startup building custom software, AI
+              automations, and web applications for businesses
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-purple shrink-0 mt-[0.35em]">▸</span>
+              Leading technical direction - scoping projects, architecting
+              solutions, and shipping client work end-to-end
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-purple shrink-0 mt-[0.35em]">▸</span>
+              Building workflow automations and AI systems that replace manual
+              processes with engineered solutions
+            </li>
+          </ul>
+        </div>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
             <span className="text-blue font-medium text-lg">
               Smartscripts Pvt. Ltd
             </span>
