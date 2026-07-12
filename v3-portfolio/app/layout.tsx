@@ -20,16 +20,17 @@ const geist = Geist({
 export const metadata: Metadata = {
   metadataBase: new URL("https://tty.atharvdangedev.in"),
   title: {
-    default: "Atharv Dange - Full Stack Engineer",
+    default: "Atharv Dange - Full Stack Engineer & Co-Founder",
     template: "%s | Atharv Dange",
   },
   description:
-    "Full Stack Engineer based in Pune, India. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
+    "Full Stack Engineer and Co-Founder of SpaceBuilder. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
   keywords: [
     "Atharv Dange",
     "Full Stack Engineer",
     "Software Engineer",
-    "Software Development Team Lead",
+    "Co-Founder",
+    "SpaceBuilder",
     "Pune",
     "Next.js Developer",
     "TypeScript Developer",
@@ -43,9 +44,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://tty.atharvdangedev.in",
     siteName: "Atharv Dange Portfolio",
-    title: "Atharv Dange - Full Stack Engineer",
+    title: "Atharv Dange - Full Stack Engineer & Co-Founder",
     description:
-      "Full Stack Engineer based in Pune, India. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
+      "Full Stack Engineer and Co-Founder of SpaceBuilder. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
     images: [
       {
         url: "/og-image.png",
@@ -57,9 +58,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Atharv Dange - Full Stack Engineer",
+    title: "Atharv Dange - Full Stack Engineer & Co-Founder",
     description:
-      "Full Stack Engineer based in Pune, India. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
+      "Full Stack Engineer and Co-Founder of SpaceBuilder. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
     images: ["/og-image.png"],
   },
   robots: {

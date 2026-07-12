@@ -8,7 +8,17 @@ export function About() {
         <p>
           I&apos;m a Full Stack Engineer based in Pune, India. I build production
           systems end-to-end - from auth protocols and API design to the
-          interfaces people actually use.
+          interfaces people actually use. I&apos;m also the co-founder of{" "}
+          <a
+            href="https://spacebuilder.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue hover:text-purple transition-colors duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
+          >
+            SpaceBuilder
+          </a>
+          , where we build custom software, AI automations, and web applications
+          for businesses.
         </p>
         <p>
           When I want to understand how something works, I rebuild it from first
@@ -25,7 +35,7 @@ export function About() {
             rel="noopener noreferrer"
             className="text-blue hover:text-purple transition-colors duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
-            blog.atharvdangedev.in
+            blog
           </a>{" "}
           and watch way too many films.
         </p>

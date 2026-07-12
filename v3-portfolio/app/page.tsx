@@ -23,7 +23,7 @@ export default function Home() {
     "@type": "Person",
     name: "Atharv Dange",
     url: "https://tty.atharvdangedev.in",
-    jobTitle: "Full Stack Engineer",
+    jobTitle: "Full Stack Engineer & Co-Founder at SpaceBuilder",
     knowsAbout: [
       "TypeScript",
       "React",
@@ -48,7 +48,7 @@ export default function Home() {
       addressCountry: "India",
     },
     description:
-      "Full Stack Engineer based in Pune, India. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
+      "Full Stack Engineer and Co-Founder of SpaceBuilder. Building production systems end-to-end - from auth protocols and API design to polished user interfaces.",
   };
 
   return (
