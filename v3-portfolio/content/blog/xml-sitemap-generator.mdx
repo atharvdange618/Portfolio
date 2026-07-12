@@ -1,15 +1,6 @@
 ---
 title: "Why Every Sitemap Tool Fails on Modern JavaScript Apps"
 publishedAt: "2026-06-10"
-tags:
-  - "sitemaps"
-  - "seo"
-  - "puppeteer"
-  - "nextjs"
-  - "typescript"
-  - "crawling"
-  - "web-scraping"
-
 featured: false
 description: "Traditional sitemap generators break on React, Next.js, and Vue apps. I built one from scratch that handles Clerk auth loops, redirect oscillations, and framework-specific rendering - and audited it three times to find out how wrong my initial assumptions were."
 summary: "Traditional sitemap tools break on JS-heavy apps. I built one from scratch that detects framework rendering strategies and chooses HTTP or Puppeteer accordingly. Three self-audits revealed issues like Clerk auth loops, redirect oscillations, and naive crawl assumptions. The final tool is a TypeScript monorepo with a BullMQ job queue and a RecyclableBrowser abstraction."

@@ -1,17 +1,6 @@
 ---
 title: "I Intentionally Built a Buggy Auth System. Here's Everything That Was Wrong With It"
 publishedAt: "2026-04-18"
-tags:
-  - "authentication"
-  - "jwt"
-  - "security"
-  - "node.js"
-  - "typescript"
-  - "bcrypt"
-  - "refresh-tokens"
-  - "race-conditions"
-  - "system-design"
-  - "api-design"
 featured: true
 description: "A deliberately flawed JWT auth system, designed as a teaching exercise to surface the security holes, race conditions, and missing edge cases that survive a first-pass auth design."
 summary: "I intentionally built a broken JWT auth system to see what class of issues a well-intentioned but imperfect design would contain. The review surfaced security holes like missing token rotation, race conditions on concurrent refresh requests, and edge cases around token revocation. Building it wrong first teaches more than building it right from the start."

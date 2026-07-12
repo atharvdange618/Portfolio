@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unescaped-entities */
-import { getAllPosts, getAllTags } from "@/lib/mdx";
+import { getAllPosts } from "@/lib/mdx";
 import { TerminalLabel } from "@/components/mdx/TerminalLabel";
 import { BlogList } from "@/components/BlogList";
 import Link from "next/link";
@@ -13,7 +13,6 @@ export const metadata = {
 
 export default function BlogPage() {
   const posts = getAllPosts();
-  const tags = getAllTags();
 
   return (
     <div className="flex flex-col gap-8">
@@ -35,7 +34,7 @@ export default function BlogPage() {
           software engineering and things I figure out while building.
         </p>
       </div>
-      <BlogList posts={posts} tags={tags} />
+      <BlogList posts={posts} />
     </div>
   );
 }

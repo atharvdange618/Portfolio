@@ -15,7 +15,6 @@ export type ProjectFrontmatter = {
 export type BlogFrontmatter = {
   title: string;
   publishedAt: string;
-  tags: string[];
   featured: boolean;
   description: string;
   summary?: string;

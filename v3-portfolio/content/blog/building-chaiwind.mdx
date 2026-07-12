@@ -1,17 +1,6 @@
 ---
 title: "Building chai-wind: How I Cloned Tailwind's Core Idea From Scratch"
 publishedAt: "2026-03-22"
-tags:
-  - "dom-manipulation"
-  - "css"
-  - "browser-apis"
-  - "mutation-observer"
-  - "inline-styles"
-  - "javascript"
-  - "tailwindcss"
-  - "css-in-js"
-  - "web-apis"
-  - "cssom"
 featured: true
 description: "How chai-wind works, covering DOM scanning, inline style injection, multi-property parsing, MutationObserver-based dynamic watching, and a runtime class registration API, all built without a bundler, build step, or stylesheet."
 summary: "I built a Tailwind-like CSS engine that skips stylesheets entirely. A JavaScript runtime scans the DOM for known class names, looks them up in a style map, and injects inline styles via setProperty(). A MutationObserver watches for new elements and styles them live. The whole system is four layers: data (style map), parsing (applyStyleString), traversal (processElement, scanDOM), and reactivity (MutationObserver). No build step, no bundler, no stylesheet."

@@ -80,12 +80,6 @@ export function getPostBySlug(slug: string) {
   return readMdxFile("blog", slug);
 }
 
-export function getAllTags(): string[] {
-  const posts = getAllPosts();
-  const tags = posts.flatMap((p) => p.tags);
-  return [...new Set(tags)].sort();
-}
-
 function readMdxFile(dir: string, slug: string) {
   const filePath = path.join(contentRoot, dir, `${slug}.mdx`);
   const raw = fs.readFileSync(filePath, "utf-8");

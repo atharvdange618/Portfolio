@@ -3,6 +3,7 @@ import { TerminalLabel } from "./mdx/TerminalLabel";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa6";
+import { ShareButtons } from "./ShareButtons";
 
 export function Blogs({
   posts,
@@ -26,25 +27,22 @@ export function Blogs({
                 <span>·</span>
                 <span>{post.readingTime} min read</span>
               </div>
-              <Link
-                href={`/blog/${post.slug}`}
-                className="text-blue hover:text-purple transition-colors duration-200 text-lg font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
-              >
-                {post.title}
-              </Link>
+              <div className="flex items-center justify-between gap-4">
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="text-blue hover:text-purple transition-colors duration-200 text-lg font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
+                >
+                  {post.title}
+                </Link>
+                <ShareButtons
+                  title={post.title}
+                  description={post.description}
+                  slug={post.slug}
+                />
+              </div>
               <p className="text-fg/80 text-base leading-relaxed">
                 {post.description}
               </p>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {post.tags.slice(0, 5).map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-sm text-purple hover:text-blue transition-colors duration-200 cursor-default"
-                  >
-                    #{tag.toLowerCase()}
-                  </span>
-                ))}
-              </div>
             </div>
           ))
         )}

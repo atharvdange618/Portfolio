@@ -1,17 +1,6 @@
 ---
 title: "Understanding Node.js Architecture: How V8, libuv, and the Event Loop Fit Together"
 publishedAt: "2026-04-15"
-tags:
-  - "nodejs"
-  - "javascript"
-  - "v8"
-  - "libuv"
-  - "event loop"
-  - "architecture"
-  - "performance"
-  - "worker threads"
-  - "concurrency"
-  - "nodejs history"
 featured: false
 description: "Node.js is more than just 'JavaScript on the server.' It's a carefully assembled runtime built on top of battle-tested components that make non-blocking I/O possible. This post breaks down how those components fit together, what they actually do, and why the design choices matter."
 summary: "Node.js is a carefully assembled runtime, not just 'JavaScript on the server.' V8 compiles JS to machine code, libuv provides the event loop and thread pool for async I/O, and the C++ bindings connect them. Understanding this architecture explains why Node.js handles concurrency with a single thread, when worker threads are actually needed, and how non-blocking I/O really works under the hood."

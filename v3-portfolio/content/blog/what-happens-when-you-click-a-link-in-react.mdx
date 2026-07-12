@@ -1,17 +1,6 @@
 ---
 title: "What Actually Happens When You Click a Link in React"
 publishedAt: "2026-06-12"
-tags:
-  - "react"
-  - "routing"
-  - "history-api"
-  - "useSyncExternalStore"
-  - "typescript"
-  - "client-side-routing"
-  - "regex"
-  - "concurrent-mode"
-  - "michi"
-
 featured: true
 description: "I'm building a client-side router from scratch to understand what React Router and TanStack Router do under the hood. This post walks through what I've found so far: the History API that makes navigation work without reloads, why useState breaks in concurrent mode, how route patterns become regex, and the `useSyncExternalStore` hook that ties it all together."
 summary: "I built a client-side router from scratch to understand TanStack and React Router internals. The History API changes URLs without page reloads. Route patterns get compiled into regex for matching. useState breaks in concurrent mode because it can tear across renders. useSyncExternalStore is the hook that solves this by subscribing to the router's external state and guaranteeing consistency."

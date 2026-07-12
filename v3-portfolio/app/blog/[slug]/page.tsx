@@ -4,10 +4,10 @@ import { formatDate, extractHeadings } from "@/lib/utils";
 import { MdxRenderer } from "@/components/mdx/MdxRenderer";
 import { TableOfContents } from "@/components/mdx/TableOfContents";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { FaClock, FaArrowLeftLong, FaBookmark } from "react-icons/fa6";
 import { ShareButtons } from "@/components/ShareButtons";
 import markdownStyles from "../../markdown-styles.module.css";
+import Link from "next/link";
 
 export async function generateStaticParams() {
   const posts = getAllPosts();
@@ -36,7 +36,6 @@ export async function generateMetadata({
       description: fm.description,
       publishedTime: fm.publishedAt,
       authors: ["Atharv Dange"],
-      tags: fm.tags,
       images: [
         {
           url: "/og-image.png",
@@ -122,18 +121,7 @@ export default async function BlogPostPage({
 
         <p className="text-fg/80 text-lg leading-relaxed">{fm.description}</p>
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
-            {fm.tags.map((tag) => (
-              <Link
-                key={tag}
-                href={`/blog?tag=${tag}`}
-                className="text-sm text-purple hover:text-fg transition-colors duration-200"
-              >
-                #{tag}
-              </Link>
-            ))}
-          </div>
+        <div className="flex justify-end">
           <ShareButtons
             title={fm.title}
             description={fm.description}
