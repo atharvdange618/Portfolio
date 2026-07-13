@@ -13,67 +13,87 @@ stack:
   - "React Native Reanimated"
   - "React Native Gesture Handler"
   - "Shopify FlashList"
+  - "Shopify React Native Skia"
+  - "React Native MMKV"
+  - "React Native WebView"
   - "Expo SecureStore"
+  - "Expo Image"
+  - "Expo Haptics"
+  - "Expo Blur"
+  - "React Native SVG"
+  - "React Native Android Widget"
 startedAt: "2026-04-6"
-updatedAt: "2026-05-17"
+updatedAt: "2026-07-13"
 github: "https://github.com/atharvdange618/Shikai"
 live: "https://github.com/atharvdange618/Shikai/releases"
 description: "A beautifully crafted, read-only GitHub dashboard for Android. Browse repos, explore code, track your contribution streak, and share your profile - without the pressure of taking action."
 ---
 
-Shikai is a beautifully crafted, mobile-first GitHub companion that transforms how developers interact with their GitHub presence on mobile devices.
+Shikai is a mobile-first GitHub companion for Android. It gives you a read-only view of your GitHub presence: repos, contribution graphs, activity feeds, and a shareable profile card. No write actions, no merge buttons. You open it, browse, and nothing bad happens.
 
-Unlike GitHub's official app-built primarily for productivity and collaboration-Shikai serves as your personal dashboard. It's a read-only sanctuary where you can check your repositories, admire your contribution streak, and share your profile without the anxiety of accidentally pushing code or merging a PR on a tiny screen.
+GitHub's official app is good for collaboration. It is not great for just checking in. Shikai fills that gap.
 
-The name _Shikai_ (視界) means "field of vision" in Japanese, perfectly capturing the app's philosophy: see what matters-your work, your progress, your impact-without distractions.
+The name _Shikai_ (視界) means "field of vision" in Japanese. The idea is simple: see your work and your progress without distractions.
 
 ---
 
 ## The Challenge
 
-GitHub's mobile app is incredibly powerful for collaboration: reviewing PRs, triaging issues, and managing notifications. But it's built for _doing work_, not for _checking in_.
+GitHub's mobile app lets you review PRs, triage issues, and manage notifications. It is built for doing work. I wanted something different: a place to check your contribution streak, glance at pinned repos, or pull up your profile at a meetup without worrying about accidentally closing an issue.
 
-I wanted an app that filled the gap for developers who want a beautiful, stress-free way to:
+- **Track progress**: See your contribution graph and maintain your streak.
+- **Share your profile**: Have a clean portfolio card ready for interviews or meetups.
+- **Monitor repos**: Keep tabs on projects without the pressure of taking action.
+- **Just look**: A read-only space to appreciate what you have built.
 
-- **Track progress**: See their contribution graph and maintain their streak.
-- **Share their profile**: Have a clean portfolio ready at meetups or interviews.
-- **Monitor projects**: Keep tabs on repositories without the pressure of taking action.
-- **Admire their work**: A read-only space to appreciate what they've built.
+I was the sole developer and designer on this. UI/UX, React Native implementation, OAuth proxy deployment, the whole thing.
 
-**My Role:** I was the sole developer and designer for this project, handling everything from the UI/UX conceptualization to the final React Native implementation and custom OAuth proxy deployment.
+<Callout type="info">
+  **Read-only by design.** No write operations. No merge buttons, no issue creation, no PR reviews. This is intentional: a GitHub viewer that removes the possibility of accidentally doing something on a tiny screen.
+</Callout>
 
 ---
 
 ## The Solution
 
-Shikai was designed to be **read-only by design**. There are no write operations, no merge buttons, and no close issue actions. When you open Shikai, you know you're safe to browse and explore without consequences.
+Shikai is read-only by design. No write operations, no merge buttons. You open it, browse, and nothing bad happens.
 
 ### Core Features
 
-- **Overview Dashboard**: A visual heat map of your 52-week contribution graph, pinned repositories with live stats, and a real-time activity feed.
-- **Repository Management**: Deep insights into your repositories including advanced filters, comprehensive stats, language breakdowns, and a complete commit history log.
-- **File Explorer**: A custom file tree interface that lets you navigate folder hierarchies and read code or markdown files directly within the app, complete with syntax highlighting.
-- **Professional Profile**: A display-ready profile card perfect for showcasing your GitHub identity, complete with total stars, follower counts, and social links.
+- **Overview Dashboard**: A 52-week contribution heatmap rendered with React Native Skia, pinned repositories with live stats, and an activity feed from users you follow.
+- **Repository Management**: Filters, stats, language breakdowns, contributor lists, and commit history per branch.
+- **File Explorer**: A full-screen file tree with branch selection. Read code or markdown files in-app, with syntax highlighting via WebView.
+- **Issues and Pull Requests**: Detail screens with comments, labels, and state filters. Write actions link out to GitHub.
+- **Global Search**: Search repos, users, and issues. Tabbed results with prefetching.
+- **Notifications**: Filtered by type (review requests, mentions, assignments, CI activity). Mark-as-read requires a PAT.
+- **Saved Repos**: GitHub Stars plus a local Watchlist, both searchable and persisted offline.
+- **User Profiles**: Browse any GitHub user's profile, top repos, and contribution stats.
+- **Profile Card**: A 3D-interactive card you can share at meetups or in interviews.
+- **Android Widget**: Contribution stats and pinned repos on your home screen.
+- **5 Themes**: Light, Dark, Tokyo Night, Dracula, Atom One.
+- **Offline Support**: MMKV-backed disk caching with 24-hour persistence. An offline banner appears when connectivity drops.
+- **Security Module**: A Kotlin Expo module that checks for root, debuggers, and developer options at boot. Blocks access on compromised devices.
 
 ---
 
 ## Design Philosophy
 
-Three core principles guided every decision in Shikai:
+Three ideas drove the design:
 
-1. **Read-Only by Design**: As mentioned, eliminating write actions removes anxiety. It's purely a viewing space.
-2. **Mobile-First, Native Feel**: Every interaction is optimized for touch. I prioritized smooth scrolling, natural gestures, haptic feedback, and fluid animations using React Native Reanimated.
-3. **Information at the Right Density**: Not too sparse, not overwhelming. Card-based layouts group related data, while progressive disclosure reveals deeper details only when needed to prevent cognitive overload.
+1. **Read-only by design**: No write actions means no accidental consequences. It is a viewing space.
+2. **Mobile-first, native feel**: Touch-optimized scrolling, haptic feedback, fluid animations with Reanimated.
+3. **Right information density**: Card-based layouts group related data. Deeper details appear on demand, not all at once.
 
 ---
 
-## Technical Architecture & Decisions
+## Technical Architecture and Decisions
 
-Building a fluid, native-feeling app required a robust tech stack.
-
-- **State & Data**: I chose **TanStack Query** for intelligent server state management (handling caching and background refetching) and **Zustand** for minimal client state management (like theme and filters).
-- **Navigation**: **Expo Router** provided type-safe, file-based routing.
-- **UI & Animations**: **React Native Reanimated** and **Gesture Handler** ensured 60fps native animations on the UI thread, while **Shopify FlashList** replaced standard FlatLists to provide 10x better performance for large lists of repositories and commits.
+- **State and data**: TanStack Query for server state (caching, background refetching). Zustand for client state (auth tokens, sign-in state, watchlist). TanStack Query persists to MMKV with a 24-hour max age. Individual queries set their own stale times. Stale time controls background refetch frequency (5min default). Persist max age controls how long data survives offline (24h). MMKV was chosen over AsyncStorage because it is synchronous and ~30x faster; a thin async wrapper makes it compatible with TanStack Query's persister.
+- **Navigation**: Expo Router, file-based. Tabs layout (Overview, Repos, Search, Profile) with stack screens for repo details, user profiles, and settings.
+- **UI and animations**: Reanimated and Gesture Handler for 60fps animations on the UI thread. FlashList for large lists. Skia for the contribution heatmap.
+- **Prefetching**: A `lib/prefetch.ts` module with a 3-layer architecture (detailed in Challenges).
+- **Dual API**: REST for most data (repos, commits, issues, PRs, notifications, files). GraphQL for contribution graphs, pinned repos, and aggregate stats where it avoids over-fetching.
+- **Why not Octokit?**: GitHub's `@octokit/rest` is built for Node.js and browsers. In React Native, a thin axios wrapper was simpler: one client handles both REST and GraphQL, custom interceptors track rate limits globally and handle 401 auto-logout, and the same auth path serves both OAuth tokens and PATs. The bundle is also smaller (~15KB vs ~50KB+).
 
 ```ascii
 ┌──────────────┐
@@ -84,44 +104,77 @@ Building a fluid, native-feeling app required a robust tech stack.
        ▼
 ┌──────────────────┐     TanStack Query      ┌─────────────────┐
 │  Custom Hooks    │────────(caching)──────> │  Query Client   │
-│  (useRepos,      │                         │  (5min cache)   │
-│   useUser, etc)  │                         └────────┬────────┘
-└──────┬───────────┘                                  │
+│  (23 hooks in    │                         │  (5min default  │
+│   hooks/)        │                         │   stale, 24h    │
+└──────┬───────────┘                         │   persist)      │
+       │                                     └────────┬────────┘
        │                                              │
-       │ Axios Request                                │
+       │ Axios Request / fetchWithPAT                 │
        ▼                                              │
 ┌──────────────────┐                                  │
 │  GitHub REST/    │                                  │
 │  GraphQL APIs    │<─────── Refetch if stale ────────┘
 └──────────────────┘
+       │
+       ▼
+┌──────────────────┐
+│  MMKV On-Disk    │
+│  Persistence     │
+└──────────────────┘
 ```
 
 ---
 
-## Challenges & Learnings
+## Challenges and Learnings
 
-Building Shikai pushed my React Native and architectural skills to the next level. Several key challenges stood out:
+### 1. GitHub's Dual APIs
 
-### 1. Navigating GitHub's Dual APIs
+GitHub has both REST and GraphQL APIs, and the docs are not always clear about which one to use for what. REST handles most of the data in Shikai: repos, commits, issues, PRs, file content, notifications. GraphQL handles contribution graphs, pinned repos, and aggregate stats. The trick was figuring out where GraphQL saves requests (fetching exactly the fields you need in one call) versus where REST is simpler and better documented.
 
-One of the biggest hurdles was scrambling my head around GitHub's APIs. I had to heavily integrate and balance both the **REST API** and the **GraphQL API** to fetch exactly the data I needed without hitting rate limits or over-fetching.
+### 2. The 3-Layer Prefetch Architecture
 
-### 2. Implementing a 3-Layer Prefetch Architecture
+I wanted screens to feel instant. To get there, I built a prefetch system in `lib/prefetch.ts` with three layers:
 
-To make the app feel blazingly fast, I designed a custom **3-layer prefetching architecture**. Using `usePrefetchOnPress`, I ensured that data for repository cards, file trees, and user profiles was fetched optimally in the background, guaranteeing instant screen transitions when a user tapped an item.
+**Layer 1: Route prefetching.** Expo Router's `router.prefetch()` warms screen transitions before they happen. Tap a repo card, and the route registers for prefetch so the navigator does not block on setup.
 
-### 3. The Code File Explorer Modal
+**Layer 2: Component-level data prefetching.** Functions like `prefetchRepoDetails`, `prefetchProfile`, and `prefetchOverview` fire when components mount or interactions occur. The tab layout prefetches profile and overview data on mount. Search results prefetch repo details as soon as they appear. Pinned repo cards prefetch the full repo data on press.
 
-I wanted users to be able to read actual code files from their codebase right on their phones. Building the file modal involved implementing a recursive file tree UI and integrating a syntax highlighter capable of handling various programming languages cleanly on a mobile screen.
+**Layer 3: Cascading prefetches.** Data dependencies chain together. `prefetchFileTree` checks if the default branch is already in cache; if not, it fetches the repo first, then chains the file tree request. `prefetchCommonFiles` batch-prefetches up to 3 common files (README, package.json, etc.) in parallel. `prefetchRepoCommits` prefetches the first page of commits while the user is still on the repo detail screen.
 
-### 4. Overhauling Authentication (PAT to OAuth)
+By the time a screen renders, TanStack Query has the data and the UI paints from cache.
 
-Initially, I used a Personal Access Token (PAT) approach for authentication, but this was clunky for users. I replaced this with a seamless **GitHub Sign-In OAuth flow**. This required building a custom **Cloudflare Worker (Wrangler)** to act as an OAuth proxy, securely exchanging tokens without exposing client secrets in the mobile app. Once authenticated, the tokens are stored heavily encrypted on-device using `expo-secure-store`.
+### 3. The File Explorer
+
+I wanted users to read actual code files on their phones. The file explorer has a recursive tree UI with branch selection, a WebView-based syntax highlighter for multiple languages, and a markdown renderer for READMEs. All of it flows through the prefetch system, so files load from cache instead of the network. I used WebView with Prism.js for syntax highlighting because the native alternatives (react-native-syntax-highlighter) are unmaintained and WebView handles 100+ languages with zero extra native dependencies.
+
+### 4. Authentication: PAT to OAuth
+
+Shikai started with Personal Access Token auth. It worked, but asking users to generate a PAT was a poor onboarding experience. I replaced it with GitHub OAuth using PKCE. The token exchange happens on a Cloudflare Worker that acts as an OAuth proxy, keeping the client secret off the device. You need the proxy because GitHub requires `client_secret` in the token exchange, and you cannot ship that on a mobile app. Tokens go into expo-secure-store.
+
+<Callout type="warning">
+  **Why a Cloudflare Worker proxy?** GitHub's OAuth token exchange requires `client_secret`, which cannot be shipped on a mobile app. The Worker holds the secret server-side and exchanges the authorization code for tokens.
+</Callout>
+
+Notifications are the exception: GitHub's notifications API does not work with OAuth tokens. It requires a PAT with the `notifications` scope. So PATs are still supported as an optional layer for notifications and the following feed. PAT-based endpoints use native `fetch` instead of the axios instance because the axios request interceptor always attaches the OAuth token from Zustand. Using `fetchWithPAT` with native fetch avoids that conflict.
+
+On 401, the axios response interceptor calls `clearAuth()` to auto-logout. This prevents users from seeing broken screens when their token expires or gets revoked. On sign-in and sign-out, MMKV is cleared to prevent stale data from a previous account leaking to the current one.
+
+### 5. The Security Module
+
+I built a native Kotlin Expo module for root detection, debugger detection, and developer-option checks. The app runs these at boot and blocks access on compromised devices. It rechecks every 10 seconds while the blocking screen is visible, so users cannot work around it by toggling settings.
+
+<Callout type="error">
+  **Root detection is a cat-and-mouse game.** Determined attackers can bypass any client-side check. The Kotlin module raises the bar significantly, but it does not guarantee security. It protects against casual tampering, not determined adversaries.
+</Callout>
 
 ---
 
-## Results & Impact
+## Results
 
-Shikai successfully bridges the gap for developers who want to stay connected to their GitHub presence visually.
+<Callout type="info">
+  **A GitHub viewer, not a GitHub manager.** Shikai fills a gap the official app ignores: a calm, read-only space to see your work. Students track contribution streaks. Maintainers monitor engagement. It comes out at interviews and meetups.
+</Callout>
 
-It serves as a beautiful portfolio piece for students and learners wanting to track their green squares, a quick reference for open-source maintainers monitoring community engagement, and a polished showcase for professional developers at interviews or client demos.
+Shikai does what it set out to do: a read-only GitHub dashboard that looks good on Android. Students use it to track contribution streaks. Open-source maintainers use it to monitor community engagement. I have pulled it up at interviews and client demos.
+
+The codebase is at [github.com/atharvdange618/Shikai](https://github.com/atharvdange618/Shikai). Release APKs are on the [releases page](https://github.com/atharvdange618/Shikai/releases).

@@ -3,6 +3,9 @@ import remarkGfm from "remark-gfm";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
 import { Callout } from "./Callout";
+import { StatusBadge } from "./StatusBadge";
+import { StackTag } from "./StackTag";
+import { TerminalLabel } from "./TerminalLabel";
 import Link from "next/link";
 import React from "react";
 
@@ -67,6 +70,9 @@ const customMermaidPlugin = () => (tree: MdxNode) => {
 
 const components = {
   Callout,
+  StatusBadge,
+  StackTag,
+  TerminalLabel,
   a: ({
     href,
     children,
