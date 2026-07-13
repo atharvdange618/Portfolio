@@ -12,11 +12,11 @@ stack:
 startedAt: "2025-03-01"
 updatedAt: "2026-05-01"
 github: "https://github.com/atharvdange618/xml-sitemap-generator"
-live: "https://xml-sitemap-generator.vercel.app"
+live: "https://sitemap.atharvdangedev.in"
 description: "A high-performance web crawler and sitemap discovery engine designed to create SEO-compliant XML sitemaps for both static and dynamically rendered websites."
 ---
 
-XML Sitemap Generator is a high-performance web crawler and sitemap discovery engine designed to create SEO-compliant XML sitemaps for both static and dynamically rendered websites. 
+XML Sitemap Generator is a high-performance web crawler and sitemap discovery engine designed to create SEO-compliant XML sitemaps for both static and dynamically rendered websites.
 
 By implementing a hybrid crawling architecture, the application dynamically chooses between high-speed static HTML parsing and headless browser rendering depending on the page type. It streams live crawl logs to the browser using Server-Sent Events (SSE) and automatically discovers, crawls, validates, and merges existing sitemap data for maximum coverage.
 
@@ -24,11 +24,12 @@ By implementing a hybrid crawling architecture, the application dynamically choo
 
 ## The Challenge
 
-Modern web applications present unique challenges to standard web crawlers. Traditional search crawlers scan static HTML, but client-side hydrated frameworks (like React, Vue, or dynamic Next.js SPAs) render their links dynamically via client-side JavaScript. 
+Modern web applications present unique challenges to standard web crawlers. Traditional search crawlers scan static HTML, but client-side hydrated frameworks (like React, Vue, or dynamic Next.js SPAs) render their links dynamically via client-side JavaScript.
 
-To crawl these Client-Side Rendered (CSR) sites, a crawler must boot up a headless browser (like Puppeteer) to execute JavaScript and extract URLs. However, headless browsers are extremely resource-intensive, slow to boot, and prone to memory leaks. Running Puppeteer inside serverless execution environments (like Vercel API routes) introduces strict memory limits (50ms to 1024MB RAM) and request timeouts (10-60 seconds). 
+To crawl these Client-Side Rendered (CSR) sites, a crawler must boot up a headless browser (like Puppeteer) to execute JavaScript and extract URLs. However, headless browsers are extremely resource-intensive, slow to boot, and prone to memory leaks. Running Puppeteer inside serverless execution environments (like Vercel API routes) introduces strict memory limits (50ms to 1024MB RAM) and request timeouts (10-60 seconds).
 
 The challenge was to design a crawler that:
+
 - Automatically detects if a page is SSR or CSR, falling back to Puppeteer only when absolutely necessary.
 - Respects `robots.txt` disallow rules and site indexing rules.
 - Manages memory and concurrency efficiently within serverless constraints.
@@ -107,10 +108,10 @@ The heuristic evaluates HTML properties, including script tags, DOM structure, a
 // Dynamic detection settings in src/utils/sitemapGenerator.js
 const config = {
   csr: {
-    minimalContentLength: 200,     // If HTML length is below this, it is likely empty / a placeholder
-    minimalChildNodes: 5,          // Minimal body elements
-    scriptCountThreshold: 10,      // Excessive script count indicates a heavy bundle app
-    contentScriptRatio: 1000,      // Ratio of HTML length to script count
+    minimalContentLength: 200, // If HTML length is below this, it is likely empty / a placeholder
+    minimalChildNodes: 5, // Minimal body elements
+    scriptCountThreshold: 10, // Excessive script count indicates a heavy bundle app
+    contentScriptRatio: 1000, // Ratio of HTML length to script count
     rootSelectors: ["#root", "#__next", "#app"], // Common framework hydration mounting points
   },
   puppeteer: {
@@ -125,7 +126,7 @@ If the static HTML lacks text content but contains framework mounting points and
 
 ### 2. Real-Time Streaming with Server-Sent Events (SSE)
 
-Crawling up to 1000 pages takes time. If a Next.js serverless route handles this synchronously, it will exceed the request timeout limit on serverless hosts. 
+Crawling up to 1000 pages takes time. If a Next.js serverless route handles this synchronously, it will exceed the request timeout limit on serverless hosts.
 
 To solve this, we implemented Server-Sent Events (SSE) at `app/api/generate-sitemap/route.js`. The client initiates a single GET connection, and the server chunks and streams real-time status packets as pages are crawled:
 
@@ -162,8 +163,8 @@ while (queue.length > 0 && visited.size < maxPages) {
       visited.add(url);
       const html = await fetchPageContent(url); // Decides Cheerio vs. Puppeteer
       const links = extractLinks(html, baseUrl);
-      queue.push(...links.filter(link => !visited.has(link)));
-    })
+      queue.push(...links.filter((link) => !visited.has(link)));
+    }),
   );
 }
 ```
@@ -175,15 +176,21 @@ This pooling strategy keeps active Chromium instances constrained to safe bounds
 ## Technical Challenges & Trade-offs
 
 ### 1. Serverless Environments vs. Persistent Web Crawlers
+
 Web crawlers are traditionally long-running background processes. In contrast, Next.js serverless functions are ephemeral, stateless, and shut down after request completion or timeout.
+
 - **Decision**: We designed the crawler to run on-demand, streaming progress via SSE. To prevent serverless execution timeout on larger crawls (e.g. over 500 pages), the client slider allows users to bound the crawler between 10 and 1000 pages. For larger sites, self-hosting via Docker (which bypasses serverless time limits) is provided as a pre-configured option.
 
 ### 2. Puppeteer Resource Footprint on Lambda
+
 Running Puppeteer inside serverless lambdas requires packaging Chromium. The chromium binary exceeds standard serverless bundle sizes and requires significant execution overhead.
+
 - **Decision**: We integrated `puppeteer-core` with a lightweight serverless-chromium layer. While this required complex bundle configuration during deployment, it minimized our deployment bundle sizes, reducing function cold start times and avoiding serverless bundle limits.
 
 ### 3. Infinite Recursion and Dynamic Parameter Loops
+
 Modern sites often have infinite dynamic paths (e.g., calendar pages with `/date?day=1`, `/date?day=2`, etc.) which can trap a recursive crawler in an infinite loop.
+
 - **Decision**: We added an aggressive normalization step that strips common tracking parameters (like `utm_*`) and caps folder-depth recursion to 5 levels. If the crawler exceeds this depth, it stops enqueuing links from that branch, saving memory and crawl budget.
 
 ---

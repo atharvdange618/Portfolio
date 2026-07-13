@@ -37,7 +37,7 @@ export default function Home() {
     ],
     sameAs: [
       "https://github.com/atharvdange618",
-      "https://linkedin.com/in/atharv-dange",
+      "https://linkedin.com/in/atharvdange",
       "https://blog.atharvdangedev.in",
       "https://x.com/atharvdangedev",
     ],

@@ -19,7 +19,7 @@ const links = [
   },
   {
     label: "LinkedIn",
-    href: "https://linkedin.com/in/atharv-dange",
+    href: "https://linkedin.com/in/atharvdange",
     icon: FaLinkedinIn,
     modeHover: "LINKEDIN" as Mode,
   },
