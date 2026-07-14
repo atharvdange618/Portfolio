@@ -1,6 +1,6 @@
 ---
 title: "Per-Route Error Boundaries and Prefetch on Hover"
-publishedAt: "2026-06-20"
+publishedAt: "2026-07-12"
 featured: true
 description: "Two problems that show up once a router has real users hitting it: what happens when one route breaks, and what happens while a user is deciding whether to click. This post covers building per-route error boundaries with two separate error channels, and prefetch on hover that reuses the exact same loader pipeline instead of building a second one."
 summary: "Continuing the Michi router series - after building the core navigation loop (slice 1-2), nested layouts with Outlet, and data loaders with parallel execution (slice 3-4), this post tackles what happens when things break and how to make them feel faster. Loader errors and render errors are structurally different failures that need separate catching mechanisms, but both slot into the same Outlet tree. Prefetch reuses the exact same matchTree and runLoaders pipeline from the data loading post - caching the promise itself means repeated hovers are a no-op, and a debounced mouseenter filters accidental cursor passes."
