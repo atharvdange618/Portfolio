@@ -22,8 +22,10 @@ function getFileSlugs(dir: string): string[] {
 
   return fs
     .readdirSync(fullPath)
-    .filter((f) => f.endsWith(".mdx"))
-    .map((f) => f.replace(/\.mdx$/, ""));
+    .reduce<string[]>((acc, f) => {
+      if (f.endsWith(".mdx")) acc.push(f.replace(/\.mdx$/, ""));
+      return acc;
+    }, []);
 }
 
 export function getAllProjects(): ProjectMeta[] {

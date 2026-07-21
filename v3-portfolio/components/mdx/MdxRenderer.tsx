@@ -21,6 +21,8 @@ interface MdxNode {
   value?: string;
 }
 
+const MERMAID_CLASSES = new Set(["language-mermaid"]);
+
 const customMermaidPlugin = () => (tree: MdxNode) => {
   function walk(node: MdxNode) {
     if (!node.children) return;
@@ -39,13 +41,15 @@ const customMermaidPlugin = () => (tree: MdxNode) => {
         (
           (child.children[0].properties as { className?: string[] })
             .className || []
-        ).includes("language-mermaid")
+        ).some((cls) => MERMAID_CLASSES.has(cls))
       ) {
         const codeNode = child.children[0];
         const rawText = (codeNode.children || [])
-          .filter((c: MdxNode) => c.type === "text")
-          .map((c: MdxNode) => c.value || "")
-          .join("");
+          .reduce<string>((acc, c: MdxNode) => {
+            if (c.type === "text") acc += c.value || "";
+            return acc;
+          }, "")
+          .trim();
 
         node.children[i] = {
           type: "element",

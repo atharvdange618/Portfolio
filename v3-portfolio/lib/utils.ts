@@ -68,7 +68,7 @@ interface MdxNode {
   value?: string;
 }
 
-export async function markdownToHtml(markdown: string) {
+async function markdownToHtml(markdown: string) {
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
@@ -86,13 +86,17 @@ export async function markdownToHtml(markdown: string) {
             child.children[0].tagName === "code" &&
             child.children[0].properties &&
             Array.isArray(child.children[0].properties.className) &&
-            child.children[0].properties.className.includes("language-mermaid")
+            child.children[0].properties.className.some(
+              (cls) => cls === "language-mermaid",
+            )
           ) {
             const codeNode = child.children[0];
             const rawText = (codeNode.children || [])
-              .filter((c) => c.type === "text")
-              .map((c) => c.value || "")
-              .join("");
+              .reduce<string>((acc, c) => {
+                if (c.type === "text") acc += c.value || "";
+                return acc;
+              }, "")
+              .trim();
 
             node.children[i] = {
               type: "element",
