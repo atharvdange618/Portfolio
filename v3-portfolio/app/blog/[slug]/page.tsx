@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { FaClock, FaArrowLeftLong, FaBookmark } from "react-icons/fa6";
 import { ShareButtons } from "@/components/ShareButtons";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { safeJsonLd } from "@/lib/json-ld";
 import markdownStyles from "../../markdown-styles.module.css";
 import Link from "next/link";
 
@@ -98,7 +99,7 @@ export default async function BlogPostPage({
     <article className="flex flex-col gap-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <Link
         href="/blog"

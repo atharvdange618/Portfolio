@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { FaArrowLeftLong, FaGithub, FaClock } from "react-icons/fa6";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { safeJsonLd } from "@/lib/json-ld";
 import { RiExternalLinkFill } from "react-icons/ri";
 import markdownStyles from "../../markdown-styles.module.css";
 
@@ -89,7 +90,7 @@ export default async function ProjectPage({
     <article className="flex flex-col gap-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <Link
         href="/projects"
