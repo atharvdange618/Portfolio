@@ -6,6 +6,7 @@ import { TableOfContents } from "@/components/mdx/TableOfContents";
 import { notFound } from "next/navigation";
 import { FaClock, FaArrowLeftLong, FaBookmark } from "react-icons/fa6";
 import { ShareButtons } from "@/components/ShareButtons";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import markdownStyles from "../../markdown-styles.module.css";
 import Link from "next/link";
 
@@ -155,6 +156,8 @@ export default async function BlogPostPage({
           </aside>
         )}
       </div>
+
+      <ScrollToTop />
     </article>
   );
 }

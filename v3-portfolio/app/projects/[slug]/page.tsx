@@ -8,6 +8,7 @@ import { TableOfContents } from "@/components/mdx/TableOfContents";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { FaArrowLeftLong, FaGithub, FaClock } from "react-icons/fa6";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { RiExternalLinkFill } from "react-icons/ri";
 import markdownStyles from "../../markdown-styles.module.css";
 
@@ -166,6 +167,8 @@ export default async function ProjectPage({
           </aside>
         )}
       </div>
+
+      <ScrollToTop />
     </article>
   );
 }
