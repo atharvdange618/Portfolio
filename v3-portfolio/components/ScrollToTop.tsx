@@ -14,6 +14,7 @@ export function ScrollToTop() {
 
   return (
     <button
+      type="button"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Scroll to top"
       aria-hidden={!visible}

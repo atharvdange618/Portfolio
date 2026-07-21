@@ -43,6 +43,24 @@ const links = [
   },
 ];
 
+const modeColors: Record<Mode, string> = {
+  NORMAL: "bg-green text-bg",
+  LINKEDIN: "bg-blue text-bg",
+  GITHUB: "bg-purple text-bg",
+  EMAIL: "bg-yellow text-bg",
+  TWITTER: "bg-red text-bg",
+  BLOG: "bg-green text-bg",
+};
+
+const modeTextColors: Record<Mode, string> = {
+  NORMAL: "text-green",
+  LINKEDIN: "text-blue",
+  GITHUB: "text-purple",
+  EMAIL: "text-yellow",
+  TWITTER: "text-red",
+  BLOG: "text-green",
+};
+
 export function Footer() {
   const pathname = usePathname() || "";
   const [mode, setMode] = useState<Mode>("NORMAL");
@@ -75,24 +93,6 @@ export function Footer() {
       clearInterval(intervalId);
     };
   }, []);
-
-  const modeColors: Record<Mode, string> = {
-    NORMAL: "bg-green text-bg",
-    LINKEDIN: "bg-blue text-bg",
-    GITHUB: "bg-purple text-bg",
-    EMAIL: "bg-yellow text-bg",
-    TWITTER: "bg-red text-bg",
-    BLOG: "bg-green text-bg",
-  };
-
-  const modeTextColors: Record<Mode, string> = {
-    NORMAL: "text-green",
-    LINKEDIN: "text-blue",
-    GITHUB: "text-purple",
-    EMAIL: "text-yellow",
-    TWITTER: "text-red",
-    BLOG: "text-green",
-  };
 
   return (
     <footer className="border-t border-border mt-24 py-8 w-full bg-bg font-mono selection:bg-surface selection:text-fg">

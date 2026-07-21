@@ -6,28 +6,28 @@ interface CalloutProps {
   children: React.ReactNode;
 }
 
-export function Callout({ type = "info", children }: CalloutProps) {
-  const styles = {
-    info: {
-      bg: "bg-blue/10",
-      border: "border-blue",
-      text: "text-blue",
-      icon: FaCircleInfo,
-    },
-    warning: {
-      bg: "bg-yellow/10",
-      border: "border-yellow",
-      text: "text-yellow",
-      icon: FaTriangleExclamation,
-    },
-    error: {
-      bg: "bg-red/10",
-      border: "border-red",
-      text: "text-red",
-      icon: FaCircleXmark,
-    },
-  };
+const styles = {
+  info: {
+    bg: "bg-blue/10",
+    border: "border-blue",
+    text: "text-blue",
+    icon: FaCircleInfo,
+  },
+  warning: {
+    bg: "bg-yellow/10",
+    border: "border-yellow",
+    text: "text-yellow",
+    icon: FaTriangleExclamation,
+  },
+  error: {
+    bg: "bg-red/10",
+    border: "border-red",
+    text: "text-red",
+    icon: FaCircleXmark,
+  },
+};
 
+export function Callout({ type = "info", children }: CalloutProps) {
   const currentStyle = styles[type] || styles.info;
   const Icon = currentStyle.icon;
 

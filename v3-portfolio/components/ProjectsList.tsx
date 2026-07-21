@@ -31,6 +31,7 @@ export function ProjectsList({ projects }: Props) {
         {filters.map(({ label, value }) => (
           <button
             key={value}
+            type="button"
             onClick={() => setActive(value)}
             aria-pressed={active === value}
             className={cn(

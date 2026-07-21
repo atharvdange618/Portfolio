@@ -52,6 +52,7 @@ export function ShareButtons({ title, description, slug }: ShareButtonsProps) {
         </a>
       ))}
       <button
+        type="button"
         onClick={copyLink}
         aria-label={copied ? "Copied!" : "Copy link"}
         className="flex items-center justify-center w-7 h-7 rounded-md border border-border bg-surface/50 text-comment hover:text-fg hover:border-purple hover:bg-surface active:scale-95 transition-all duration-200"

@@ -12,6 +12,7 @@ export function CodeCopyButtonInitializer() {
     );
 
     let liveRegion = document.getElementById("copy-announcer");
+    let createdLiveRegion = false;
     if (!liveRegion) {
       liveRegion = document.createElement("div");
       liveRegion.id = "copy-announcer";
@@ -19,7 +20,11 @@ export function CodeCopyButtonInitializer() {
       liveRegion.setAttribute("aria-atomic", "true");
       liveRegion.className = "sr-only";
       document.body.appendChild(liveRegion);
+      createdLiveRegion = true;
     }
+
+    const createdButtons: HTMLButtonElement[] = [];
+    const controller = new AbortController();
 
     codeBlocks.forEach((block) => {
       const pre = block.tagName === "PRE" ? block : block.querySelector("pre");
@@ -39,6 +44,7 @@ export function CodeCopyButtonInitializer() {
       if (isAscii) return;
 
       const button = document.createElement("button");
+      button.type = "button";
       button.className = "copy-code-button";
       button.setAttribute("aria-label", "Copy code to clipboard");
 
@@ -52,6 +58,7 @@ export function CodeCopyButtonInitializer() {
           container.style.position = "relative";
         }
         container.appendChild(button);
+        createdButtons.push(button);
       }
 
       button.addEventListener("click", async () => {
@@ -81,8 +88,18 @@ export function CodeCopyButtonInitializer() {
         } catch (err) {
           console.error("Failed to copy code to clipboard: ", err);
         }
-      });
+      }, { signal: controller.signal });
     });
+
+    return () => {
+      controller.abort();
+      for (const btn of createdButtons) {
+        btn.remove();
+      }
+      if (createdLiveRegion && liveRegion?.parentElement) {
+        liveRegion.remove();
+      }
+    };
   }, [pathname]);
 
   return null;
