@@ -17,7 +17,7 @@ export default function ProjectsPage() {
     <div className="flex flex-col gap-8">
       <Link
         href="/"
-        className="flex items-center gap-2 text-comment hover:text-fg transition-colors duration-200 text-sm w-fit"
+        className="flex items-center gap-2 text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 text-sm w-fit"
       >
         <FaArrowLeftLong className="w-3 h-3" />
         Back to home

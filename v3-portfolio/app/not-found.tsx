@@ -22,7 +22,7 @@ Hint: check the URL or head back home.
       </div>
       <Link
         href="/"
-        className="flex items-center gap-2 text-sm text-comment hover:text-purple transition-colors duration-200 w-fit focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
+        className="flex items-center gap-2 text-sm text-comment hover:text-purple active:scale-[0.98] transition-all duration-200 w-fit focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
       >
         <FaArrowLeftLong className="w-3 h-3" />
         Back to home

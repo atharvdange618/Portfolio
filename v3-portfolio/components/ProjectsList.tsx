@@ -33,7 +33,7 @@ export function ProjectsList({ projects }: Props) {
             key={value}
             onClick={() => setActive(value)}
             className={cn(
-              "px-3 py-1 text-sm transition-colors duration-200",
+              "px-3 py-1 text-sm active:scale-[0.98] transition-all duration-200",
               active === value
                 ? "text-fg border-b-2 border-purple"
                 : "text-comment hover:text-fg",
@@ -62,7 +62,7 @@ export function ProjectsList({ projects }: Props) {
 
               <Link
                 href={`/projects/${project.slug}`}
-                className="text-blue hover:text-purple transition-colors duration-200 text-xl font-medium"
+                className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 text-xl font-medium"
               >
                 {project.title}
               </Link>
@@ -80,7 +80,7 @@ export function ProjectsList({ projects }: Props) {
               <div className="flex items-center gap-4 mt-1 text-sm">
                 <Link
                   href={`/projects/${project.slug}`}
-                  className="text-fg hover:text-purple transition-colors duration-200 flex items-center gap-1 group"
+                  className="text-fg hover:text-purple active:scale-[0.98] transition-all duration-200 flex items-center gap-1 group"
                 >
                   Read the story <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </Link>
@@ -89,7 +89,7 @@ export function ProjectsList({ projects }: Props) {
                     href={project.github}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-comment hover:text-fg transition-colors duration-200 flex items-center gap-1"
+                    className="text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 flex items-center gap-1"
                   >
                     <FaGithub className="w-3 h-3" /> Source
                   </a>
@@ -99,7 +99,7 @@ export function ProjectsList({ projects }: Props) {
                     href={project.live}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-comment hover:text-fg transition-colors duration-200 flex items-center gap-1"
+                    className="text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 flex items-center gap-1"
                   >
                     <RiExternalLinkFill className="w-3 h-3" /> Live
                   </a>

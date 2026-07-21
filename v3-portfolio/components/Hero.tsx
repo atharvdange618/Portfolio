@@ -65,7 +65,7 @@ export function Hero() {
               key={label}
               href={href}
               aria-label={`Navigate to ${label.split("/")[1]} section`}
-              className="text-comment hover:text-purple transition-colors duration-200 text-lg underline-offset-4 decoration-border/50 hover:decoration-purple focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
+              className="text-comment hover:text-purple active:scale-[0.98] transition-all duration-200 text-lg underline-offset-4 decoration-border/50 hover:decoration-purple focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
             >
               {label}
             </a>

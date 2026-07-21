@@ -30,7 +30,7 @@ export function Blogs({
               <div className="flex items-center justify-between gap-4">
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="text-blue hover:text-purple transition-colors duration-200 text-lg font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
+                  className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 text-lg font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
                 >
                   {post.title}
                 </Link>
@@ -48,7 +48,7 @@ export function Blogs({
         )}
         <Link
           href="/blog"
-          className="text-base text-comment hover:text-purple transition-colors duration-200 flex items-center gap-1 w-fit group focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
+          className="text-base text-comment hover:text-purple active:scale-[0.98] transition-all duration-200 flex items-center gap-1 w-fit group focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
         >
           Read all posts{" "}
           <FaArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5" />
