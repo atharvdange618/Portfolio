@@ -31,6 +31,8 @@ export function ShareButtons({ title, description, slug }: ShareButtonsProps) {
   const copyLink = async () => {
     await navigator.clipboard.writeText(url);
     setCopied(true);
+    const announcer = document.getElementById("copy-announcer");
+    if (announcer) announcer.textContent = "Link copied to clipboard";
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -46,6 +48,7 @@ export function ShareButtons({ title, description, slug }: ShareButtonsProps) {
           className="flex items-center justify-center w-7 h-7 rounded-md border border-border bg-surface/50 text-comment hover:text-fg hover:border-purple hover:bg-surface active:scale-95 transition-all duration-200"
         >
           <link.icon className="w-3 h-3" />
+          <span className="sr-only"> (opens in new tab)</span>
         </a>
       ))}
       <button

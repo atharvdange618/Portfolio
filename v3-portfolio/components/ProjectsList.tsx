@@ -32,6 +32,7 @@ export function ProjectsList({ projects }: Props) {
           <button
             key={value}
             onClick={() => setActive(value)}
+            aria-pressed={active === value}
             className={cn(
               "px-3 py-1 text-sm active:scale-[0.98] transition-all duration-200",
               active === value
@@ -47,9 +48,9 @@ export function ProjectsList({ projects }: Props) {
       {filtered.length === 0 ? (
         <p className="text-comment text-lg">No projects in this category.</p>
       ) : (
-        <div className="flex flex-col">
+        <ul className="flex flex-col">
           {filtered.map((project) => (
-            <div
+            <li
               key={project.slug}
               className="flex flex-col gap-3 py-8 border-b border-border last:border-0"
             >
@@ -105,9 +106,9 @@ export function ProjectsList({ projects }: Props) {
                   </a>
                 )}
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

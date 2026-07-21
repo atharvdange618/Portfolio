@@ -16,6 +16,8 @@ export function ScrollToTop() {
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Scroll to top"
+      aria-hidden={!visible}
+      tabIndex={visible ? 0 : -1}
       className={`
         fixed bottom-8 right-8 z-50
         w-10 h-10 flex items-center justify-center

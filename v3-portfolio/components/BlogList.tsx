@@ -9,9 +9,9 @@ type Props = {
 
 export function BlogList({ posts }: Props) {
   return (
-    <div className="flex flex-col">
+    <ul className="flex flex-col">
       {posts.map((post) => (
-        <div
+        <li
           key={post.slug}
           className="flex flex-col gap-2 py-6 border-b border-border last:border-0"
         >
@@ -38,8 +38,8 @@ export function BlogList({ posts }: Props) {
           <p className="text-fg/80 text-base leading-relaxed">
             {post.description}
           </p>
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

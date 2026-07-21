@@ -11,6 +11,16 @@ export function CodeCopyButtonInitializer() {
       "[data-rehype-pretty-code-figure], .markdown pre",
     );
 
+    let liveRegion = document.getElementById("copy-announcer");
+    if (!liveRegion) {
+      liveRegion = document.createElement("div");
+      liveRegion.id = "copy-announcer";
+      liveRegion.setAttribute("aria-live", "polite");
+      liveRegion.setAttribute("aria-atomic", "true");
+      liveRegion.className = "sr-only";
+      document.body.appendChild(liveRegion);
+    }
+
     codeBlocks.forEach((block) => {
       const pre = block.tagName === "PRE" ? block : block.querySelector("pre");
       if (!pre) return;
@@ -58,6 +68,10 @@ export function CodeCopyButtonInitializer() {
           copyIcon?.classList.add("hidden");
           checkIcon?.classList.remove("hidden");
           button.classList.add("copied");
+
+          if (liveRegion) {
+            liveRegion.textContent = "Code copied to clipboard";
+          }
 
           setTimeout(() => {
             copyIcon?.classList.remove("hidden");

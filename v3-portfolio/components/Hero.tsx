@@ -5,7 +5,7 @@ export function Hero() {
         Atharv Dange - Full Stack Engineer & Cinephile
       </h1>
       <div className="flex flex-col items-start w-full">
-        <div className="hidden sm:flex flex-row flex-wrap mb-8 gap-x-8 gap-y-4 overflow-x-auto w-full">
+        <div className="hidden sm:flex flex-row flex-wrap mb-8 gap-x-8 gap-y-4 overflow-x-auto w-full" role="img" aria-label="Atharv Dange ASCII art banner">
           <pre className="text-green text-xs md:text-sm lg:text-base whitespace-pre leading-tight">
             {`
  █████╗ ████████╗██╗  ██╗ █████╗ ██████╗ ██╗   ██╗

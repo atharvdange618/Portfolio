@@ -60,6 +60,7 @@ export function Projects({
                     className="text-base text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
                   >
                     <FaGithub className="w-4 h-4" />
+                    <span className="sr-only"> (opens in new tab)</span>
                   </a>
                 )}
                 {project.live && (
@@ -71,6 +72,7 @@ export function Projects({
                     className="text-base text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
                   >
                     <RiExternalLinkFill className="w-4 h-4" />
+                    <span className="sr-only"> (opens in new tab)</span>
                   </a>
                 )}
               </div>

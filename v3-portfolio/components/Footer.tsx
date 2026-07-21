@@ -125,12 +125,14 @@ export function Footer() {
               <span
                 className={`w-1.5 h-1.5 rounded-full bg-current animate-pulse ${modeTextColors[mode]}`}
               />
-              <span>{timeString ? timeString.split(" ")[0] : "--:--:--"}</span>
+              <time className="text-fg/90 tracking-wide" aria-label="Current time">
+                {timeString ? timeString.split(" ")[0] : "--:--:--"}
+              </time>
             </div>
           </div>
 
           <div className="w-full md:flex-1 flex items-stretch min-w-0 bg-surface/10 md:bg-transparent h-9 md:h-full">
-            <div className="flex items-stretch w-full justify-start md:justify-center">
+            <nav aria-label="Social links" className="flex items-stretch w-full justify-start md:justify-center">
               {links.map(({ label, href, icon: Icon, modeHover }) => (
                 <Link
                   key={label}
@@ -143,9 +145,10 @@ export function Footer() {
                   aria-label={label}
                 >
                   <Icon className="w-3.5 h-3.5 text-comment group-hover:text-fg transition-colors" />
+                  <span className="sr-only"> (opens in new tab)</span>
                 </Link>
               ))}
-            </div>
+            </nav>
           </div>
 
           <div className="hidden md:flex items-center shrink-0">
@@ -159,9 +162,9 @@ export function Footer() {
               <span
                 className={`w-1.5 h-1.5 rounded-full bg-current animate-pulse ${modeTextColors[mode]}`}
               />
-              <span className="text-fg/90 tracking-wide">
+              <time className="text-fg/90 tracking-wide" aria-label="Current time">
                 {timeString || "--:--:--"}
-              </span>
+              </time>
             </div>
           </div>
         </div>

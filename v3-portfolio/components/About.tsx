@@ -16,6 +16,7 @@ export function About() {
             className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
             SpaceBuilder
+            <span className="sr-only"> (opens in new tab)</span>
           </a>
           , where we build custom software, AI automations, and web applications
           for businesses.
@@ -36,6 +37,7 @@ export function About() {
             className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
             blog
+            <span className="sr-only"> (opens in new tab)</span>
           </a>{" "}
           and watch way too many films.
         </p>

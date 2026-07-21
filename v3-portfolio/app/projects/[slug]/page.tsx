@@ -138,6 +138,7 @@ export default async function ProjectPage({
             >
               <FaGithub className="w-3 h-3" />
               View on GitHub
+              <span className="sr-only"> (opens in new tab)</span>
             </a>
           )}
           {fm.live && (
@@ -149,6 +150,7 @@ export default async function ProjectPage({
             >
               <RiExternalLinkFill className="w-3 h-3" />
               Live demo
+              <span className="sr-only"> (opens in new tab)</span>
             </a>
           )}
         </div>
