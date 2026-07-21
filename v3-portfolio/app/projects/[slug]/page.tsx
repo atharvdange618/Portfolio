@@ -93,7 +93,7 @@ export default async function ProjectPage({
       />
       <Link
         href="/projects"
-        className="flex items-center gap-2 text-comment hover:text-fg transition-colors duration-200 text-sm w-fit"
+        className="flex items-center gap-2 text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 text-sm w-fit"
       >
         <FaArrowLeftLong className="w-3 h-3" />
         Back to projects
@@ -134,7 +134,7 @@ export default async function ProjectPage({
               href={fm.github}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-fg border border-border px-3 py-1.5 hover:border-purple hover:text-purple transition-colors duration-200"
+              className="flex items-center gap-2 text-sm text-fg border border-border px-3 py-1.5 hover:border-purple hover:text-purple active:scale-[0.97] transition-all duration-200"
             >
               <FaGithub className="w-3 h-3" />
               View on GitHub
@@ -145,7 +145,7 @@ export default async function ProjectPage({
               href={fm.live}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-fg border border-border px-3 py-1.5 hover:border-purple hover:text-purple transition-colors duration-200"
+              className="flex items-center gap-2 text-sm text-fg border border-border px-3 py-1.5 hover:border-purple hover:text-purple active:scale-[0.97] transition-all duration-200"
             >
               <RiExternalLinkFill className="w-3 h-3" />
               Live demo

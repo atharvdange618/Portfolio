@@ -20,9 +20,9 @@ export function ScrollToTop() {
         fixed bottom-8 right-8 z-50
         w-10 h-10 flex items-center justify-center
         bg-surface border border-border rounded-lg
-        text-comment hover:text-purple hover:border-purple
-        transition-all duration-300
-        ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}
+        text-comment hover:text-purple hover:border-purple active:scale-95
+        transition-all duration-200 ease-out
+        ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none"}
       `}
     >
       <FaArrowUp className="w-4 h-4" />
