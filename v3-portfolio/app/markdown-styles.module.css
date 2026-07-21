@@ -12,11 +12,11 @@
 }
 
 .markdown h2 {
-    @apply text-2xl mt-12 mb-4 leading-snug font-semibold text-purple;
+    @apply text-xl sm:text-2xl mt-12 mb-4 leading-snug font-semibold text-purple;
 }
 
 .markdown h3 {
-    @apply text-xl mt-8 mb-4 leading-snug text-purple font-semibold;
+    @apply text-lg sm:text-xl mt-8 mb-4 leading-snug text-purple font-semibold;
 }
 
 .markdown ul {
@@ -75,7 +75,7 @@
 }
 
 .markdown [data-rehype-pretty-code-figure][data-language="ascii"] code {
-    @apply text-sm;
+    @apply text-[11px] sm:text-xs md:text-sm;
     color: var(--color-comment);
     line-height: 1.9;
 }
