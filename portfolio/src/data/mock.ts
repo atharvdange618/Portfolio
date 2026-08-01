@@ -5,7 +5,7 @@ export const personalInfo = {
   bio: "I'm a Full Stack Engineer who builds things from first principles. Most of my recent work dives into how frameworks work underneath - client-side routing, rendering strategies, CSS engines, and auth systems. I write about what I learn. Backend is where I started (Node.js, PostgreSQL, Prisma), but I've been spending more time on the frontend engineering side lately.",
   company: "Open to Opportunities",
   funFact:
-    "When I'm not coding, you can find me watching movies, diving into a new anime series, or exploring the world around me with my girlfriend.",
+    "When I'm not coding, you can find me watching movies, diving into a new anime series, or exploring the world around me",
   characterEssence: {
     identity: [
       {
@@ -60,6 +60,7 @@ export const personalInfo = {
     phone: "7875273298",
     portfolio: "https://atharvdangedev.in",
     blog: "https://blog.atharvdangedev.in",
+    work: "https://tty.atharvdangedev.in",
   },
 };
 
