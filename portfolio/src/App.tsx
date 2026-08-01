@@ -30,9 +30,9 @@ const App = () => {
                   path="/shikai/testing"
                   element={
                     <RedirectPage
-                      url="https://play.google.com/apps/testing/com.atharvdange618.Shikai"
-                      title="Shikai Closed Testing"
-                      description="Redirecting you to the Google Play Store closed testing program for Shikai. Join the testing group to install and try out the app."
+                      url="https://play.google.com/store/apps/details?id=com.atharvdange618.Shikai"
+                      title="Shikai on Google Play"
+                      description="Redirecting you to Shikai on the Google Play Store. Download the app and try it out."
                     />
                   }
                 />
@@ -40,9 +40,9 @@ const App = () => {
                   path="/testing"
                   element={
                     <RedirectPage
-                      url="https://play.google.com/apps/testing/com.atharvdange618.Shikai"
-                      title="Shikai Closed Testing"
-                      description="Redirecting you to the Google Play Store closed testing program for Shikai. Join the testing group to install and try out the app."
+                      url="https://play.google.com/store/apps/details?id=com.atharvdange618.Shikai"
+                      title="Shikai on Google Play"
+                      description="Redirecting you to Shikai on the Google Play Store. Download the app and try it out."
                     />
                   }
                 />
@@ -51,8 +51,8 @@ const App = () => {
                   element={
                     <RedirectPage
                       url="https://forms.gle/SkU5CR4CMyaMh3Y17"
-                      title="Shikai Feedback Form"
-                      description="Redirecting you to the feedback form for Shikai. Your responses will help improve the app before its public release."
+                      title="Shikai Feedback"
+                      description="Redirecting you to the feedback form for Shikai. Your responses help shape the app."
                     />
                   }
                 />
@@ -61,8 +61,8 @@ const App = () => {
                   element={
                     <RedirectPage
                       url="https://forms.gle/SkU5CR4CMyaMh3Y17"
-                      title="Shikai Feedback Form"
-                      description="Redirecting you to the feedback form for Shikai. Your responses will help improve the app before its public release."
+                      title="Shikai Feedback"
+                      description="Redirecting you to the feedback form for Shikai. Your responses help shape the app."
                     />
                   }
                 />
