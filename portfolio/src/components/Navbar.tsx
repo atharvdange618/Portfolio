@@ -36,7 +36,7 @@ export default function Navbar() {
 
   const [announcementVisible, setAnnouncementVisible] = useState(() => {
     if (typeof window !== "undefined") {
-      return !localStorage.getItem("shikai-announcement-dismissed");
+      return !localStorage.getItem("shikai-launch-dismissed");
     }
     return false;
   });
@@ -44,7 +44,7 @@ export default function Navbar() {
   const handleDismissAnnouncement = (e: React.MouseEvent) => {
     e.stopPropagation();
     setAnnouncementVisible(false);
-    localStorage.setItem("shikai-announcement-dismissed", "true");
+    localStorage.setItem("shikai-launch-dismissed", "true");
   };
 
   useEffect(() => {
@@ -100,15 +100,15 @@ export default function Navbar() {
       {announcementVisible && (
         <div className="w-full bg-linear-to-r from-[#FF9149] via-[#FFB494] to-[#60B5FF] text-black font-body text-xs sm:text-sm py-2 px-4 border-b-2 border-black dark:border-white flex items-center justify-between gap-4 font-bold shadow-sm select-none">
           <div className="flex-1 flex items-center justify-center gap-1.5 flex-wrap text-center">
-            <span>Shikai Closed Beta is live!</span>
+            <span>Shikai is live on the Play Store!</span>
             <a
-              href="https://forms.gle/qdw2xTKfH9kGsmwt9"
+              href="https://play.google.com/store/apps/details?id=com.atharvdange618.Shikai"
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => trackGoal("shikai_testing_clicked")}
+              onClick={() => trackGoal("shikai_playstore_clicked")}
               className="underline hover:text-white transition-colors duration-150 inline-flex items-center gap-0.5"
             >
-              Join Testing Program
+              Get the app
             </a>
             <span className="hidden sm:inline">|</span>
             <a
