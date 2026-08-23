@@ -48,8 +48,8 @@ export function TableOfContents({ items }: { items: TocItem[] }) {
               <a
                 href={`#${item.id}`}
                 className={`
-                  block text-sm leading-relaxed border-l -ml-px transition-colors duration-200
-                  ${item.level === 3 ? "pl-6" : "pl-4"}
+                  block leading-relaxed border-l -ml-px transition-colors duration-200
+                  ${item.level === 3 ? "pl-8 text-xs" : "pl-4 text-sm"}
                   ${
                     activeId === item.id
                       ? "border-green text-green"

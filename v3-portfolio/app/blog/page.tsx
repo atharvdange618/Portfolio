@@ -6,7 +6,7 @@ import Link from "next/link";
 import { FaArrowLeftLong } from "react-icons/fa6";
 
 export const metadata = {
-  title: "Blog - Atharv Dange",
+  title: "Blog",
   description:
     "Writing on JavaScript & Web fundamentals, frameworks, tools and software engineering",
 };

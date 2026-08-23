@@ -19,7 +19,7 @@ const statusConfig: Record<
   },
   archived: {
     label: "archived",
-    className: "text-red border-red",
+    className: "text-comment border-comment",
   },
 };
 

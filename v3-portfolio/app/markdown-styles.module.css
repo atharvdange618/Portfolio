@@ -1,7 +1,7 @@
 @reference "./globals.css";
 
 .markdown {
-    @apply text-lg leading-relaxed;
+    @apply max-w-[70ch] text-lg leading-relaxed;
 }
 
 .markdown p,
