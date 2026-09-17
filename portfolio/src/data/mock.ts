@@ -60,7 +60,7 @@ export const personalInfo = {
     phone: "7875273298",
     portfolio: "https://atharvdangedev.in",
     blog: "https://blog.atharvdangedev.in",
-    work: "https://tty.atharvdangedev.in",
+    work: "https://tty-atharvdange.vercel.app",
   },
 };
 
