@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { Sun, Moon, Menu, X, Github, Linkedin } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { personalInfo } from "@/data/mock";
-import { trackGoal } from "@/lib/telemetry";
 
 const navLinks = [
   { label: "About", href: "/#about" },
@@ -28,24 +27,6 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const isRedirectRoute =
-    location.pathname.startsWith("/shikai") ||
-    location.pathname === "/testing" ||
-    location.pathname === "/feedback";
-
-  const [announcementVisible, setAnnouncementVisible] = useState(() => {
-    if (typeof window !== "undefined") {
-      return !localStorage.getItem("shikai-launch-dismissed");
-    }
-    return false;
-  });
-
-  const handleDismissAnnouncement = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setAnnouncementVisible(false);
-    localStorage.setItem("shikai-launch-dismissed", "true");
-  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -86,8 +67,6 @@ export default function Navbar() {
     }
   };
 
-  if (isRedirectRoute) return null;
-
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 border-b-3 border-black dark:border-white transition-all duration-300 ${
@@ -97,40 +76,6 @@ export default function Navbar() {
       }`}
       style={{ borderBottomWidth: "3px" }}
     >
-      {announcementVisible && (
-        <div className="w-full bg-linear-to-r from-[#FF9149] via-[#FFB494] to-[#60B5FF] text-black font-body text-xs sm:text-sm py-2 px-4 border-b-2 border-black dark:border-white flex items-center justify-between gap-4 font-bold shadow-sm select-none">
-          <div className="flex-1 flex items-center justify-center gap-1.5 flex-wrap text-center">
-            <span>Shikai is live on the Play Store!</span>
-            <a
-              href="https://play.google.com/store/apps/details?id=com.atharvdange618.Shikai"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackGoal("shikai_playstore_clicked")}
-              className="underline hover:text-white transition-colors duration-150 inline-flex items-center gap-0.5"
-            >
-              Get the app
-            </a>
-            <span className="hidden sm:inline">|</span>
-            <a
-              href="/feedback"
-              onClick={(e) => {
-                trackGoal("shikai_feedback_clicked");
-                handleNavClick(e, "/feedback");
-              }}
-              className="underline hover:text-white transition-colors duration-150 inline-flex items-center gap-0.5"
-            >
-              Share Feedback
-            </a>
-          </div>
-          <button
-            onClick={handleDismissAnnouncement}
-            className="p-1 border border-black bg-white hover:bg-red-400 text-black cursor-pointer transition-colors"
-            aria-label="Dismiss announcement"
-          >
-            <X size={12} />
-          </button>
-        </div>
-      )}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <a
