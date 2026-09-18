@@ -22,14 +22,16 @@ stack:
   - "Expo Blur"
   - "React Native SVG"
   - "React Native Android Widget"
-startedAt: "2026-04-6"
-updatedAt: "2026-07-13"
+  - "Sentry"
+  - "Vitest"
+startedAt: "2026-04-06"
+updatedAt: "2026-09-18"
 github: "https://github.com/atharvdange618/Shikai"
 live: "https://play.google.com/store/apps/details?id=com.atharvdange618.Shikai"
 description: "A beautifully crafted, read-only GitHub dashboard for Android. Browse repos, explore code, track your contribution streak, and share your profile - without the pressure of taking action."
 ---
 
-Shikai is a mobile-first GitHub companion for Android. It gives you a read-only view of your GitHub presence: repos, contribution graphs, activity feeds, and a shareable profile card. No write actions, no merge buttons. You open it, browse, and nothing bad happens.
+Shikai is a mobile-first GitHub companion for Android. It gives you a read-only view of your GitHub presence: repos, contribution graphs, activity feeds, and a shareable profile card. No push buttons, no merge actions, no anxiety about accidentally doing something on a tiny screen.
 
 GitHub's official app is good for collaboration. It is not great for just checking in. Shikai fills that gap.
 
@@ -73,6 +75,10 @@ Shikai is read-only by design. No write operations, no merge buttons. You open i
 - **5 Themes**: Light, Dark, Tokyo Night, Dracula, Atom One.
 - **Offline Support**: MMKV-backed disk caching with 24-hour persistence. An offline banner appears when connectivity drops.
 - **Security Module**: A Kotlin Expo module that checks for root, debuggers, and developer options at boot. Blocks access on compromised devices.
+- **Deep Repo Navigation**: Blame and per-file commit history, a compare view between any two refs, a releases tab with changelogs and downloadable assets, and a Discussions viewer.
+- **Richer PR/Issue Threads**: Review comments show their diff hunk inline, timelines merge label/state/reference events into the comment stream in order, and reactions show up under bodies and comments.
+- **GitHub URL Deep Links**: Opening or sharing a github.com link (repo, issue, PR, commit, compare, release, file, folder) routes straight into the matching in-app screen instead of a browser.
+- **Crash and Performance Monitoring**: Anonymous crash reports and sampled performance data sent to Sentry, with GitHub tokens stripped from every report before it leaves the device. Off in development.
 
 ---
 
@@ -80,7 +86,7 @@ Shikai is read-only by design. No write operations, no merge buttons. You open i
 
 Three ideas drove the design:
 
-1. **Read-only by design**: No write actions means no accidental consequences. It is a viewing space.
+1. **Read-only by design**: No write actions means no anxiety. It is a viewing space.
 2. **Mobile-first, native feel**: Touch-optimized scrolling, haptic feedback, fluid animations with Reanimated.
 3. **Right information density**: Card-based layouts group related data. Deeper details appear on demand, not all at once.
 
@@ -88,12 +94,12 @@ Three ideas drove the design:
 
 ## Technical Architecture and Decisions
 
-- **State and data**: TanStack Query for server state (caching, background refetching). Zustand for client state (auth tokens, sign-in state, watchlist). TanStack Query persists to MMKV with a 24-hour max age. Individual queries set their own stale times. Stale time controls background refetch frequency (5min default). Persist max age controls how long data survives offline (24h). MMKV was chosen over AsyncStorage because it is synchronous and ~30x faster; a thin async wrapper makes it compatible with TanStack Query's persister.
+- **State and data**: TanStack Query for server state (caching, background refetching). Zustand for client state (auth tokens, sign-in state, watchlist). TanStack Query persists to MMKV with a 24-hour max age. Individual queries set their own stale times. Stale time controls background refetch frequency (5min default). Persist max age controls how long data survives offline (24h). They serve different purposes. MMKV was chosen over AsyncStorage because it is synchronous and ~30x faster; a thin async wrapper makes it compatible with TanStack Query's persister.
 - **Navigation**: Expo Router, file-based. Tabs layout (Overview, Repos, Search, Profile) with stack screens for repo details, user profiles, and settings.
 - **UI and animations**: Reanimated and Gesture Handler for 60fps animations on the UI thread. FlashList for large lists. Skia for the contribution heatmap.
 - **Prefetching**: A `lib/prefetch.ts` module with a 3-layer architecture (detailed in Challenges).
 - **Dual API**: REST for most data (repos, commits, issues, PRs, notifications, files). GraphQL for contribution graphs, pinned repos, and aggregate stats where it avoids over-fetching.
-- **Why not Octokit?**: GitHub's `@octokit/rest` is built for Node.js and browsers. In React Native, a thin axios wrapper was simpler: one client handles both REST and GraphQL, custom interceptors track rate limits globally and handle 401 auto-logout, and the same auth path serves both OAuth tokens and PATs. The bundle is also smaller (~15KB vs ~50KB+).
+- **Why not Octokit?**: GitHub's official `@octokit/rest` is built for Node.js and browsers. In React Native, a thin axios wrapper was simpler: one client handles both REST and GraphQL, custom interceptors track rate limits globally and handle 401 auto-logout, and the same auth path serves both OAuth tokens and PATs without Octokit's plugin adapters. The bundle is also smaller (~15KB vs ~50KB+).
 
 ```ascii
 ┌──────────────┐
@@ -149,7 +155,7 @@ I wanted users to read actual code files on their phones. The file explorer has 
 
 ### 4. Authentication: PAT to OAuth
 
-Shikai started with Personal Access Token auth. It worked, but asking users to generate a PAT was a poor onboarding experience. I replaced it with GitHub OAuth using PKCE. The token exchange happens on a Cloudflare Worker that acts as an OAuth proxy, keeping the client secret off the device. You need the proxy because GitHub requires `client_secret` in the token exchange, and you cannot ship that on a mobile app. Tokens go into expo-secure-store.
+Shikai started with Personal Access Token auth. It worked, but asking users to generate a PAT was a bad onboarding experience. I replaced it with GitHub OAuth using PKCE. The token exchange happens on a Cloudflare Worker that acts as an OAuth proxy, keeping the client secret off the device. You need the proxy because GitHub requires `client_secret` in the token exchange, and you cannot ship that on a mobile app. Tokens go into expo-secure-store.
 
 <Callout type="warning">
   **Why a Cloudflare Worker proxy?** GitHub's OAuth token exchange requires `client_secret`, which cannot be shipped on a mobile app. The Worker holds the secret server-side and exchanges the authorization code for tokens.
@@ -167,6 +173,12 @@ I built a native Kotlin Expo module for root detection, debugger detection, and 
   **Root detection is a cat-and-mouse game.** Determined attackers can bypass any client-side check. The Kotlin module raises the bar significantly, but it does not guarantee security. It protects against casual tampering, not determined adversaries.
 </Callout>
 
+### 6. The Play Store Review Wall
+
+Google Play rejected a release over the OAuth sign-in flow. A reviewer's sandboxed session can't complete the browser redirect and device-verification/2FA prompts that a real user's session sails through, so the sign-in just stalled during review.
+
+The fix was a second, self-contained entry point: a "Sign in with a token" option that accepts a classic or fine-grained PAT with `repo` and `read:user` scopes, validates it directly against the GitHub API, and starts the session without touching a browser at all. It's not the path I expect real users to take, it exists so a reviewer (or anyone without OAuth access) has a way in that never depends on GitHub's own auth UI. Both paths converge on the same `finalizeSession()` call, so the rest of the app has no idea which one ran.
+
 ---
 
 ## Results
@@ -177,4 +189,4 @@ I built a native Kotlin Expo module for root detection, debugger detection, and 
 
 Shikai does what it set out to do: a read-only GitHub dashboard that looks good on Android. Students use it to track contribution streaks. Open-source maintainers use it to monitor community engagement. I have pulled it up at interviews and client demos.
 
-The codebase is at [github.com/atharvdange618/Shikai](https://github.com/atharvdange618/Shikai). Shikai is live on the [Google Play Store](https://play.google.com/store/apps/details?id=com.atharvdange618.Shikai).
+The codebase is at [github.com/atharvdange618/Shikai](https://github.com/atharvdange618/Shikai). Shikai is live on the [Google Play Store](https://play.google.com/store/apps/details?id=com.atharvdange618.Shikai), with release APKs also available on the [GitHub releases page](https://github.com/atharvdange618/Shikai/releases).
