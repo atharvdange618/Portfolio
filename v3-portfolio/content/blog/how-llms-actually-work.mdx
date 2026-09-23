@@ -1,0 +1,159 @@
+---
+title: "How LLMs Actually Work, From Tokens to Predictions"
+publishedAt: "2026-09-23"
+featured: true
+description: "A concept by concept walkthrough of what happens inside a modern LLM: tokenization, embeddings, RoPE, attention, induction heads, multi-head attention with GQA, the feed-forward network, residual streams, and next-token prediction. Written up after working through the mechanics until every piece made sense."
+summary: "I went through the transformer piece by piece to understand what happens between a prompt and a response. Text becomes subword tokens, and each token becomes a vector through an embedding matrix. Attention lets each token pull context from the tokens before it using Query, Key, and Value projections, and RoPE rotates the Queries and Keys so the model knows how far apart two tokens are. Multi-head attention runs many of these passes in parallel, and Grouped-Query Attention shares Key/Value heads to shrink the memory cost. Much of a model's factual recall seems to happen in the feed-forward network. Residual connections and normalization are what make stacking dozens of layers trainable. The last token's vector gets scored against the whole vocabulary, softmax turns the scores into probabilities, and the model samples one token at a time. Open models like LLaMA publish this exact recipe, and everything public about GPT and Claude points to the same skeleton. What differs is the weights, the configuration, and the post-training."
+---
+
+I use LLMs every day, but I had never worked out what happens between typing a prompt and watching the response stream back. I wanted the mechanism, not the marketing version: what a token is, what a vector does with 4,000 numbers in it, why attention is called attention, and why every model card mentions RoPE and RMSNorm as if you already know what they are.
+
+So I went through it one concept at a time until each one clicked, using [0xkato's "How LLMs Actually Work"](https://www.0xkato.xyz/how-llms-actually-work) as my map and checking each claim against the papers behind it. This post follows the order the pieces build on each other: tokens, embeddings, position, attention, many attention heads at once, the feed-forward network, the residual stream that holds it together, and the last step that turns a vector into the next word. Most of a model card is a list of settings on top of this same skeleton. Once the skeleton makes sense, the model cards start to make sense too.
+
+```ascii
+"the cat sat"
+      │
+      ▼
+ [tokenize]      →  token IDs
+      │
+      ▼
+ [embed]         →  one vector per token
+      │
+      ▼
+ ┌──────────────────────────────────┐
+ │  norm → attention (RoPE on Q, K) │   × N layers, each
+ │  norm → feed-forward             │   sub-block adds its
+ │  (each adds back to the stream)  │   output to the stream
+ └──────────────────────────────────┘
+      │
+      ▼
+ [final norm + unembed + softmax]  →  probability for every token
+      │
+      ▼
+    next token
+```
+
+## Text Becomes Numbers Before Anything Else
+
+A model never reads your words. It reads integers. Tokenization turns a string into a list of integers, and each integer points into a fixed vocabulary the model was trained with. Vocabulary sizes range from about 32,000 (LLaMA 2, Mistral 7B) to 200,000 or more (GPT-4o, Gemma).
+
+Those integers don't map to whole words. They map to pieces of words. "unbelievable" might split into `un`, `believ`, `able`. That's a deliberate middle ground. A vocabulary of whole words gets huge and still has no entry for a word it has never seen. A vocabulary of single letters stays tiny, but then even common words take a dozen steps to spell out, and the model has to work harder to treat them as one idea. Subword tokenization splits the difference. Common words usually get one token each, and rare or made-up words get built from smaller pieces. "glorbnificent" comes out as several tokens, since it never earned a slot of its own.
+
+This explains a famous failure. Ask an older LLM how many R's are in "strawberry" and it often gets it wrong. The problem is less about counting and more about input: the model never sees the letters. It sees two or three chunks that happen to spell the word, the way you'd read a barcode instead of the label under it.
+
+GPT models use byte-level Byte Pair Encoding (BPE). It starts from raw bytes and keeps merging the most frequent neighboring pair into a new token until the vocabulary hits its target size. LLaMA 1 and 2 used Google's SentencePiece library to run the same kind of merging over characters, and LLaMA 3 switched to a byte-level BPE like OpenAI's. The details matter for two practical reasons. Fewer tokens per request means less compute, because the model's cost grows with the number of tokens, not the number of words. And a tokenizer trained mostly on English cuts other scripts into far more pieces per word, which makes those languages slower and more expensive to run.
+
+## A Number Alone Means Nothing
+
+A token ID like `1024` carries no meaning by itself. It's a row number. The meaning comes from a lookup table called the embedding matrix. It has one row per vocabulary entry, and each row is a vector: a list of numbers, 4,096 of them in a 7B model and 8,192 in a 70B one. Think of it as a spreadsheet with one row per token. Every time the model sees a token ID, it copies out that row.
+
+Nobody picks those numbers by hand. They start random, and training shapes them. Tokens that show up in similar contexts end up with similar vectors, so "king" sits near "queen" and far from "bicycle." The classic demo is `vector("king") - vector("man") + vector("woman")` landing near `vector("queen")`. That result comes from word2vec (Mikolov et al. 2013), an older and simpler model, and LLM embeddings show a looser version of the same structure. Either way, nobody built it in. The space picked up directions that roughly mean "gender" or "royalty" because those directions helped predict text.
+
+At this stage, the vector depends only on which token it is, not on where it sits or what surrounds it. "bank" the riverbank and "bank" the lender start out with the exact same vector. Attention, further down, is what tells them apart.
+
+## Order Doesn't Come for Free
+
+Attention, the mixing step covered in the next section, has no built-in sense of order. Each token scores the others by content alone. Without something extra, "the cat chased the dog" and "the dog chased the cat" give it the same tokens and no clear signal for which came first.
+
+The original 2017 transformer handled this by adding a fixed pattern of sine and cosine waves to each token's embedding, a different pattern for each position. That worked, but it encoded absolute position ("I'm token 37"), when language mostly cares about relative position ("that word was three back"). It also mixed position into the same numbers that carry meaning. Later models like GPT-2 and BERT learned their position vectors instead, which had a harder limit: train on sequences up to 1,024 tokens and there's simply no vector for position 5,000.
+
+Most modern models use RoPE, Rotary Position Embedding (Su et al. 2021), now standard in LLaMA, Mistral, Gemma, and most open models. Two details matter. First, RoPE doesn't touch the embedding. It acts inside every attention layer, on the Query and Key vectors (introduced in the next section). Second, it rotates instead of adding. Picture each pair of numbers in the vector as a clock hand. RoPE turns that hand by an angle based on the token's position: a little for position 1, much further for position 100. Different pairs turn at different speeds, some fast and some slow, so the vector can encode both short and long distances.
+
+Here's why rotating works. When attention compares two rotated vectors, the result depends only on the difference between their angles, which means it depends only on how far apart the two tokens are. Two tokens ten positions apart produce the same position signal near the start of a document or ten thousand tokens in.
+
+Long-context models still show a "lost in the middle" effect (Liu et al. 2023). They recall information near the start or end of a long prompt more reliably than information buried in the middle. RoPE was never meant to fix this, and the cause is still debated. Training data is one likely factor, since most documents put the important parts first or last. In practice, this is why "put the important part first or last" is real prompting advice.
+
+## How One Token Learns From Every Other Token
+
+The paper that introduced transformers was titled "Attention Is All You Need," and this is the attention it meant. Inside every layer, attention lets each token look at the tokens it's allowed to see and decide which ones matter to it.
+
+Every token gets projected into three vectors by three separate learned weight matrices: a Query, a Key, and a Value. The Query says what this token is looking for. The Key says what this token has to offer. The Value is what gets passed along when a match happens. It works like a lookup with partial matches: a Query gets compared against every Key it can see, and the result is a blend of Values, weighted by how well each Key matched.
+
+Take "The cat that I saw yesterday was sleeping" and look at "was." Its Query is asking, roughly, who is doing this. That Query gets compared against every earlier Key with a dot product: multiply the two vectors number by number and add it all up. Vectors that point the same way score high. The score against "cat" comes out high and the score against "yesterday" comes out low. Each score gets divided by the square root of the vector size, which keeps the numbers from growing too large, and then softmax turns the scores into weights that add up to one. Say "cat" gets 0.6 and "yesterday" gets 0.1. The new vector for "was" is a weighted sum of every token's Value, and "cat" dominates it. A word four positions back now shapes what this token means.
+
+For left-to-right generation there's one more rule. A token at position N can attend to positions 1 through N and never anything after. This is causal masking. Before softmax, the model sets every score for a future position to negative infinity, so those weights come out as zero. One result: the last token in the prompt, right before generation starts, can see every token before it. No other token has as full a view, which matters at the very end of this post.
+
+Attention's cost grows with the square of the sequence length, because every token scores against every token it can see. Double the prompt and you roughly quadruple the attention work. That's a big reason context windows used to be small, and why FlashAttention (a faster way to compute the same thing), sliding-window attention (each token sees only a recent window), and non-attention models like Mamba exist.
+
+## The Pattern Behind In-Context Learning
+
+Anthropic's interpretability team described one attention pattern in 2021 and 2022 that accounts for a behavior that used to feel like magic: a model picking up a brand-new pattern from your prompt and continuing it, with no training on that exact pattern.
+
+The pattern is "A B ... A, so predict B." If "Harry Potter" showed up earlier and the model hits "Harry" again, an induction head pushes hard toward "Potter." Two heads in different layers work together. First, a previous-token head copies into each position a note about which token came right before it. So the position holding "Potter" now also carries "the token before me was Harry." Then, at the new "Harry," the induction head searches for any position whose note says "the token before me was Harry." It finds "Potter" and copies it forward as the prediction.
+
+Two timescales are easy to mix up here. The model learns the skill (scan back for a repeat, copy what followed) during training, and that takes enormous amounts of text. It uses the skill at inference time, and that needs only one earlier occurrence in the current context. Reading maps works the same way: it takes years of practice to learn, but once you can do it, you can read a map you've never seen on the first try. That's why this works on patterns the model never saw in training, as long as the pattern shows up once earlier in the same prompt.
+
+Olsson et al. (2022) found strong evidence that induction heads drive a large share of in-context learning, with the clearest results in small models. Few-shot prompting at scale uses more than pure copying, though. When you give three to five examples instead of one, you aren't giving the mechanism more to copy. You're narrowing down which rule you mean. One example fits many possible rules, and each extra example rules more of them out.
+
+## One Attention Pass Isn't Enough
+
+One attention pass gives the model one learned view of which tokens matter to which. Language needs several views at once. A verb might need to find its subject and also check whether this phrase repeats an earlier one. A single set of attention weights would have to average those two needs together and would do both badly.
+
+Multi-head attention runs the attention operation many times in parallel, and each run, called a head, has its own learned Query, Key, and Value weights. Each head projects the full input vector down into its own small space, say from 4,096 numbers to 128 when there are 32 heads, and runs a complete attention pass there. Then the model joins all 32 outputs end to end and mixes them through one more learned matrix.
+
+This is the part that trips people up when reading code. In most implementations you'll see one big Query matrix whose output gets split into 32 chunks of 128. That looks like "slicing the vector into 32 pieces," but the split happens after the projection, so every head still sees the whole input. The one big matrix is 32 separate head matrices stored side by side.
+
+Nobody assigns heads their jobs. Specialization comes out of training. Researchers have found heads that link a verb back to its subject and heads that connect a pronoun to the name it refers to, on top of the induction heads above. A 7B model has 32 heads in each of 32 layers, over a thousand in total. LLaMA-2 70B has 64 heads in each of 80 layers, over five thousand.
+
+That many heads has a cost, and it drove a recent change in design. During generation, the model stores the Key and Value vectors for every token in the context, for every head in every layer, so it doesn't have to recompute them for each new token. This store is the KV cache, and at long context lengths it's usually the real memory limit. Grouped-Query Attention (GQA, Ainslie et al. 2023) shrinks it. Every Query head stays separate, but groups of Query heads share one Key/Value head. LLaMA-2 70B runs 64 Query heads against 8 Key/Value heads, which makes the KV cache 8 times smaller. Mistral 7B runs 32 against 8. GQA sits between two extremes: standard multi-head attention, where every Query head has its own Key/Value head, and multi-query attention, where all Query heads share a single one. Sharing more saves memory but costs some quality, and GQA gets most of the savings for very little of the loss.
+
+The saving is mostly in memory, not math. The model still computes a score for every Query head, since the number of Query heads doesn't change. It does compute fewer Key and Value projections, but that's the smaller win. The bigger win comes from generation speed, which usually depends on how fast the GPU can read data from memory rather than how fast it can multiply. A smaller KV cache means less data to read for every new token, and that's where most of GQA's speedup comes from.
+
+## Where an LLM Seems to Keep What It Knows
+
+Every transformer layer is an attention sub-block followed by a feed-forward sub-block (the FFN). Attention mixes information across tokens. The FFN does the opposite: it processes each token's vector on its own, with no view of any other token.
+
+For each token, the FFN widens the vector, applies a non-linear function, and narrows it back. A 4,096-number vector might widen to around 11,000 to 16,000 numbers, pass through the non-linear step, and shrink back to 4,096. The non-linear step is what makes the block worth having. Two linear layers in a row do the same job as one linear layer, no matter how you stack them, so without that step the whole block would collapse into a single matrix multiply. Older models used ReLU or GELU for this. Most modern models, including LLaMA, Mistral, and PaLM, use SwiGLU (Shazeer 2020). It computes two projections of the input and multiplies them together number by number, so one acts as a gate on the other. SwiGLU needs three weight matrices instead of two, so models shrink the hidden width to keep the parameter count the same. At equal size, it still trains to better quality. Even the paper that introduced it offers no clear explanation of why.
+
+Here's the part that surprised me most: in a dense model, about two thirds of the parameters sit in the FFN layers, not in attention. Geva et al. (2021) showed that FFN layers behave like key-value memories: the first matrix detects patterns in the input, and the second writes out related information. Some single neurons respond to recognizable concepts, but most respond to a mix of unrelated things, which makes "one neuron, one fact" too simple. A rough split: attention decides where to look, and the FFN supplies much of what the model knows.
+
+The clearest demo is ROME, Rank-One Model Editing (Meng et al. 2022). It changed "the Eiffel Tower is in Paris" to "the Eiffel Tower is in Rome" with one small, targeted change to a single FFN weight matrix and no retraining. Afterward, the model wrote text consistent with the new fact. That's strong evidence that FFNs play a central role in recalling facts. Later work showed the picture is messier: facts spread across several layers, and edits like this often break in ways that are easy to miss.
+
+Some large models replace the single FFN with a Mixture of Experts (MoE): several FFNs side by side, plus a small router network that sends each token to one or two of them. Mixtral 8x7B has 46.7 billion total parameters but uses about 12.9 billion per token, since only 2 of its 8 experts run on any given token. You get the knowledge capacity of a big model at close to the per-token compute of a small one. The cost is harder training. The router has to learn to spread tokens across experts instead of sending everything to one favorite, and labs add an extra training penalty to push it that way.
+
+Why do layers alternate attention and FFN, instead of running all the attention first and all the FFNs after? Each layer is a gather-then-process cycle. Attention gathers context from other tokens, and the FFN transforms what came in. If you ran all the attention first, each pass would mostly re-blend the same Value vectors with nothing in between to transform them. If you ran all the FFNs last, their refined features could never shape what gets attended to next. Alternating lets each layer's attention work from representations the previous layer already improved. This matches what researchers see inside trained models: early layers handle grammar and local structure, and later layers handle meaning.
+
+## The Shortcut That Makes Deep Networks Trainable
+
+Stacking dozens of these layers works only because of two supporting pieces: residual connections and normalization.
+
+Picture a conveyor belt running the full length of the network, one vector per token, from the embedding step to the final output. Every attention sub-block and every FFN sub-block sits beside that belt, not on it. Each one reads the current vector off the belt, computes a correction, and adds that correction back. Nothing gets replaced. That running belt is the residual stream. A sub-block with nothing useful to add for a given token can output something close to zero, and the vector passes by unchanged.
+
+This matters most for training. Training works by sending an error signal (the gradient) backward through the network to adjust every weight. In a 100-layer network without shortcuts, that signal has to pass through 100 transformations in a row, and it tends to shrink toward zero or blow up on the way. With the residual addition, each layer computes `x + f(x)`, and the gradient of that with respect to `x` always includes a plain 1 from the `x` term, however complex `f` gets. That gives the signal a direct path back to every earlier layer.
+
+Residual connections didn't start with transformers. They came from ResNet (He et al. 2015), an image recognition network. The ResNet authors found that making a plain network deeper made it worse, even on its own training data, because very deep stacks were hard to optimize. The shortcut path fixed that, and transformers adopted it. Interpretability researchers now treat the residual stream itself as the main thing to study. They describe every attention head and every FFN as something that reads from the stream and writes back to it.
+
+Normalization solves a separate, more mundane problem. Each sub-block adds to the stream, so the vectors keep growing as they pass through more layers. That causes trouble. Each sub-block's weights work best at a certain input scale, but the scale keeps changing with depth. Large values can overflow in the 16-bit number formats used for training. And attention scores get large, which pushes softmax to put nearly all its weight on one token and makes training unstable. LayerNorm rescales each vector to a standard size before a sub-block reads it, however large the stream has grown. RMSNorm (Zhang and Sennrich 2019) is a cheaper version that skips subtracting the mean and just divides by the vector's root mean square. It works about as well for less compute, so most current models use it.
+
+Where the normalization sits matters as much as what it does. The original 2017 transformer used post-norm: it added the sub-block output to the stream and then normalized the result. That puts a normalization step on the shortcut path in every layer, so the clean gradient path gets rescaled at every step, and training became fragile. The original model needed a careful warm-up period with a small learning rate to train at all. Pre-norm normalizes only the copy that goes into the sub-block and leaves the shortcut path as a plain addition all the way down. GPT-2 moved to pre-norm in 2019, and most models since have followed.
+
+## Turning a Vector Back Into a Word
+
+After the last layer, the model has one final vector per token. To generate the next word, it uses only the last one, since that's the token that could see everything before it. (During training, every position predicts its own next token at once, which is why training can process a whole document in parallel.)
+
+Think of that final vector as the model's answers on a multiple-choice test where every token in the vocabulary is an option. To score every option, the model normalizes the vector once more and multiplies it by the unembedding matrix. That matrix has one row per vocabulary entry, the same shape as the embedding matrix from the first step, and some models reuse the embedding matrix itself. Each row's dot product with the final vector gives one raw score, called a logit, for that candidate token.
+
+Softmax, the same function attention used, turns the logits into probabilities that add up to one. Temperature divides every logit by a constant before softmax runs. Below 1, the distribution sharpens toward the top token, and as temperature approaches zero you get greedy decoding, which always picks the top token. Above 1, the distribution flattens and lower-ranked tokens get a real chance. Temperature alone doesn't stop the model from sometimes picking an unlikely token from the long tail, so most systems also apply top-k or top-p. Top-k keeps only the k highest-scoring tokens. Top-p (nucleus sampling) keeps the smallest set of top tokens whose probabilities add up to a threshold like 0.9. Top-p is more common because that set shrinks when the model is confident and grows when it isn't.
+
+The chosen token gets appended to the sequence, and the model runs again. Thanks to the KV cache, it doesn't reprocess the whole prompt. It runs only the new token through the layers and reads the cached Keys and Values for everything before it. This loop is why generation is called autoregressive: each new token depends on every token before it, including the ones the model just wrote.
+
+Be clear about what this training teaches. A base model's entire training signal is next-token prediction over raw text. Nothing in that goal says "be helpful" or "follow instructions." Give a raw base model a question and it may continue the text as if it were a document, maybe by listing more questions. Chat behavior comes from post-training on top of the same architecture and weights: curated instruction and response pairs, then preference tuning like RLHF (human feedback) or RLAIF (AI feedback).
+
+One speed trick deserves its own explanation: speculative decoding (Leviathan et al. 2023). A small, fast draft model guesses several tokens ahead. The big model then checks all of them in a single parallel pass, which costs about the same as generating one token. Each draft token is accepted with probability `min(1, p_big / p_draft)`. At the first rejection, the model throws away the remaining guesses and picks a replacement from a corrected distribution: the parts where the big model wanted a token more than the draft did. The big model already computed its probabilities during the check, so this replacement costs nothing extra.
+
+Here's a worked example. The big model wants cat at 0.7, dog at 0.2, bird at 0.1. A weaker draft wants dog at 0.5, cat at 0.3, bird at 0.2.
+
+- The draft proposes dog half the time and keeps it with probability 0.2 / 0.5 = 0.4. So dog comes out 0.5 × 0.4 = 0.2 of the time, exactly the big model's number. The draft already overrates dog, so a rejection never picks it.
+- The draft proposes cat 0.3 of the time and always keeps it, since the big model likes cat even more. All rejections (0.4 of the time in total) get replaced with cat, because cat is the only token the draft underrates. Cat comes out 0.3 + 0.4 = 0.7 of the time, again matching the big model.
+
+This holds for every token and every pair of models. A weaker draft only means more rejections, so you get less speedup. It never changes which tokens come out or how often. You pay some extra compute for the draft model and the wasted guesses, but you give up no quality.
+
+## What's Different Between GPT, Claude, and LLaMA
+
+Every piece above is shared structure: tokenize, embed, attend across many heads with RoPE, run the FFN, repeat with residual connections and normalization holding it together, then predict the next token. Open-weight models like LLaMA, Mistral, and Gemma publish exactly this recipe. OpenAI and Anthropic don't publish their architectures, but everything public about GPT and Claude points to the same skeleton. What differs is the trained weights, learned from different data at different scale. Settings like layer count, vocabulary size, head count, and dense versus MoE differ too. And so does the post-training on top: instruction tuning, RLHF or RLAIF, and safety tuning.
+
+The modern recipe built up over about five years. Pre-norm came with GPT-2 in 2019, SwiGLU in 2020, RoPE in 2021, and GQA in 2023. LLaMA's release in early 2023 bundled pre-norm, RMSNorm, RoPE, and SwiGLU, and most open models since have copied that combination, adding GQA and, in some of the largest, Mixture of Experts.
+
+By the standards of machine learning history, the transformer's spread is unusual. The field used to run separate specialized architectures for each domain, one for vision, another for audio, another for language. Transformers now handle all three. That could still change. State-space models like Mamba are a real alternative, especially for very long sequences, since their cost grows linearly with length instead of quadratically. Hybrids like Jamba already mix both kinds of layers. But any sequence model has to solve the same list of problems in some form: turning tokens into meaning, encoding order, mixing information across positions, processing what it gathered, keeping a deep stack trainable, and turning a final vector back into a prediction.
+
+Take a line like "32 layers, 32 query heads, 8 KV heads, RoPE, RMSNorm, SwiGLU, 8 experts with top-2 routing." That's Mixtral, and each item in it maps to a section of this post. The number I'd look at first is the 2, not the 8. All 8 experts exist and cost memory, but only 2 run per token, and that gap is the whole reason to use MoE.
