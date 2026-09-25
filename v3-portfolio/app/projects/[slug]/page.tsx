@@ -70,6 +70,35 @@ export default async function ProjectPage({
   const readingTime = Math.ceil(wordCount / 250);
   const headings = extractHeadings(project.content || "");
 
+  const projectLinks = (
+    <>
+      {fm.github && (
+        <a
+          href={fm.github}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-sm text-fg border border-border px-3 py-1.5 hover:border-purple hover:text-purple active:scale-[0.97] transition-all duration-200"
+        >
+          <FaGithub className="w-3 h-3" />
+          View on GitHub
+          <span className="sr-only"> (opens in new tab)</span>
+        </a>
+      )}
+      {fm.live && (
+        <a
+          href={fm.live}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-sm text-fg border border-border px-3 py-1.5 hover:border-purple hover:text-purple active:scale-[0.97] transition-all duration-200"
+        >
+          <RiExternalLinkFill className="w-3 h-3" />
+          Live demo
+          <span className="sr-only"> (opens in new tab)</span>
+        </a>
+      )}
+    </>
+  );
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareSourceCode",
@@ -130,30 +159,7 @@ export default async function ProjectPage({
         </div>
 
         <div className="flex items-center gap-4">
-          {fm.github && (
-            <a
-              href={fm.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-fg border border-border px-3 py-1.5 hover:border-purple hover:text-purple active:scale-[0.97] transition-all duration-200"
-            >
-              <FaGithub className="w-3 h-3" />
-              View on GitHub
-              <span className="sr-only"> (opens in new tab)</span>
-            </a>
-          )}
-          {fm.live && (
-            <a
-              href={fm.live}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-fg border border-border px-3 py-1.5 hover:border-purple hover:text-purple active:scale-[0.97] transition-all duration-200"
-            >
-              <RiExternalLinkFill className="w-3 h-3" />
-              Live demo
-              <span className="sr-only"> (opens in new tab)</span>
-            </a>
-          )}
+          {projectLinks}
         </div>
       </div>
 
@@ -170,6 +176,19 @@ export default async function ProjectPage({
           </aside>
         )}
       </div>
+
+      <footer className="flex flex-wrap items-center justify-between gap-4 pt-8 border-t border-border">
+        <Link
+          href="/projects"
+          className="flex items-center gap-2 text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 text-sm w-fit py-2"
+        >
+          <FaArrowLeftLong className="w-3 h-3" />
+          All projects
+        </Link>
+        <div className="flex items-center gap-4">
+          {projectLinks}
+        </div>
+      </footer>
 
       <ScrollToTop />
     </article>

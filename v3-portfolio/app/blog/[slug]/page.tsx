@@ -70,6 +70,12 @@ export default async function BlogPostPage({
   const readingTime = Math.ceil(wordCount / 250);
   const headings = extractHeadings(post.content || "");
 
+  // getAllPosts is sorted newest first
+  const allPosts = getAllPosts();
+  const index = allPosts.findIndex((p) => p.slug === slug);
+  const newer = index > 0 ? allPosts[index - 1] : undefined;
+  const older = allPosts[index + 1];
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -157,6 +163,51 @@ export default async function BlogPostPage({
           </aside>
         )}
       </div>
+
+      <footer className="flex flex-col gap-6 pt-8 border-t border-border">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-comment text-sm">Share this post</span>
+          <ShareButtons
+            title={fm.title}
+            description={fm.description}
+            slug={slug}
+          />
+        </div>
+
+        {(newer || older) && (
+          <nav
+            aria-label="More posts"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
+            {older && (
+              <Link
+                href={`/blog/${older.slug}`}
+                className="flex flex-col gap-1 border border-border p-4 hover:border-purple transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple"
+              >
+                <span className="text-comment text-sm">Previous post</span>
+                <span className="text-blue">{older.title}</span>
+              </Link>
+            )}
+            {newer && (
+              <Link
+                href={`/blog/${newer.slug}`}
+                className="flex flex-col gap-1 border border-border p-4 hover:border-purple transition-colors duration-200 sm:col-start-2 sm:text-right focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple"
+              >
+                <span className="text-comment text-sm">Next post</span>
+                <span className="text-blue">{newer.title}</span>
+              </Link>
+            )}
+          </nav>
+        )}
+
+        <Link
+          href="/blog"
+          className="flex items-center gap-2 text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 text-sm w-fit py-2"
+        >
+          <FaArrowLeftLong className="w-3 h-3" />
+          All posts
+        </Link>
+      </footer>
 
       <ScrollToTop />
     </article>
