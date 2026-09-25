@@ -791,5 +791,3 @@ A few patterns show up repeatedly across all the fixes:
 **Third, document your tradeoffs explicitly or someone will break them.** The 15-minute access token window after logout is a known, acceptable tradeoff. The forgot-password escape from account lockout is intentional behavior. If these aren't written down, a future developer sees them as bugs and "fixes" them into security holes.
 
 **Fourth, the client is part of the security model.** The refresh token reuse attack false positive is unsolvable purely on the server side without accepting either false positives or weakening the security model. The right fix lives in the Axios interceptor, not the backend. Auth is a distributed system. Design it like one.
-
----
