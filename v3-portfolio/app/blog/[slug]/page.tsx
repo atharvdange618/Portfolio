@@ -33,7 +33,7 @@ export async function generateMetadata({
     },
     openGraph: {
       type: "article",
-      url: `https://tty.atharvdangedev.in/blog/${slug}`,
+      url: `https://www.atharvdange.com/blog/${slug}`,
       title: fm.title,
       description: fm.description,
       publishedTime: fm.publishedAt,
@@ -79,11 +79,11 @@ export default async function BlogPostPage({
     dateModified: fm.publishedAt,
     wordCount,
     timeRequired: `PT${readingTime}M`,
-    url: `https://tty.atharvdangedev.in/blog/${slug}`,
+    url: `https://www.atharvdange.com/blog/${slug}`,
     author: {
       "@type": "Person",
       name: "Atharv Dange",
-      url: "https://tty.atharvdangedev.in",
+      url: "https://www.atharvdange.com",
     },
     publisher: {
       "@type": "Person",
@@ -91,7 +91,7 @@ export default async function BlogPostPage({
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://tty.atharvdangedev.in/blog/${slug}`,
+      "@id": `https://www.atharvdange.com/blog/${slug}`,
     },
   };
 

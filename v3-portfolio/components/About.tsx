@@ -31,7 +31,7 @@ export function About() {
         <p>
           Outside of code I write about what I find at{" "}
           <a
-            href="https://blog.atharvdangedev.in"
+            href="https://blog.atharvdange.com"
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"

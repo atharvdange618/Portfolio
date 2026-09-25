@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { getAllPosts, getAllProjects } from "@/lib/mdx";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://tty.atharvdangedev.in";
+  const baseUrl = "https://www.atharvdange.com";
 
   const staticRoutes = ["", "/blog", "/projects"].map((route) => ({
     url: `${baseUrl}${route}`,

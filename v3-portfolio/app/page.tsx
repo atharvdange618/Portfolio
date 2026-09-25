@@ -19,7 +19,7 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Person",
   name: "Atharv Dange",
-  url: "https://tty.atharvdangedev.in",
+  url: "https://www.atharvdange.com",
   jobTitle: "Full Stack Engineer & Co-Founder at SpaceBuilder",
   knowsAbout: [
     "TypeScript",
@@ -35,7 +35,7 @@ const jsonLd = {
   sameAs: [
     "https://github.com/atharvdange618",
     "https://linkedin.com/in/atharvdange",
-    "https://blog.atharvdangedev.in",
+    "https://blog.atharvdange.com",
     "https://x.com/atharvdangedev",
   ],
   address: {

@@ -37,7 +37,7 @@ const links = [
   },
   {
     label: "Blog",
-    href: "https://blog.atharvdangedev.in",
+    href: "https://blog.atharvdange.com",
     icon: LuBookOpenText,
     modeHover: "BLOG" as Mode,
   },

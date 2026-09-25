@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://tty.atharvdangedev.in/sitemap.xml",
+    sitemap: "https://www.atharvdange.com/sitemap.xml",
   };
 }

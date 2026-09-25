@@ -35,7 +35,7 @@ export async function generateMetadata({
     },
     openGraph: {
       type: "website",
-      url: `https://tty.atharvdangedev.in/projects/${slug}`,
+      url: `https://www.atharvdange.com/projects/${slug}`,
       title: fm.title,
       description: fm.description,
       images: [
@@ -78,11 +78,11 @@ export default async function ProjectPage({
     programmingLanguage: "TypeScript",
     codeRepository: fm.github || "",
     runtimePlatform: fm.stack.join(", "),
-    url: `https://tty.atharvdangedev.in/projects/${slug}`,
+    url: `https://www.atharvdange.com/projects/${slug}`,
     author: {
       "@type": "Person",
       name: "Atharv Dange",
-      url: "https://tty.atharvdangedev.in",
+      url: "https://www.atharvdange.com",
     },
   };
 

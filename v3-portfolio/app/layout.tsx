@@ -18,7 +18,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://tty.atharvdangedev.in"),
+  metadataBase: new URL("https://www.atharvdange.com"),
   title: {
     default: "Atharv Dange - Full Stack Engineer & Co-Founder",
     template: "%s | Atharv Dange",
@@ -37,12 +37,12 @@ export const metadata: Metadata = {
     "React Native Developer",
     "API Designer",
   ],
-  authors: [{ name: "Atharv Dange", url: "https://tty.atharvdangedev.in" }],
+  authors: [{ name: "Atharv Dange", url: "https://www.atharvdange.com" }],
   creator: "Atharv Dange",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://tty.atharvdangedev.in",
+    url: "https://www.atharvdange.com",
     siteName: "Atharv Dange Portfolio",
     title: "Atharv Dange - Full Stack Engineer & Co-Founder",
     description:

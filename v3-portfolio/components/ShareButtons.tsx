@@ -12,7 +12,7 @@ interface ShareButtonsProps {
 export function ShareButtons({ title, description, slug }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
 
-  const url = `https://tty.atharvdangedev.in/blog/${slug}`;
+  const url = `https://www.atharvdange.com/blog/${slug}`;
   const shareText = `${title} - ${description}`;
 
   const shareLinks = [
