@@ -109,9 +109,13 @@ export function Footer() {
               <span className="text-comment text-[10px] uppercase tracking-wider shrink-0">
                 path:
               </span>
-              <span className="truncate font-medium text-cyan">
+              <Link
+                href="/"
+                aria-label="Go to home page"
+                className="truncate font-medium text-cyan hover:text-purple hover:underline underline-offset-4 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple"
+              >
                 {formattedPath}
-              </span>
+              </Link>
             </div>
 
             <div className="px-3 border-r md:border-r border-border text-comment flex items-center gap-2">
