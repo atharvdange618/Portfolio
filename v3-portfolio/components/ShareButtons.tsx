@@ -45,9 +45,9 @@ export function ShareButtons({ title, description, slug }: ShareButtonsProps) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Share on ${link.name}`}
-          className="flex items-center justify-center w-7 h-7 rounded-md border border-border bg-surface/50 text-comment hover:text-fg hover:border-purple hover:bg-surface active:scale-95 transition-all duration-200"
+          className="flex items-center justify-center w-9 h-9 rounded-md border border-border bg-surface/50 text-comment hover:text-fg hover:border-purple hover:bg-surface active:scale-95 transition-all duration-200"
         >
-          <link.icon className="w-3 h-3" />
+          <link.icon className="w-3.5 h-3.5" />
           <span className="sr-only"> (opens in new tab)</span>
         </a>
       ))}
@@ -55,12 +55,12 @@ export function ShareButtons({ title, description, slug }: ShareButtonsProps) {
         type="button"
         onClick={copyLink}
         aria-label={copied ? "Copied!" : "Copy link"}
-        className="flex items-center justify-center w-7 h-7 rounded-md border border-border bg-surface/50 text-comment hover:text-fg hover:border-purple hover:bg-surface active:scale-95 transition-all duration-200"
+        className="flex items-center justify-center w-9 h-9 rounded-md border border-border bg-surface/50 text-comment hover:text-fg hover:border-purple hover:bg-surface active:scale-95 transition-all duration-200"
       >
         {copied ? (
-          <FaCheck className="w-3 h-3 text-green" />
+          <FaCheck className="w-3.5 h-3.5 text-green" />
         ) : (
-          <FaLink className="w-3 h-3" />
+          <FaLink className="w-3.5 h-3.5" />
         )}
       </button>
     </div>
