@@ -70,6 +70,15 @@ export function Hero() {
               {label}
             </a>
           ))}
+          <a
+            href="/Atharv-Dange.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open resume PDF (opens in new tab)"
+            className="text-comment hover:text-purple active:scale-[0.98] transition-all duration-200 text-lg underline-offset-4 decoration-border/50 hover:decoration-purple focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
+          >
+            ~/resume.pdf
+          </a>
         </nav>
       </div>
     </section>
