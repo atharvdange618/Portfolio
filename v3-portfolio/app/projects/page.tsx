@@ -28,7 +28,7 @@ export default function ProjectsPage() {
       <div>
         <TerminalLabel command="ls projects/" />
         <p className="text-fg/80 leading-relaxed text-lg">
-          Things I’ve built - the decisions, trade-offs, and lessons along the
+          Things I’ve built, with the decisions, trade-offs, and lessons along the
           way.
         </p>
       </div>

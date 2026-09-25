@@ -29,8 +29,9 @@ export function Hero() {
         </div>
 
         <p className="hidden sm:block text-comment text-lg mb-8 max-w-lg">
-          Full Stack Engineer building production systems end-to-end, from auth
-          protocols and API design to the interfaces people actually use.
+          Full Stack Engineer and co-founder of SpaceBuilder. I ship client
+          software for a living and rebuild web tools from scratch to learn how
+          they work.
         </p>
 
         <div className="flex sm:hidden flex-col mb-8 gap-2 font-mono text-base text-green w-full border border-border p-4 bg-surface/30 rounded">

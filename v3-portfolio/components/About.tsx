@@ -7,7 +7,7 @@ export function About() {
       <div className="flex flex-col gap-3 text-fg leading-relaxed text-lg">
         <p>
           I&apos;m a Full Stack Engineer based in Pune, India. I build production
-          systems end-to-end - from auth protocols and API design to the
+          systems end-to-end, from auth protocols and API design to the
           interfaces people actually use. I&apos;m also the co-founder of{" "}
           <a
             href="https://spacebuilder.in"
@@ -24,7 +24,7 @@ export function About() {
         <p>
           When I want to understand how something works, I rebuild it from first
           principles. I&apos;ve built HTTP frameworks, client-side routers, CSS
-          engines, OIDC providers, and web rendering pipelines - not to replace
+          engines, OIDC providers, and web rendering pipelines. Not to replace
           existing tools, but to understand the problems they solve at the
           protocol level.
         </p>

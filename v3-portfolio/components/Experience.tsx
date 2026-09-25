@@ -19,7 +19,7 @@ export function Experience() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-purple shrink-0 mt-[0.35em]">▸</span>
-              Leading technical direction - scoping projects, architecting
+              Leading technical direction: scoping projects, architecting
               solutions, and shipping client work end-to-end
             </li>
             <li className="flex items-start gap-2">
@@ -47,7 +47,7 @@ export function Experience() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-purple shrink-0 mt-[0.35em]">▸</span>
-              Took ownership of the IT department - architecture decisions,
+              Took ownership of the IT department: architecture decisions,
               client-facing project scoping, quotations, and on-time delivery
             </li>
             <li className="flex items-start gap-2">
