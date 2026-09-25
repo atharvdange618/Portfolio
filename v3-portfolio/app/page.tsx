@@ -6,7 +6,6 @@ import { Experience } from "@/components/Experience";
 import { Stack } from "@/components/Stack";
 import { Projects } from "@/components/Projects";
 import { Blogs } from "@/components/Blogs";
-import { FadeIn } from "@/components/FadeIn";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -53,32 +52,17 @@ export default function Home() {
   const recentPosts = getRecentPosts(4);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-20">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <Hero />
-      <div className="h-16" />
-      <FadeIn>
-        <About />
-      </FadeIn>
-      <div className="h-20" />
-      <FadeIn delay={50}>
-        <Experience />
-      </FadeIn>
-      <div className="h-20" />
-      <FadeIn delay={50}>
-        <Projects projects={featuredProjects} />
-      </FadeIn>
-      <div className="h-16" />
-      <FadeIn delay={50}>
-        <Stack />
-      </FadeIn>
-      <div className="h-20" />
-      <FadeIn delay={50}>
-        <Blogs posts={recentPosts} />
-      </FadeIn>
+      <About />
+      <Experience />
+      <Projects projects={featuredProjects} />
+      <Stack />
+      <Blogs posts={recentPosts} />
     </div>
   );
 }
