@@ -11,6 +11,8 @@ import { safeJsonLd } from "@/lib/json-ld";
 import markdownStyles from "../../markdown-styles.module.css";
 import Link from "next/link";
 
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   const posts = getAllPosts();
   return posts.map((p) => ({ slug: p.slug }));

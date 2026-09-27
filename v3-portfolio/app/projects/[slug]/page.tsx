@@ -13,6 +13,8 @@ import { safeJsonLd } from "@/lib/json-ld";
 import { RiExternalLinkFill } from "react-icons/ri";
 import markdownStyles from "../../markdown-styles.module.css";
 
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   const projects = getAllProjects();
   return projects.map((p) => ({ slug: p.slug }));
