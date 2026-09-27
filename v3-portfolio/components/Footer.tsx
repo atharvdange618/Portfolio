@@ -100,7 +100,7 @@ export function Footer() {
         <div className="w-full bg-surface/10 border border-border flex flex-col md:flex-row md:h-9 text-xs select-none overflow-hidden rounded-sm shadow-md divide-y md:divide-y-0 divide-border">
           <div className="flex items-stretch justify-between md:justify-start h-9 md:h-full bg-surface/5 md:bg-transparent">
             <div
-              className={`px-4 flex items-center font-black tracking-wide transition-colors duration-150 uppercase ${modeColors[mode]}`}
+              className={`w-28 shrink-0 px-4 flex items-center justify-center font-black tracking-wide transition-colors duration-150 uppercase ${modeColors[mode]}`}
             >
               {mode}
             </div>
