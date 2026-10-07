@@ -19,7 +19,7 @@ const jsonLd = {
   "@type": "Person",
   name: "Atharv Dange",
   url: "https://www.atharvdange.com",
-  jobTitle: "Full Stack Engineer & Co-Founder at SpaceBuilder",
+  jobTitle: "Full Stack Engineer",
   knowsAbout: [
     "TypeScript",
     "React",
@@ -44,7 +44,7 @@ const jsonLd = {
     addressCountry: "India",
   },
   description:
-    "Full Stack Engineer and Co-Founder of SpaceBuilder. Building production systems end-to-end, from auth protocols and API design to polished user interfaces.",
+    "Full Stack Engineer building production systems end-to-end, from auth protocols and API design to polished user interfaces.",
 };
 
 export default function Home() {

@@ -29,8 +29,8 @@ export function Hero() {
         </div>
 
         <p className="hidden sm:block text-comment text-lg mb-8 max-w-lg">
-          Full Stack Engineer and co-founder of SpaceBuilder. I ship client
-          software for a living and rebuild web tools from scratch to learn how
+          Full Stack Engineer, currently freelancing. I ship client software
+          for a living and rebuild web tools from scratch to learn how
           they work.
         </p>
 
@@ -81,7 +81,7 @@ export function Hero() {
             ~/resume.pdf
           </a>
           <a
-            href="mailto:atharvdange.dev@gmail.com"
+            href="mailto:atharvdange618@gmail.com"
             aria-label="Email Atharv"
             className="text-comment hover:text-purple active:scale-[0.98] transition-all duration-200 text-lg underline-offset-4 decoration-border/50 hover:decoration-purple focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >

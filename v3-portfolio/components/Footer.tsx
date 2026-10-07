@@ -31,7 +31,7 @@ const links = [
   },
   {
     label: "Email",
-    href: "mailto:atharvdange.dev@gmail.com",
+    href: "mailto:atharvdange618@gmail.com",
     icon: MdOutlineAttachEmail,
     modeHover: "EMAIL" as Mode,
   },

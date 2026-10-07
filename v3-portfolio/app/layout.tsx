@@ -20,17 +20,15 @@ const geist = Geist({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.atharvdange.com"),
   title: {
-    default: "Atharv Dange - Full Stack Engineer & Co-Founder",
+    default: "Atharv Dange - Full Stack Engineer",
     template: "%s | Atharv Dange",
   },
   description:
-    "Full Stack Engineer and Co-Founder of SpaceBuilder. Building production systems end-to-end, from auth protocols and API design to polished user interfaces.",
+    "Full Stack Engineer building production systems end-to-end, from auth protocols and API design to polished user interfaces.",
   keywords: [
     "Atharv Dange",
     "Full Stack Engineer",
     "Software Engineer",
-    "Co-Founder",
-    "SpaceBuilder",
     "Pune",
     "Next.js Developer",
     "TypeScript Developer",
@@ -44,9 +42,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://www.atharvdange.com",
     siteName: "Atharv Dange Portfolio",
-    title: "Atharv Dange - Full Stack Engineer & Co-Founder",
+    title: "Atharv Dange - Full Stack Engineer",
     description:
-      "Full Stack Engineer and Co-Founder of SpaceBuilder. Building production systems end-to-end, from auth protocols and API design to polished user interfaces.",
+      "Full Stack Engineer building production systems end-to-end, from auth protocols and API design to polished user interfaces.",
     images: [
       {
         url: "/og-image.png",
@@ -58,9 +56,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Atharv Dange - Full Stack Engineer & Co-Founder",
+    title: "Atharv Dange - Full Stack Engineer",
     description:
-      "Full Stack Engineer and Co-Founder of SpaceBuilder. Building production systems end-to-end, from auth protocols and API design to polished user interfaces.",
+      "Full Stack Engineer building production systems end-to-end, from auth protocols and API design to polished user interfaces.",
     images: ["/og-image.png"],
   },
   robots: {

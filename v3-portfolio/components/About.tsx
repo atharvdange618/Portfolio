@@ -8,18 +8,18 @@ export function About() {
         <p>
           I&apos;m a Full Stack Engineer based in Pune, India. I build production
           systems end-to-end, from auth protocols and API design to the
-          interfaces people actually use. I&apos;m also the co-founder of{" "}
+          interfaces people actually use. Right now I&apos;m freelancing, most
+          recently on a booking and payments platform for{" "}
           <a
-            href="https://spacebuilder.in"
+            href="https://www.mentoraidconnect.com"
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
-            SpaceBuilder
+            MentorAID
             <span className="sr-only"> (opens in new tab)</span>
           </a>
-          , where we build custom software, AI automations, and web applications
-          for businesses.
+          , a UPSC-prep startup in Delhi.
         </p>
         <p>
           When I want to understand how something works, I rebuild it from first

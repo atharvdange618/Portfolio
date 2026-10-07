@@ -22,7 +22,7 @@ export function GET() {
 
   const body = `# Atharv Dange
 
-> Full Stack Engineer and Co-Founder of SpaceBuilder. Building production systems end-to-end, from auth protocols and API design to polished user interfaces.
+> Full Stack Engineer building production systems end-to-end, from auth protocols and API design to polished user interfaces.
 
 # Projects
 
