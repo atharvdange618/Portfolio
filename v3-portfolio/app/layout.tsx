@@ -48,8 +48,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/og-image.png",
-        width: 1914,
-        height: 964,
+        width: 1912,
+        height: 962,
         alt: "Atharv Dange - Full Stack Engineer Portfolio",
       },
     ],
