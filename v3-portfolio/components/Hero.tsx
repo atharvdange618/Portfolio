@@ -1,3 +1,5 @@
+"use client";
+
 export function Hero() {
   return (
     <section>
@@ -76,6 +78,7 @@ export function Hero() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Open resume PDF (opens in new tab)"
+            onClick={() => window.telemetry?.goal("resume_opened")}
             className="text-comment hover:text-purple active:scale-[0.98] transition-all duration-200 text-lg underline-offset-4 decoration-border/50 hover:decoration-purple focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
             ~/resume.pdf
@@ -83,6 +86,9 @@ export function Hero() {
           <a
             href="mailto:atharvdange618@gmail.com"
             aria-label="Email Atharv"
+            onClick={() =>
+              window.telemetry?.goal("contact_clicked", { location: "hero" })
+            }
             className="text-comment hover:text-purple active:scale-[0.98] transition-all duration-200 text-lg underline-offset-4 decoration-border/50 hover:decoration-purple focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
             ~/contact

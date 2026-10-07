@@ -145,6 +145,14 @@ export function Footer() {
                   rel="noopener noreferrer"
                   onMouseEnter={() => setMode(modeHover)}
                   onMouseLeave={() => setMode("NORMAL")}
+                  onClick={
+                    label === "Email"
+                      ? () =>
+                          window.telemetry?.goal("contact_clicked", {
+                            location: "footer",
+                          })
+                      : undefined
+                  }
                   className="flex-1 md:flex-none px-2 sm:px-3 flex items-center justify-center gap-1.5 border-r last:border-r-0 md:last:border-r border-border/40 hover:bg-surface/30 transition-all duration-100 group text-[11px] sm:text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-[-2px]"
                   aria-label={label}
                 >

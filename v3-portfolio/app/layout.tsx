@@ -4,6 +4,7 @@ import { Geist, Fira_Code } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { CodeCopyButtonInitializer } from "@/components/mdx/CodeCopyButtonInitializer";
 import { MermaidInitializer } from "@/components/mdx/MermaidInitializer";
+import { TelemetryPageviews } from "@/components/TelemetryPageviews";
 import "./globals.css";
 
 const firaCode = Fira_Code({
@@ -103,6 +104,7 @@ export default function RootLayout({
       >
         <CodeCopyButtonInitializer />
         <MermaidInitializer />
+        <TelemetryPageviews />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-surface focus:border focus:border-purple focus:text-purple focus:text-sm focus:font-mono focus:rounded"
