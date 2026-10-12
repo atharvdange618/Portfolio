@@ -39,6 +39,7 @@ export async function generateMetadata({
       title: fm.title,
       description: fm.description,
       publishedTime: fm.publishedAt,
+      modifiedTime: fm.updatedAt,
       authors: ["Atharv Dange"],
       images: [
         {
@@ -84,7 +85,7 @@ export default async function BlogPostPage({
     headline: fm.title,
     description: fm.description,
     datePublished: fm.publishedAt,
-    dateModified: fm.publishedAt,
+    dateModified: fm.updatedAt ?? fm.publishedAt,
     wordCount,
     timeRequired: `PT${readingTime}M`,
     url: `https://www.atharvdange.com/blog/${slug}`,
@@ -120,6 +121,12 @@ export default async function BlogPostPage({
       <div className="flex flex-col gap-4 pb-8 border-b border-border">
         <div className="flex items-center gap-3 text-sm text-comment">
           <span>{formatDate(fm.publishedAt)}</span>
+          {fm.updatedAt && (
+            <>
+              <span>·</span>
+              <span>Updated {formatDate(fm.updatedAt)}</span>
+            </>
+          )}
           <span>·</span>
           <span className="flex items-center gap-1">
             <FaClock className="w-3 h-3" />
