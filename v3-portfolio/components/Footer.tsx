@@ -112,7 +112,7 @@ export function Footer() {
               <Link
                 href="/"
                 aria-label="Go to home page"
-                className="truncate font-medium text-cyan hover:text-purple hover:underline underline-offset-4 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple"
+                className="truncate font-medium text-cyan hover:text-purple hover:underline underline-offset-4 transition-colors focus-visible:outline-2 focus-visible:outline-purple"
               >
                 {formattedPath}
               </Link>
@@ -153,7 +153,7 @@ export function Footer() {
                           })
                       : undefined
                   }
-                  className="flex-1 md:flex-none px-2 sm:px-3 flex items-center justify-center gap-1.5 border-r last:border-r-0 md:last:border-r border-border/40 hover:bg-surface/30 transition-all duration-100 group text-[11px] sm:text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-[-2px]"
+                  className="flex-1 md:flex-none px-2 sm:px-3 flex items-center justify-center gap-1.5 border-r last:border-r-0 md:last:border-r border-border/40 hover:bg-surface/30 transition-all duration-100 group text-[11px] sm:text-xs focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-[-2px]"
                   aria-label={label}
                 >
                   <Icon className="w-3.5 h-3.5 text-comment group-hover:text-fg transition-colors" />

@@ -184,7 +184,7 @@ export default async function BlogPostPage({
             {older && (
               <Link
                 href={`/blog/${older.slug}`}
-                className="flex flex-col gap-1 border border-border p-4 hover:border-purple transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple"
+                className="flex flex-col gap-1 border border-border p-4 hover:border-purple transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-purple"
               >
                 <span className="text-comment text-sm">Previous post</span>
                 <span className="text-blue">{older.title}</span>
@@ -193,7 +193,7 @@ export default async function BlogPostPage({
             {newer && (
               <Link
                 href={`/blog/${newer.slug}`}
-                className="flex flex-col gap-1 border border-border p-4 hover:border-purple transition-colors duration-200 sm:col-start-2 sm:text-right focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple"
+                className="flex flex-col gap-1 border border-border p-4 hover:border-purple transition-colors duration-200 sm:col-start-2 sm:text-right focus-visible:outline-2 focus-visible:outline-purple"
               >
                 <span className="text-comment text-sm">Next post</span>
                 <span className="text-blue">{newer.title}</span>

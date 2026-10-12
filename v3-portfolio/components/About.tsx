@@ -14,7 +14,7 @@ export function About() {
             href="https://www.mentoraidconnect.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
+            className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
             MentorAID
             <span className="sr-only"> (opens in new tab)</span>
@@ -34,7 +34,7 @@ export function About() {
             href="https://blog.atharvdange.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
+            className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
             blog
             <span className="sr-only"> (opens in new tab)</span>
