@@ -16,7 +16,11 @@ export function BlogList({ posts }: Props) {
           className="flex flex-col gap-2 py-6 border-b border-border last:border-0"
         >
           <div className="flex items-center gap-3 text-sm text-comment">
-            <span>{formatDate(post.publishedAt)}</span>
+            <span>
+              {post.updatedAt
+                ? `Updated ${formatDate(post.updatedAt)}`
+                : formatDate(post.publishedAt)}
+            </span>
             <span>·</span>
             <span>{post.readingTime} min read</span>
           </div>
