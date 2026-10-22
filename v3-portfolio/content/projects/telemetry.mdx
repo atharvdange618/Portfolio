@@ -1,0 +1,204 @@
+---
+title: "Telemetry"
+status: "active"
+kind: "product"
+featured: false
+stack:
+  - "TypeScript"
+  - "Node.js"
+  - "Fastify 5"
+  - "PostgreSQL"
+  - "Prisma"
+  - "Zod"
+  - "React 19"
+  - "Vite"
+  - "TanStack Query"
+  - "Zustand"
+  - "React Router"
+  - "Recharts"
+  - "Tailwind CSS 4"
+  - "Vitest"
+startedAt: "2025-07-31"
+updatedAt: "2026-10-02"
+github: "https://github.com/atharvdange618/Telemetry"
+live: "https://usetelemetry.vercel.app"
+cover: "/projects/telemetry.png"
+description: "Privacy-first, open-source web analytics. A cookieless tracker of about 3KB reports page views, visitors, referrers, goals, funnels, retention cohorts, and Core Web Vitals. Visitor IDs are salted hashes that rotate every quarter, and the raw IP is never stored. 7 people have signed up and registered 10 sites, including this portfolio."
+---
+
+Telemetry is web analytics I built and run myself. You paste one script tag, and the dashboard shows page views, unique visitors, referrers, UTM campaigns, goals, funnels, weekly retention cohorts, scroll depth, outbound clicks, and Core Web Vitals from real sessions. It sets no cookies, so there is no cookie banner to ship for it.
+
+The site you are reading sends its page views to it.
+
+---
+
+## The Challenge
+
+I wanted to know how analytics works under the hood. Every dashboard I had used was a black box: a number goes up, and I had no idea how a "unique visitor" got counted without a login. The free tiers of the hosted tools also weren't generous enough for a handful of personal sites.
+
+I also wanted an excuse to learn Fastify. Everything I had built before ran on Express.
+
+The hard part of analytics without cookies is accuracy. You need to:
+
+- Count the same visitor once across page loads, without storing anything that follows them across sites.
+- Keep that ID stable long enough for retention and period comparisons to mean something.
+- Get location, referrers, and outbound clicks right, and keep bots out of the numbers.
+- Send events without slowing the page or losing them when the visitor leaves.
+
+**My Role:** Sole developer. Tracker script, Fastify ingestion API, Postgres schema, metrics queries, React dashboard, deployment.
+
+<Callout type="info">
+  **Two bursts, a year apart.** I built the core in five days in August 2025. It sat mostly untouched until June 2026, when I moved everything onto my own VPS and wanted my own analytics on this portfolio. That second pass is where most of the security and accuracy work happened.
+</Callout>
+
+---
+
+## The Solution
+
+### One script tag
+
+```html
+<script
+  async
+  defer
+  src="https://usetelemetry.hogyoku.cloud/analytics.js"
+  data-tenant-id="YOUR_TENANT_ID"
+  data-api-key="YOUR_API_KEY"
+></script>
+```
+
+The tracker reads the tenant from its own script tag, sends a page view, and then listens. It records the deepest scroll on the page, clicks on links that leave the site, and LCP, INP, CLS, TTFB, and FCP from the session. Sites call `window.telemetry.goal("signup", { plan: "pro" })` to record conversions with properties.
+
+### A dashboard computed from raw events
+
+Every number is computed from the raw event rows when you open the dashboard. There are no pre-built rollups. That keeps it simple and lets every filter (device, browser, country, UTM source) apply to every card. The dashboard has separate pages for content, sources, audience, conversions, and performance, plus:
+
+- **Funnels:** define steps like Landing → Pricing → Sign Up and see drop-off at each step.
+- **Retention cohorts:** weekly cohorts of new visitors and how many come back in the weeks after.
+- **Insights:** the selected period compared with the one before it, with cards for anything that moved more than a fixed threshold. No model, just thresholds.
+- **Share links:** a read-only dashboard for one site, behind a token.
+- **Ingestion alerts:** an hourly check that posts to Discord when a site's last 24 hours fall under 30% of its normal day.
+
+---
+
+## Technical Architecture
+
+```ascii
+  Customer site                     VPS (pm2)                     Vercel
+┌───────────────┐  POST /api/track  ┌──────────────────┐        ┌──────────────┐
+│ analytics.js  │ ────────────────▶ │  Fastify 5 API   │ ◀───── │ React + Vite │
+│ (~3KB, no     │  fetch, keepalive │  - bot filter    │ cookie │  dashboard   │
+│  cookies)     │  credentials omit │  - rate limit    │  auth  └──────────────┘
+└───────────────┘                   │  - API key check │
+                                    │  - origin check  │
+                                    │  - hash visitor  │
+                                    └────────┬─────────┘
+                                             │ Prisma
+                                             ▼
+                                    ┌──────────────────┐
+                                    │    PostgreSQL    │
+                                    │   Event table    │
+                                    └──────────────────┘
+```
+
+The API runs on my Hostinger VPS under pm2. The dashboard is a Vite app on Vercel that signs in with GitHub OAuth and talks to the API with a session cookie. Events of every type (page view, goal, outbound, scroll, performance) land in one `Event` table with nullable columns per type, so a single query can filter any of them by the same visitor, session, device, or location.
+
+---
+
+## Engineering Deep Dives
+
+### 1. Pseudonymous visitor IDs without cookies
+
+The server never sees a visitor ID from the browser. It builds one from the request:
+
+```typescript
+// src/routes/track.ts
+const salt = getRotatingSalt(process.env.VISITOR_SALT!);
+const hashSource = `${ip}-${userAgent}-${tenant.id}-${salt}`;
+const visitorId = createHash("sha256").update(hashSource).digest("hex");
+```
+
+The tenant ID in the hash means the same person gets a different ID on every site, so IDs can't be joined across tenants. The raw IP is not stored.
+
+The first version used a fixed salt. That meant a visitor on a stable IP kept the same ID forever, which is a permanent fingerprint, and a database leak could rebuild one person's full history with a site. The common fix is a salt that rotates daily. That would have broken the dashboard: cohort retention follows a visitor for 8 weeks, and period comparisons go up to 90 days. A daily salt makes every returning visitor look new.
+
+So the salt rotates every quarter, longer than any window the dashboard measures:
+
+```typescript
+// src/lib/visitor-salt.ts
+function getQuarterLabel(date: Date): string {
+  const year = date.getUTCFullYear();
+  const quarter = Math.floor(date.getUTCMonth() / 3) + 1;
+  return `${year}-Q${quarter}`;
+}
+
+export function getRotatingSalt(baseSecret: string, date: Date = new Date()): string {
+  return createHmac("sha256", baseSecret).update(getQuarterLabel(date)).digest("hex");
+}
+```
+
+It is derived from the date, so there is no salt table and no cron job, and every instance of the API agrees on it without talking to each other.
+
+<Callout type="warning">
+  **The trade-off is honest, not perfect.** A visitor keeps the same ID for up to three months, and two people behind one IP with the same browser count as one. That is the price of no cookies, and the README says so.
+</Callout>
+
+### 2. The six weeks nobody noticed
+
+In August 2026 I fixed a real security hole. CORS was one policy for the whole API, with credentials on, and its allowlist was every domain any tenant had registered. Anyone could add a domain to their own site, and that domain became a trusted origin, with cookies, for every logged-in user on the platform.
+
+The fix split the policy. Dashboard routes accept only the dashboard's origin, with credentials. `/api/track` reads no cookies, so it got its own policy with credentials off.
+
+That fix quietly broke tracking on every customer site. The tracker sent events with `sendBeacon`, and a beacon always includes cookies, so its preflight now needed `Access-Control-Allow-Credentials: true`, which the route refused. Browsers dropped every cross-origin event. Nobody noticed for six weeks, until a user did.
+
+The tracker now uses `fetch` with `credentials: "omit"` and `keepalive: true`, which finishes after the page unloads the way a beacon would, without the cookies:
+
+```javascript
+// public/analytics.js
+fetch(endpoint, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload),
+  credentials: "omit",
+  keepalive: true,
+});
+```
+
+I also moved the domain check out of CORS and into the handler. It compares the request's `Origin` with that tenant's own domains and answers with a 403 that says which domain to add. The tracker logs that message to the console once, instead of failing with a CORS error nobody can read. And the incident is why the ingestion alerts exist: a site whose events drop under 30% of its normal day now pings Discord within the hour.
+
+### 3. Keeping the numbers clean
+
+- **Bots:** requests with a missing or short User-Agent, or one that matches a list of crawlers, headless browsers, uptime checkers, and AI scrapers (GPTBot, ClaudeBot, CCBot and others), get a 403 before they touch the database.
+- **Rate limit:** `/api/track` allows 30 requests per minute per IP, tracked in memory.
+- **API keys:** each site has a `tlv_1_...` key, compared in constant time.
+- **Zero is a value:** the tracker used to send `cls: perfData.cls || null`, which turned a perfect CLS of 0 into "no data". Missing metrics now stay `undefined` and drop out of the JSON, and a real 0 gets stored.
+- **Scroll depth on mobile:** it is sent on `pagehide`, not `beforeunload`, because iOS Safari rarely fires `beforeunload`.
+- **Time zones:** views over time are bucketed in the viewer's time zone, so "today" on the chart means today where you are.
+
+---
+
+## Technical Challenges and Trade-offs
+
+### 1. Computing on read
+
+Every dashboard load scans raw events for the selected range. At my traffic that is fast and keeps the code small. At much higher volume it would need daily rollup tables, and the hourly alert query already carries a note saying so.
+
+### 2. Third parties the tracker still touches
+
+Geolocation comes from `ipwho.is`, which means the server sends the visitor's IP to that service before discarding it. The Core Web Vitals library loads from jsDelivr, pinned to a version and checked with a subresource integrity hash. Both are trade-offs I would remove with a local GeoIP database and a self-hosted copy of `web-vitals`.
+
+### 3. Docs that say what the code does
+
+In October 2026 I went through the landing page and docs and replaced every claim I couldn't point to in the code. "No tracking scripts" became a plain list of what the tracker stores. Compliance claims became a note that country and city count as personal data, and that each site owner decides what to disclose.
+
+---
+
+## Results
+
+Telemetry runs at [usetelemetry.vercel.app](https://usetelemetry.vercel.app).
+
+| Users | Sites registered | Sites active in the last 30 days | Events stored |
+| :---: | :---: | :---: | :---: |
+| 7 | 10 | 4 | 3,580 |
+
+Those sites are this portfolio, a couple of my own projects, and sites my friends run. The numbers are small, and that is fine: it is real traffic from real visitors, and it is enough to have caught the bugs above. It taught me Fastify, and more than that, it taught me where analytics numbers come from and how easy they are to get wrong.
