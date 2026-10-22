@@ -1,0 +1,172 @@
+---
+title: "Tabi"
+status: "active"
+featured: true
+stack:
+  - "Next.js 16"
+  - "React 19"
+  - "TypeScript"
+  - "Express 5"
+  - "MongoDB"
+  - "Mongoose"
+  - "Clerk"
+  - "TanStack Query"
+  - "Zustand"
+  - "React Hook Form"
+  - "Zod"
+  - "dnd-kit"
+  - "React Leaflet"
+  - "Cloudinary"
+  - "Resend"
+  - "Tailwind CSS 4"
+  - "Vitest"
+startedAt: "2026-03-01"
+updatedAt: "2026-10-20"
+github: "https://github.com/atharvdange618/Tabi"
+live: "https://tabi.atharvdange.com"
+cover: "/projects/tabi.png"
+description: "A group trip planner that pulls the plan, the money, and the people out of the group chat and into one place. Shared itinerary with list, calendar, and map views, expense splitting with settle-up, and role-based access checked on every request. My friends and I plan our trips on it."
+---
+
+Tabi (旅, journey) is a group trip planner. Each trip gets a shared itinerary, a budget that works out who owes whom, checklists, reservations, files, and polls. It started at the ChaiCode Buildathon and I kept building it after the event ended.
+
+It is the first thing I built that real people use. My friends and I plan our trips on it now.
+
+---
+
+## The Challenge
+
+Every group trip I've been on went the same way. Someone makes a WhatsApp group. One person builds a Google Sheet that only they update. Flight links get buried under two hundred messages of "wait, who's booking?" After the trip, nobody knows who owes what.
+
+The goal was to move the whole trip onto one platform:
+
+- One plan everyone can see and edit, with the right people allowed to change the right things.
+- Money tracked as it's spent, with balances worked out for you.
+- Invites that work for friends who don't have an account yet.
+
+**My Role:** Sole developer. Express API, MongoDB schema, permission model, invite flow, Next.js client, deployment.
+
+<Callout type="info">
+  **Built for a problem I had.** I didn't worry that Tabi lacked features. If the plan, the money, and the people live in one place, the trip already feels easier, and that was enough to ship.
+</Callout>
+
+---
+
+## The Solution
+
+### One plan everyone can see
+
+Each trip gets a day for every date, and each day holds activities with a time, place, cost, and notes. You can drag to reorder them, comment on them, and react with emoji. The server warns you when two activities overlap.
+
+The itinerary has three views, and I kept changing them until each one answered a question the others couldn't. The list is for editing. The calendar shows how full each day is. The map shows whether a day makes sense on foot.
+
+![Itinerary list view](/projects/tabi/itinerary.png)
+
+### Money that settles itself
+
+Log an expense and say who paid. Tabi tracks spending against the budget, breaks it down by category, and works out who owes whom. You mark a debt as settled when it's paid back.
+
+![Budget and split balances](/projects/tabi/budget.png)
+
+### Everything else a trip needs
+
+- **Checklists** for packing and pre-trip tasks, with progress per list.
+- **Reservations** for flights, hotels, and restaurants, with their reference numbers.
+- **Files** like tickets and booking screenshots, stored on Cloudinary.
+- **Polls** for the decisions a group can't make in chat.
+- **Notifications** when someone adds an expense, comments, or changes the plan.
+- **Public trips** you can share as a read-only page, plus a Discover page to browse them.
+
+---
+
+## Technical Architecture
+
+```ascii
+Next.js 16 client  ──REST + Clerk JWT──▶  Express 5 API  ──Mongoose──▶  MongoDB
+  TanStack Query                            Clerk middleware
+  Zustand                                   role guards
+  React Hook Form                           Zod validation
+         └──────────── shared/ Zod schemas ────────────┘
+```
+
+The client and the API are separate apps in one pnpm workspace, with a `shared/` package between them. In production both run on one Hostinger VPS under one domain. The browser only calls `/api` on that domain, and a Next.js rewrite forwards it to the Express server on the same machine, so there is no CORS setup to get wrong in production.
+
+Clerk handles sign-in, Cloudinary stores files, and Resend sends invite emails. Files go client to server to Cloudinary, never straight from the browser, so the server checks the MIME type and the member's role before anything gets stored.
+
+The server keeps strict layers: routes wire middleware, controllers handle the request, and services are the only code that touches Mongoose models.
+
+---
+
+## Engineering Deep Dives
+
+### 1. Permissions before features
+
+Every trip member is an owner, an editor, or a viewer. The server checks the role on every request, so hiding a button in the UI is never the only thing standing between a viewer and your itinerary.
+
+I built the middleware chain before any feature:
+
+```typescript
+// server/src/routes/activities.ts
+const auth = [requireAuthentication, resolveDbUser] as const;
+
+router.get("/", ...auth, requireMembership(), activityController.getActivities);
+
+router.post(
+  "/",
+  ...auth,
+  requireRole(["owner", "editor"]),
+  validate(createActivitySchema),
+  activityController.createActivity,
+);
+```
+
+It felt slow at the time. It paid off, because every feature after that (expenses, files, checklists, reservations) got access control in two lines. Non-members get a 403, not a 404, so the client can tell "you don't have access" apart from "this doesn't exist".
+
+| Action                                                     | Owner | Editor | Viewer |
+| ---------------------------------------------------------- | :---: | :----: | :----: |
+| View the trip and comment                                  |  ✅   |   ✅   |   ✅   |
+| Edit activities, checklists, reservations, files, expenses |  ✅   |   ✅   |   ❌   |
+| Edit trip details, invite members, delete the trip         |  ✅   |   ❌   |   ❌   |
+
+Ownership transfer is a request, not a switch. The person receiving it has to accept.
+
+### 2. Invites for people who don't have an account
+
+Inviting someone who already has an account is easy. Inviting someone who doesn't is not.
+
+The first version put every invite in a `pending_invites` collection. That left orphaned records for existing users and made the accept flow awkward. The second version checks the email first:
+
+- **Existing user:** create a `trip_member` with `status: "pending"`.
+- **Unknown email:** create a `pending_invite` with a token that expires in seven days.
+
+The users collection never fills up with placeholder accounts for people who never sign up.
+
+<Callout type="warning">
+  **Model the edge cases before the happy path.** Same person invited twice, token expired, email belongs to an existing account. Each one changed the data model, and finding them after writing the happy path cost a rewrite.
+</Callout>
+
+### 3. One set of schemas for both sides
+
+The client and server validate with the same Zod schemas from `shared/`. Adding a field like `travelerCount` to the create trip payload is one change in one file, and both the form and the API pick it up. There are no "I updated the server but forgot the client" bugs.
+
+---
+
+## Technical Challenges and Trade-offs
+
+### 1. MongoDB without foreign keys
+
+Trip data is hierarchical (trip, days, activities), which fits documents well, and all writes go through one API, so missing foreign keys rarely matter. Where it became real work: deleting a trip has to clean up 11 collections. In Postgres, `ON DELETE CASCADE` does that. Here it's a `deleteTripCascade` service that deletes from each collection in order, and it needs tests to prove it runs.
+
+### 2. Request and response only
+
+Two people editing the same trip see each other's changes on the next fetch or when a mutation invalidates the TanStack Query cache. A WebSocket layer would make it live. I deferred it for time, not difficulty.
+
+### 3. Optimistic updates in two places only
+
+Activity reordering and checklist toggles update the UI before the server answers. Expenses and file uploads still wait for the round trip, and they'd feel faster with the same treatment.
+
+---
+
+## Results
+
+Tabi runs at [tabi.atharvdange.com](https://tabi.atharvdange.com), and my friends and I use it to plan our trips. It turned a hackathon entry into a product, because it solved a problem we kept having every time a trip came up.
