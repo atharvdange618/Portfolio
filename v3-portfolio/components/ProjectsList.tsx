@@ -4,15 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { FaArrowRight, FaGithub } from "react-icons/fa6";
 import { RiExternalLinkFill } from "react-icons/ri";
-import { ProjectMeta, ProjectStatus } from "@/lib/types";
+import { ProjectMeta, ProjectKind } from "@/lib/types";
 import { StatusBadge } from "@/components/mdx/StatusBadge";
+import { KindBadge } from "@/components/mdx/KindBadge";
 import { StackTag } from "@/components/mdx/StackTag";
 import { cn } from "@/lib/utils";
 
-const filters: { label: string; value: ProjectStatus | "all" }[] = [
+const filters: { label: string; value: ProjectKind | "all" }[] = [
   { label: "All", value: "all" },
-  { label: "Active", value: "active" },
-  { label: "Completed", value: "completed" },
+  { label: "Products", value: "product" },
+  { label: "Packages", value: "package" },
+  { label: "Learning", value: "learning" },
 ];
 
 type Props = {
@@ -20,10 +22,10 @@ type Props = {
 };
 
 export function ProjectsList({ projects }: Props) {
-  const [active, setActive] = useState<ProjectStatus | "all">("all");
+  const [active, setActive] = useState<ProjectKind | "all">("all");
 
   const filtered =
-    active === "all" ? projects : projects.filter((p) => p.status === active);
+    active === "all" ? projects : projects.filter((p) => p.kind === active);
 
   return (
     <div className="flex flex-col gap-8">
@@ -57,6 +59,7 @@ export function ProjectsList({ projects }: Props) {
             >
               <div className="flex items-center gap-3">
                 <StatusBadge status={project.status} />
+                <KindBadge kind={project.kind} />
                 {project.featured && (
                   <span role="img" className="text-yellow text-sm" aria-label="Featured project">★</span>
                 )}

@@ -1,8 +1,11 @@
 export type ProjectStatus = "active" | "completed" | "archived";
 
+export type ProjectKind = "product" | "package" | "learning";
+
 export type ProjectFrontmatter = {
   title: string;
   status: ProjectStatus;
+  kind: ProjectKind;
   featured: boolean;
   stack: string[];
   startedAt: string;

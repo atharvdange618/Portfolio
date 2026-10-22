@@ -1,6 +1,7 @@
 import { getFeaturedProjects } from "@/lib/mdx";
 import { TerminalLabel } from "./mdx/TerminalLabel";
 import { StatusBadge } from "./mdx/StatusBadge";
+import { KindBadge } from "./mdx/KindBadge";
 import Link from "next/link";
 import { StackTag } from "./mdx/StackTag";
 import { FaArrowRight, FaGithub } from "react-icons/fa6";
@@ -25,6 +26,7 @@ export function Projects({
             >
               <div className="flex items-center gap-3">
                 <StatusBadge status={project.status} />
+                <KindBadge kind={project.kind} />
               </div>
               <Link
                 href={`/projects/${project.slug}`}

@@ -1,6 +1,7 @@
 import { getAllProjects, getProjectBySlug } from "@/lib/mdx";
 import { ProjectFrontmatter } from "@/lib/types";
 import { StatusBadge } from "@/components/mdx/StatusBadge";
+import { KindBadge } from "@/components/mdx/KindBadge";
 import { StackTag } from "@/components/mdx/StackTag";
 import { formatDate, extractHeadings } from "@/lib/utils";
 import { MdxRenderer } from "@/components/mdx/MdxRenderer";
@@ -135,6 +136,7 @@ export default async function ProjectPage({
       <div className="flex flex-col gap-4 pb-8 border-b border-border">
         <div className="flex items-center gap-3">
           <StatusBadge status={fm.status} />
+          <KindBadge kind={fm.kind} />
           {readingTime && (
             <span className="text-comment text-sm flex items-center gap-1">
               <FaClock className="w-3 h-3" />
