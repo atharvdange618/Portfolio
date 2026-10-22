@@ -7,6 +7,7 @@ import { MdxRenderer } from "@/components/mdx/MdxRenderer";
 import { TableOfContents } from "@/components/mdx/TableOfContents";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { FaArrowLeftLong, FaGithub, FaClock } from "react-icons/fa6";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { safeJsonLd } from "@/lib/json-ld";
@@ -144,6 +145,24 @@ export default async function ProjectPage({
 
         <h1 className="text-3xl font-bold text-fg">{fm.title}</h1>
 
+        <p className="text-fg/80 text-lg leading-relaxed">{fm.description}</p>
+
+        <div className="flex flex-wrap items-center gap-4">
+          {projectLinks}
+        </div>
+
+        {fm.cover && (
+          <Image
+            src={fm.cover}
+            alt={`${fm.title} screenshot`}
+            width={1600}
+            height={900}
+            priority
+            sizes="(min-width: 768px) 900px, 100vw"
+            className="w-full aspect-video object-cover object-top border border-border"
+          />
+        )}
+
         <div className="flex items-center gap-3 text-sm text-comment">
           <span>Started {formatDate(fm.startedAt)}</span>
           {fm.updatedAt && (
@@ -158,10 +177,6 @@ export default async function ProjectPage({
           {fm.stack.map((s) => (
             <StackTag key={s} tag={s} />
           ))}
-        </div>
-
-        <div className="flex items-center gap-4">
-          {projectLinks}
         </div>
       </div>
 

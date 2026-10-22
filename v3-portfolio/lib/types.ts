@@ -10,6 +10,8 @@ export type ProjectFrontmatter = {
   github: string;
   live: string;
   description: string;
+  // Path under /public, 16:9 screenshot of the running product
+  cover?: string;
 };
 
 export type BlogFrontmatter = {
