@@ -19,7 +19,7 @@ stack:
   - "Tailwind CSS 4"
   - "Vitest"
 startedAt: "2025-07-31"
-updatedAt: "2026-10-02"
+updatedAt: "2026-10-23"
 github: "https://github.com/atharvdange618/Telemetry"
 live: "https://usetelemetry.vercel.app"
 cover: "/projects/telemetry.png"
@@ -185,7 +185,9 @@ Every dashboard load scans raw events for the selected range. At my traffic that
 
 ### 2. Third parties the tracker still touches
 
-Geolocation comes from `ipwho.is`, which means the server sends the visitor's IP to that service before discarding it. The Core Web Vitals library loads from jsDelivr, pinned to a version and checked with a subresource integrity hash. Both are trade-offs I would remove with a local GeoIP database and a self-hosted copy of `web-vitals`.
+Geolocation used to come from `ipwho.is`, so the server sent each visitor's IP to that service before discarding it. Since [62b8c5a](https://github.com/atharvdange618/Telemetry/commit/62b8c5a), the server looks up country and city in a local copy of MaxMind's GeoLite2 database, and the raw IP no longer leaves the server. That also took a network call out of every tracked event.
+
+The Core Web Vitals library still loads from jsDelivr, pinned to a version and checked with a subresource integrity hash. That one I would remove with a self-hosted copy of `web-vitals`.
 
 ### 3. Docs that say what the code does
 
