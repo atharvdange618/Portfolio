@@ -32,6 +32,7 @@ function slugify(text: string): string {
 
 export function extractHeadings(markdown: string): TocItem[] {
   const headings: TocItem[] = [];
+  const usedIds = new Set<string>();
   const lines = markdown.split("\n");
 
   for (const line of lines) {
@@ -44,7 +45,14 @@ export function extractHeadings(markdown: string): TocItem[] {
         .replace(/`([^`]+)`/g, "$1")
         .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
         .trim();
-      headings.push({ id: slugify(text), text, level });
+      const baseId = slugify(text);
+      let id = baseId;
+      let suffix = 0;
+      while (usedIds.has(id)) {
+        id = `${baseId}-${++suffix}`;
+      }
+      usedIds.add(id);
+      headings.push({ id, text, level });
     }
   }
 
