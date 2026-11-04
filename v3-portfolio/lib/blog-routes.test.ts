@@ -19,6 +19,24 @@ describe("blog content", () => {
 });
 
 describe("blog URL migration", () => {
+  it("names the section blogs across UI labels and text indexes", async () => {
+    for (const file of [
+      "components/Hero.tsx",
+      "components/Blogs.tsx",
+      "components/About.tsx",
+      "components/Footer.tsx",
+      "app/blogs/page.tsx",
+      "app/blogs/[slug]/page.tsx",
+    ]) {
+      const source = readFileSync(file, "utf8");
+      expect(source, file).toMatch(/\bblogs\b/i);
+      expect(source.replaceAll('"#blog"', '').replaceAll('id="blog"', ''), file)
+        .not.toMatch(/\bblog\b/i);
+    }
+    expect(await llms().text()).toContain("## Blogs\n");
+    expect(await fullText().text()).toContain("# Blogs\n");
+  });
+
   it("redirects the old index and post URLs permanently", async () => {
     const redirects = await config.redirects?.();
     expect(redirects).toContainEqual({

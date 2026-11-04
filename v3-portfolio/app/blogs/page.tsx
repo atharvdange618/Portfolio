@@ -6,7 +6,7 @@ import Link from "next/link";
 import { FaArrowLeftLong } from "react-icons/fa6";
 
 export const metadata = {
-  title: "Blog",
+  title: "Blogs",
   alternates: { canonical: "/blogs" },
   description:
     "Writing on JavaScript & Web fundamentals, frameworks, tools and software engineering",
@@ -25,11 +25,11 @@ export default function BlogPage() {
         Back to home
       </Link>
       <h1 className="sr-only">
-        Atharv Dange's Blog - Articles on JavaScript, Web Fundamentals, and
+        Atharv Dange's Blogs - Articles on JavaScript, Web Fundamentals, and
         Systems Engineering
       </h1>
       <div>
-        <TerminalLabel command="ls blog/" />
+        <TerminalLabel command="ls blogs/" />
         <p className="text-fg/80 leading-relaxed text-lg">
           Writing on JavaScript & Web fundamentals, frameworks, tools and
           software engineering and things I figure out while building.

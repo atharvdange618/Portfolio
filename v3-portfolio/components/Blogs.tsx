@@ -12,7 +12,7 @@ export function Blogs({
 }) {
   return (
     <section id="blog">
-      <TerminalLabel command="ls blog/ --recent" />
+      <TerminalLabel command="ls blogs/ --recent" />
       <div className="flex flex-col gap-6">
         {posts.length === 0 ? (
           <p className="text-comment text-sm">No posts yet.</p>

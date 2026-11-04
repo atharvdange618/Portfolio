@@ -28,7 +28,7 @@ export function GET() {
 
 ${projects.join("\n\n---\n\n")}
 
-# Blog
+# Blogs
 
 ${posts.join("\n\n---\n\n")}
 `;

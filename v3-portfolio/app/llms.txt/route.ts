@@ -23,7 +23,7 @@ The full text of every project and post is at ${baseUrl}/llms-full.txt
 
 ${projects}
 
-## Blog
+## Blogs
 
 ${posts}
 `;

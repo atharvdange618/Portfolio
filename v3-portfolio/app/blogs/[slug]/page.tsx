@@ -114,7 +114,7 @@ export default async function BlogPostPage({
         className="flex items-center gap-2 text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 text-sm w-fit"
       >
         <FaArrowLeftLong className="w-3 h-3" />
-        Back to blog
+        Back to blogs
       </Link>
 
       <div className="flex flex-col gap-4 pb-8 border-b border-border">

@@ -8,7 +8,7 @@ import { FaGithub, FaLinkedinIn, FaXTwitter } from "react-icons/fa6";
 import { MdOutlineAttachEmail } from "react-icons/md";
 import { LuBookOpenText, LuGitBranch } from "react-icons/lu";
 
-type Mode = "NORMAL" | "LINKEDIN" | "GITHUB" | "EMAIL" | "TWITTER" | "BLOG";
+type Mode = "NORMAL" | "LINKEDIN" | "GITHUB" | "EMAIL" | "TWITTER" | "BLOGS";
 
 const links = [
   {
@@ -36,10 +36,10 @@ const links = [
     modeHover: "EMAIL" as Mode,
   },
   {
-    label: "Blog",
+    label: "Blogs",
     href: "/blogs",
     icon: LuBookOpenText,
-    modeHover: "BLOG" as Mode,
+    modeHover: "BLOGS" as Mode,
   },
 ];
 
@@ -49,7 +49,7 @@ const modeColors: Record<Mode, string> = {
   GITHUB: "bg-purple text-bg",
   EMAIL: "bg-yellow text-bg",
   TWITTER: "bg-red text-bg",
-  BLOG: "bg-green text-bg",
+  BLOGS: "bg-green text-bg",
 };
 
 const modeTextColors: Record<Mode, string> = {
@@ -58,7 +58,7 @@ const modeTextColors: Record<Mode, string> = {
   GITHUB: "text-purple",
   EMAIL: "text-yellow",
   TWITTER: "text-red",
-  BLOG: "text-green",
+  BLOGS: "text-green",
 };
 
 export function Footer() {

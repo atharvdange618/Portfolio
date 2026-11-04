@@ -62,7 +62,7 @@ export function Hero() {
             { label: "~/about", href: "#about" },
             { label: "~/experience", href: "#experience" },
             { label: "~/projects", href: "#projects" },
-            { label: "~/blog", href: "#blog" },
+            { label: "~/blogs", href: "#blog" },
           ].map(({ label, href }) => (
             <a
               key={label}
