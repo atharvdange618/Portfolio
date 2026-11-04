@@ -108,13 +108,13 @@ if (Buffer.byteLength(password, "utf8") > MAX_PASSWORD_BYTES) {
 
 The flow for duplicate detection looks like this:
 
-```text
+```ascii
 Check email in DB -> not found -> insert user
 ```
 
 That works perfectly in a sequential world. In production, two signup requests for the same email can arrive within milliseconds. Both hit the "email exists?" check before either has inserted. Both get "not found." Both try to insert.
 
-```text
+```ascii
 Request A: SELECT * FROM users WHERE email = 'x@y.com' -> not found
 Request B: SELECT * FROM users WHERE email = 'x@y.com' -> not found
 Request A: INSERT INTO users (email, ...) -> success
@@ -293,7 +293,7 @@ Now the user tries to verify their email, clicks the link, verification succeeds
 
 This should be a documented policy decision. The cleanest fix: block sign in for unverified accounts early, before you increment `failedAttempts`.
 
-```text
+```ascii
 Find user -> check isVerified -> if false, return 403 immediately (no failedAttempts change)
 ```
 
@@ -333,7 +333,7 @@ if (!user.isVerified) {
 
 The 5-minute rate limit on reset emails works like this in the current design:
 
-```text
+```ascii
 Check lastResetSentAt -> not within 5 min -> generate token -> write lastResetSentAt
 ```
 
