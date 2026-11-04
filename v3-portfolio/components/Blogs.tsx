@@ -33,7 +33,7 @@ export function Blogs({
               </div>
               <div className="flex items-center justify-between gap-4">
                 <Link
-                  href={`/blog/${post.slug}`}
+                  href={`/blogs/${post.slug}`}
                   className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 text-lg font-medium focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
                 >
                   {post.title}
@@ -51,7 +51,7 @@ export function Blogs({
           ))
         )}
         <Link
-          href="/blog"
+          href="/blogs"
           className="text-base text-comment hover:text-purple active:scale-[0.98] transition-all duration-200 flex items-center gap-1 w-fit group focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
         >
           Read all posts{" "}

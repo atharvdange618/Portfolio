@@ -1,0 +1,356 @@
+---
+title: "`this` and `globalThis` in Node.js: What They Really Are"
+publishedAt: "2026-03-15T15:06:41.095Z"
+featured: false
+description: >-
+  A complete guide to how `this` behaves in every Node.js context, from
+  top-level module scope to classes and arrow functions.
+summary: >-
+  `this` is one of JavaScript's most misunderstood keywords, and Node.js adds
+  its own twists on top. This post breaks down exactly how `this` behaves in
+  every context you'll encounter, why `globalThis` exists, and the subtle
+  gotchas that catch even experienced developers off guard.
+updatedAt: "2026-03-15T15:06:41.144Z"
+category: JavaScript & Web APIs
+seoTitle: Understanding `this` and `globalThis` in Node.js
+tags:
+  - javascript
+  - nodejs
+  - this keyword
+  - globalThis
+  - javascript fundamentals
+  - context
+  - scope
+  - module system
+seoKeywords:
+  - this in nodejs
+  - globalThis nodejs
+  - javascript this keyword
+  - this in arrow functions
+  - module.exports this
+  - global object nodejs
+  - javascript context
+  - this binding javascript
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1773587167/from-scratch/fxp6fd1youkhvvppnlg7.png
+---
+
+![`this` and `globalThis` in Node.js: What They Really Are](https://res.cloudinary.com/dvwajyvot/image/upload/v1773587167/from-scratch/fxp6fd1youkhvvppnlg7.png)
+
+Think of `this` like a name tag at a company event. The name tag doesn't belong to any one person permanently. Whoever is wearing it at that moment is the person it refers to. Pass the name tag to someone else, and now "this person" is someone different entirely. `this` in JavaScript works exactly the same way. It doesn't care where a function was written. It cares about how and where that function was called.
+
+Simple enough in theory. In practice, Node.js throws in a few surprises.
+
+## What `this` Actually Refers To
+
+Before anything else, there's one rule that anchors everything:
+
+> `this` is determined by the call site, not the definition site.
+
+That single rule explains most of the confusion people have. Let's go through each context one by one.
+
+## `this` at the Top Level of a Node.js File
+
+Here's something most developers get wrong the first time.
+
+Open any Node.js file and log `this` at the very top:
+
+```javascript
+// file: index.js
+console.log(this); // {}
+console.log(this === module.exports); // true
+console.log(this === global); // false
+```
+
+That empty object? That's `module.exports`. Not `global`. Not `window`. Not the module itself. It's `module.exports`.
+
+Here's why. Node.js doesn't run your files as-is. It wraps every file in a function before executing it. This is the module wrapper:
+
+```ascii
+┌────────────────────────────────────────────────────────┐
+│  Node.js Module Wrapper                                │
+│                                                        │
+│  (function(exports, require, module, __filename,       │
+│            __dirname) {                                │
+│                                                        │
+│    // YOUR FILE CODE RUNS HERE                         │
+│                                                        │
+│    console.log(this); // <-- this = module.exports     │
+│                                                        │
+│  });                                                   │
+└────────────────────────────────────────────────────────┘
+```
+
+Because your code is wrapped in a regular function and called with `this` set to `module.exports`, that's what you see at the top level. This surprises a lot of people who expect `this` to be `global` here. It isn't.
+
+If you reassign `this` at the top level, you're actually modifying `module.exports`:
+
+```javascript
+this.name = "Atharv";
+console.log(module.exports); // { name: 'Atharv' }
+```
+
+## `this` Inside Regular Functions
+
+Now step inside a function definition. The behavior changes, and it depends on strict mode.
+
+```ascii
+┌─────────────────────────────────────────────┐
+│         Function Call Context               │
+│                                             │
+│  Non-strict mode:                           │
+│    function foo() { this → global }         │
+│                                             │
+│  Strict mode ('use strict'):                │
+│    function foo() { this → undefined }      │
+│                                             │
+│  Method call:                               │
+│    obj.foo()  →  this = obj                 │
+└─────────────────────────────────────────────┘
+```
+
+In non-strict mode, calling a plain function gives you `global` as `this`:
+
+```javascript
+function showThis() {
+  console.log(this === global); // true
+}
+
+showThis();
+```
+
+In strict mode (or in ES modules, which are always strict), `this` becomes `undefined`:
+
+```javascript
+"use strict";
+
+function showThis() {
+  console.log(this); // undefined
+}
+
+showThis();
+```
+
+This is actually the safer behavior. Accidentally attaching things to `global` through a function call is a classic source of bugs.
+
+## `this` in Methods
+
+When a function is called as a method of an object, `this` becomes that object. This is the most intuitive use case.
+
+```javascript
+const user = {
+  name: "Atharv",
+  greet() {
+    console.log(`Hello, ${this.name}`);
+  },
+};
+
+user.greet(); // Hello, Atharv
+```
+
+But here's the catch. Detach that method from the object and `this` changes:
+
+```javascript
+const greet = user.greet;
+greet(); // Hello, undefined (or crashes in strict mode)
+```
+
+The function is the same. The call site changed. That's all it takes.
+
+```ascii
+┌──────────────────────────────────────────────────┐
+│  user.greet()          │  greet()                │
+│  this = user           │  this = global / undef  │
+│  "Hello, Atharv"       │  "Hello, undefined"     │
+└──────────────────────────────────────────────────┘
+```
+
+This is exactly why React developers used to write `this.handleClick = this.handleClick.bind(this)` in constructors. And why arrow functions became so popular for event handlers.
+
+## Arrow Functions: Lexical `this`
+
+Arrow functions don't have their own `this`. They capture it from the surrounding scope at the time they were defined. This is called lexical binding.
+
+```javascript
+const user = {
+  name: "Atharv",
+  greetLater() {
+    setTimeout(function () {
+      console.log(this.name); // undefined, this = global/undefined
+    }, 100);
+
+    setTimeout(() => {
+      console.log(this.name); // "Atharv", this = user
+    }, 100);
+  },
+};
+
+user.greetLater();
+```
+
+The arrow function inside `setTimeout` doesn't create its own `this`. It looks up the scope chain and finds `this` from `greetLater`, which is `user`.
+
+```ascii
+┌───────────────────────────────────────────────┐
+│  Arrow Function: Lexical this                 │
+│                                               │
+│  Outer scope (greetLater called on user)      │
+│  this = user                                  │
+│      │                                        │
+│      └──> Arrow function inherits this        │
+│           this = user  (same object)          │
+└───────────────────────────────────────────────┘
+```
+
+One thing to watch out for: don't use arrow functions as object methods if you need `this` to refer to the object. Since they capture `this` lexically, you'll get the outer `this` instead.
+
+```javascript
+const user = {
+  name: "Atharv",
+  greet: () => {
+    console.log(this.name); // undefined, this is NOT user here
+  },
+};
+```
+
+## `this` in Classes
+
+Inside a class, `this` refers to the instance of that class. This is the most predictable context.
+
+```javascript
+class Counter {
+  constructor() {
+    this.count = 0;
+  }
+
+  increment() {
+    this.count++;
+    console.log(this.count);
+  }
+}
+
+const c = new Counter();
+c.increment(); // 1
+c.increment(); // 2
+```
+
+But even here, the "detached method" problem applies. If you pass `c.increment` as a callback, `this` will be lost unless you bind it or use an arrow function property.
+
+```javascript
+// This breaks:
+setTimeout(c.increment, 1000); // NaN
+
+// Fix with bind:
+setTimeout(c.increment.bind(c), 1000); // 1
+
+// Or use a class field (arrow function):
+class Counter {
+  count = 0;
+  increment = () => {
+    this.count++;
+    console.log(this.count);
+  };
+}
+```
+
+## The `global` Object in Node.js
+
+Every runtime has a global object. In browsers, it's `window`. In Node.js, it's `global`.
+
+The `global` object holds things like `setTimeout`, `setInterval`, `console`, `process`, and `Buffer`. When you call `console.log()`, you're technically calling `global.console.log()`.
+
+```ascii
+┌──────────────────────────────────────────┐
+│            Node.js global object         │
+│                                          │
+│  global.console      → Console           │
+│  global.setTimeout   → Function          │
+│  global.process      → Process           │
+│  global.Buffer       → Buffer class      │
+│  global.queueMicrotask → Function        │
+│  global.__filename   → NOT here (module) │
+│  global.__dirname    → NOT here (module) │
+└──────────────────────────────────────────┘
+```
+
+A quick gotcha: `__filename` and `__dirname` are NOT on `global`. They're injected by the module wrapper and are only available inside each file's scope.
+
+Variables you declare with `var` in a function do NOT automatically attach to `global` in Node.js (unlike in browsers where top-level `var` becomes `window.x`). In Node.js, file-level `var` stays inside the module wrapper.
+
+## `globalThis`: The Universal Answer
+
+Here's the problem `globalThis` was created to solve.
+
+JavaScript runs in different environments. Each has its own name for the global object:
+
+```ascii
+┌─────────────────────────────────────────────┐
+│  Environment     │  Global Object Name      │
+├──────────────────┼──────────────────────────┤
+│  Browser         │  window                  │
+│  Node.js         │  global                  │
+│  Web Workers     │  self                    │
+│  Deno            │  globalThis              │
+└─────────────────────────────────────────────┘
+```
+
+If you're writing code that needs to work across environments (think: a library, a shared utility), you'd have to write something like:
+
+```javascript
+// The old painful way
+const globalObj =
+  typeof window !== "undefined"
+    ? window
+    : typeof global !== "undefined"
+      ? global
+      : typeof self !== "undefined"
+        ? self
+        : undefined;
+```
+
+That's ugly. `globalThis`, introduced in ES2020, fixes this cleanly. It always refers to the global object, regardless of environment.
+
+```javascript
+// Works everywhere: Node.js, browser, worker
+console.log(globalThis === global); // true in Node.js
+console.log(globalThis === window); // true in browser
+```
+
+```ascii
+┌─────────────────────────────────────────┐
+│            globalThis                   │
+│                                         │
+│  Node.js  ──────────────────→  global   │
+│  Browser  ──────────────────→  window   │
+│  Worker   ──────────────────→  self     │
+│  Deno     ──────────────────→  Deno's   │
+│                               global    │
+└─────────────────────────────────────────┘
+```
+
+In day-to-day Node.js code, you probably won't reach for `globalThis` that often. But the moment you start writing isomorphic code (code that runs on both server and client), it becomes essential.
+
+## Putting It All Together
+
+Here's a mental map of every `this` context in Node.js:
+
+```ascii
+┌─────────────────────────────────────────────────────────┐
+│  Context                    │  Value of this            │
+├─────────────────────────────┼───────────────────────────┤
+│  Top-level (CJS file)       │  module.exports ({})      │
+│  Top-level (ES module)      │  undefined                │
+│  Regular function (sloppy)  │  global                   │
+│  Regular function (strict)  │  undefined                │
+│  Arrow function             │  Lexically inherited      │
+│  Method call (obj.fn())     │  obj                      │
+│  Class method               │  Instance                 │
+│  Detached method            │  global / undefined       │
+└─────────────────────────────┴───────────────────────────┘
+```
+
+## Key Takeaways
+
+`this` in Node.js follows one core rule: it's set by the call site, not where the function was written. The module wrapper means top-level `this` is `module.exports`, not `global`. Arrow functions don't have their own `this`, which makes them great for callbacks but wrong for object methods. And `globalThis` exists to give you a single reliable way to reference the global object across every JavaScript runtime, no environment detection needed.
+
+Once these pieces click, a lot of the "weird JavaScript behavior" people complain about stops feeling weird. It's just the name tag passing hands.

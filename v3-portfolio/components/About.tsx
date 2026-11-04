@@ -1,4 +1,5 @@
 import { TerminalLabel } from "./mdx/TerminalLabel";
+import Link from "next/link";
 
 export function About() {
   return (
@@ -30,15 +31,12 @@ export function About() {
         </p>
         <p>
           Outside of code I write about what I find at{" "}
-          <a
-            href="https://blog.atharvdange.com"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/blogs"
             className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 underline decoration-dotted underline-offset-4 focus-visible:outline-2 focus-visible:outline-purple focus-visible:outline-offset-2"
           >
             blog
-            <span className="sr-only"> (opens in new tab)</span>
-          </a>{" "}
+          </Link>{" "}
           and watch way too many films.
         </p>
       </div>

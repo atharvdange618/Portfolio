@@ -1,0 +1,491 @@
+---
+title: Understanding Object-Oriented Programming in JavaScript
+publishedAt: "2026-03-11T12:13:13.227Z"
+featured: false
+description: >-
+  Learn OOP in JavaScript from scratch. This guide covers classes, constructors,
+  methods, encapsulation, and code reusability.
+summary: >-
+  Object-Oriented Programming (OOP) is a way of organizing code around
+  real-world entities, and JavaScript supports it natively through classes. This
+  post walks you through what OOP actually means, how classes work in JS, and
+  why it makes your code cleaner and more reusable.
+updatedAt: "2026-03-11T12:13:13.253Z"
+category: JavaScript & Web APIs
+seoTitle: Understanding Object-Oriented Programming in JavaScript
+tags:
+  - javascript
+  - oop
+  - classes
+  - object-oriented-programming
+  - es6
+  - beginner
+  - constructor
+  - encapsulation
+  - methods
+seoKeywords:
+  - object-oriented programming javascript
+  - javascript classes
+  - oop in javascript
+  - javascript constructor
+  - javascript methods
+  - es6 classes
+  - beginner javascript oop
+  - class vs object javascript
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1773231117/from-scratch/tb7thflbvcgw7c6ur5cr.png
+---
+
+![Understanding Object-Oriented Programming in JavaScript](https://res.cloudinary.com/dvwajyvot/image/upload/v1773231117/from-scratch/tb7thflbvcgw7c6ur5cr.png)
+
+Think about the last time you filled out a form online. Every input field on that page was doing the same kind of thing: capturing a value, validating it, maybe showing an error message. What if you had to write separate, disconnected code for every single one of those fields? It would be a mess. OOP is the idea that instead of writing repetitive code, you define a template once, and then create as many copies of it as you need, each with its own data. That template is a class. Those copies are objects.
+
+## What Is Object-Oriented Programming?
+
+OOP is a programming paradigm. A paradigm is just a way of thinking about and organizing code. There are others, like functional programming or procedural programming, and they all solve the same problems differently. OOP says: model your code around things (objects) that have properties and behaviors.
+
+Here's the core idea in plain English. Everything in the real world is an object. A car has properties (color, brand, speed) and behaviors (accelerate, brake, honk). A person has a name, an age, and can walk, talk, or sleep. OOP lets you represent those real-world things directly in your code.
+
+```ascii
+Real World             Your Code
+─────────────────      ─────────────────
+Car (thing)       →    Object
+color, speed      →    Properties
+accelerate()      →    Methods
+```
+
+Three big reasons developers use OOP:
+
+1. **Reusability**: Write a class once, use it everywhere.
+2. **Organization**: Related data and behavior live together.
+3. **Maintainability**: When something breaks, you know exactly where to look.
+
+## The Blueprint Analogy
+
+Here is the most important mental model for OOP. Think of a class as a blueprint for a house. The blueprint is not a house. You cannot live in a blueprint. But you can use that same blueprint to build 10 houses, 100 houses, each one independent with its own address, paint color, and residents.
+
+```ascii
+  ┌─────────────────────────────────┐
+  │        BLUEPRINT (Class)        │
+  │  - has rooms                    │
+  │  - has a kitchen                │
+  │  - has doors and windows        │
+  └────────────┬────────────────────┘
+               │ build()
+       ┌───────┼───────┐
+       ▼       ▼       ▼
+   ┌───────┐ ┌───────┐ ┌───────┐
+   │House 1│ │House 2│ │House 3│
+   │ Blue  │ │ Red   │ │ White │
+   └───────┘ └───────┘ └───────┘
+   (Object)  (Object)  (Object)
+```
+
+Each house (object) was made from the same blueprint (class), but each one is independent. Change the color of House 1 and it doesn't affect House 2. That's the fundamental value here.
+
+In JavaScript, a class is the blueprint. An object is an instance of that class.
+
+## What Is a Class in JavaScript?
+
+A class in JavaScript is a template for creating objects. It was introduced in ES6 (2015) as a cleaner syntax on top of JavaScript's existing prototype-based inheritance. Under the hood, classes are still prototypes, but you don't need to worry about that yet.
+
+Here's the simplest class you can write:
+
+```javascript
+class Car {
+  // this is a class
+}
+```
+
+That's it. It does nothing yet, but it's valid. Now let's make it actually useful.
+
+## The Constructor Method
+
+Every class has a special method called `constructor`. It runs automatically whenever you create a new object from that class. Think of it as the setup step, the moment the blueprint becomes a real thing.
+
+```javascript
+class Car {
+  constructor(brand, color) {
+    this.brand = brand;
+    this.color = color;
+  }
+}
+```
+
+The `this` keyword here refers to the specific object being created. When you make a new Car, `this.brand` becomes that car's brand. Not some global variable. Not anyone else's car. That specific instance.
+
+```ascii
+constructor(brand, color) called
+           │
+           ▼
+  ┌────────────────────┐
+  │  new object born   │
+  │  this.brand = brand│
+  │  this.color = color│
+  └────────────────────┘
+           │
+           ▼
+   object ready to use
+```
+
+## Creating Objects from a Class
+
+To create an object from a class, you use the `new` keyword.
+
+```javascript
+class Car {
+  constructor(brand, color) {
+    this.brand = brand;
+    this.color = color;
+  }
+}
+
+const myCar = new Car("Toyota", "red");
+const anotherCar = new Car("Honda", "blue");
+
+console.log(myCar.brand); // Toyota
+console.log(anotherCar.color); // blue
+```
+
+Each `new Car(...)` call creates a completely separate object. `myCar` and `anotherCar` share the same structure (from the class), but they hold different data. Changing `myCar.color` doesn't touch `anotherCar`.
+
+```ascii
+  Car Class
+  ┌────────────────────┐
+  │  constructor()     │
+  │  brand, color      │
+  └──────────┬─────────┘
+             │ new Car(...)
+    ┌─────────┴──────────┐
+    ▼                    ▼
+┌──────────────┐   ┌──────────────┐
+│   myCar      │   │  anotherCar  │
+│  brand:Toyota│   │  brand:Honda │
+│  color:red   │   │  color:blue  │
+└──────────────┘   └──────────────┘
+```
+
+## Methods Inside a Class
+
+A method is just a function attached to a class. Where properties store data, methods define behavior. Going back to the car: speed and color are properties. Accelerating or honking are behaviors.
+
+```javascript
+class Car {
+  constructor(brand, color) {
+    this.brand = brand;
+    this.color = color;
+  }
+
+  describe() {
+    console.log(`This is a ${this.color} ${this.brand}.`);
+  }
+
+  honk() {
+    console.log(`${this.brand} says: Beep beep!`);
+  }
+}
+
+const myCar = new Car("Toyota", "red");
+myCar.describe(); // This is a red Toyota.
+myCar.honk(); // Toyota says: Beep beep!
+```
+
+Notice that `describe()` uses `this.brand` and `this.color`. Inside a method, `this` still refers to the specific instance calling the method. So when `myCar.describe()` runs, `this` is `myCar`.
+
+This matters more than it looks. It's why the same method can behave differently for different objects without any extra code on your part.
+
+```javascript
+const car1 = new Car("BMW", "black");
+const car2 = new Car("Tesla", "white");
+
+car1.describe(); // This is a black BMW.
+car2.describe(); // This is a white Tesla.
+```
+
+Same method. Different output. That's the power of binding behavior to an instance.
+
+## Putting It Together: A Person Class
+
+Let's build something slightly more relatable.
+
+```javascript
+class Person {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+
+  greet() {
+    console.log(`Hi, I'm ${this.name} and I'm ${this.age} years old.`);
+  }
+
+  isAdult() {
+    return this.age >= 18;
+  }
+}
+
+const alice = new Person("Alice", 25);
+const bob = new Person("Bob", 16);
+
+alice.greet(); // Hi, I'm Alice and I'm 25 years old.
+console.log(alice.isAdult()); // true
+console.log(bob.isAdult()); // false
+```
+
+The `isAdult()` method uses the instance's own `age` to make the decision. You're not passing any argument because the data is already there on the object. That's what makes classes so clean to work with.
+
+## A Quick Look at Encapsulation
+
+Encapsulation is the idea that an object should manage its own data and expose only what's necessary. You don't need to know how a car engine works to drive the car. You just call `accelerate()`. The internal complexity is hidden.
+
+In JavaScript, a simple way to think about encapsulation is: put related data and behavior together in one class, and only expose methods that make sense for the outside world to use.
+
+```javascript
+class BankAccount {
+  constructor(owner, balance) {
+    this.owner = owner;
+    this._balance = balance; // convention: _ means "treat as private"
+  }
+
+  deposit(amount) {
+    if (amount > 0) {
+      this._balance += amount;
+    }
+  }
+
+  getBalance() {
+    return this._balance;
+  }
+}
+
+const account = new BankAccount("Atharv", 5000);
+account.deposit(1000);
+console.log(account.getBalance()); // 6000
+```
+
+The underscore prefix `_balance` is a JavaScript convention that says "don't touch this directly from outside." It's not enforced by the language itself (for that, you'd use private fields with `#`), but it communicates intent clearly. The public API is `deposit()` and `getBalance()`. That's all the outside world needs to know.
+
+## A Quick Look at Inheritance
+
+Inheritance lets one class build on top of another. Instead of rewriting shared behavior, a child class extends a parent class and gets all its properties and methods for free. You only define what's new or different.
+
+Think of it this way: an `Animal` has a name and can breathe. A `Dog` is still an animal, but it can also bark. You shouldn't have to redefine name and breathing just because you're now talking about a dog.
+
+```javascript
+class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+
+  breathe() {
+    console.log(`${this.name} is breathing.`);
+  }
+}
+
+class Dog extends Animal {
+  bark() {
+    console.log(`${this.name} says: Woof!`);
+  }
+}
+
+const dog = new Dog("Rex");
+dog.breathe(); // Rex is breathing.  (inherited from Animal)
+dog.bark(); // Rex says: Woof!    (defined in Dog)
+```
+
+The `extends` keyword sets up the inheritance. `Dog` doesn't have a `breathe()` method, but it doesn't need one. It climbs up to `Animal` and finds it there. This chain is called the **prototype chain**.
+
+When the child class needs its own constructor, you call `super()` first. `super()` runs the parent's constructor and sets up the inherited properties before the child adds its own.
+
+```javascript
+class Cat extends Animal {
+  constructor(name, indoor) {
+    super(name); // runs Animal's constructor
+    this.indoor = indoor;
+  }
+
+  describe() {
+    const type = this.indoor ? "indoor" : "outdoor";
+    console.log(`${this.name} is an ${type} cat.`);
+  }
+}
+
+const cat = new Cat("Mochi", true);
+cat.describe(); // Mochi is an indoor cat.
+cat.breathe(); // Mochi is breathing.
+```
+
+Inheritance is powerful, but use it with intent. It works best when the relationship genuinely is "is-a": a Dog _is an_ Animal. When the relationship is more like "has-a" or "uses-a", composition (putting an object inside another object) is usually the better choice.
+
+## A Quick Look at Polymorphism
+
+Polymorphism means "many forms." The idea is that different objects can respond to the same method call in their own way. You call the same method, but each class decides what it actually does.
+
+The most common form of this in JavaScript is **method overriding**: a child class redefines a method it inherited from the parent.
+
+```javascript
+class Shape {
+  area() {
+    return 0;
+  }
+}
+
+class Circle extends Shape {
+  constructor(radius) {
+    super();
+    this.radius = radius;
+  }
+
+  area() {
+    return Math.PI * this.radius ** 2;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(width, height) {
+    super();
+    this.width = width;
+    this.height = height;
+  }
+
+  area() {
+    return this.width * this.height;
+  }
+}
+
+const shapes = [new Circle(5), new Rectangle(4, 6)];
+
+shapes.forEach((shape) => {
+  console.log(shape.area());
+});
+// 78.53981633974483
+// 24
+```
+
+Notice the loop doesn't care whether it's dealing with a `Circle` or a `Rectangle`. It just calls `.area()` and trusts each shape to do the right thing. That's polymorphism in practice: write code that works on a general type, and let each specific type handle the details.
+
+This is why polymorphism makes large codebases much easier to extend. Add a new `Triangle` class with its own `area()` method and the loop above works instantly, without any changes.
+
+## A Quick Look at Abstraction
+
+Abstraction is about hiding complexity and showing only what's relevant. The goal is to let someone use a class without needing to understand how it works internally. You interact with the interface, not the implementation.
+
+You already experience abstraction every day. When you call `console.log()`, you don't think about how the JavaScript engine writes to stdout. You just call the method. The complexity is abstracted away.
+
+In your own classes, abstraction means exposing a clean, simple set of methods while keeping the messy internal logic private.
+
+```javascript
+class EmailSender {
+  send(to, subject, body) {
+    const formatted = this._formatMessage(subject, body);
+    const validated = this._validateEmail(to);
+
+    if (validated) {
+      console.log(`Sending to ${to}: ${formatted}`);
+    }
+  }
+
+  _formatMessage(subject, body) {
+    return `[${subject}] ${body}`;
+  }
+
+  _validateEmail(email) {
+    return email.includes("@");
+  }
+}
+
+const mailer = new EmailSender();
+mailer.send("user@example.com", "Hello", "Welcome aboard!");
+// Sending to user@example.com: [Hello] Welcome aboard!
+```
+
+From the outside, all you know is: call `.send()` with three arguments and the email gets sent. The validation, formatting, and any other internal steps are hidden. If you later change how formatting works, nothing outside the class needs to update.
+
+Abstraction and encapsulation are closely related. Encapsulation is the mechanism (bundling data and hiding it). Abstraction is the goal (reducing complexity from the user's perspective).
+
+## Why Code Reusability Matters
+
+Let's say you need to represent 50 students in a school application. Without classes, you'd be copying object literals everywhere. With a class, you define the structure once.
+
+```javascript
+// Without classes, repetitive and error-prone:
+const student1 = { name: "Alice", age: 20, grade: "A" };
+const student2 = { name: "Bob", age: 21, grade: "B" };
+// ... 48 more of these
+
+// With a class, clean and consistent:
+class Student {
+  constructor(name, age, grade) {
+    this.name = name;
+    this.age = age;
+    this.grade = grade;
+  }
+
+  printDetails() {
+    console.log(`${this.name} | Age: ${this.age} | Grade: ${this.grade}`);
+  }
+}
+
+const students = [
+  new Student("Alice", 20, "A"),
+  new Student("Bob", 21, "B"),
+  new Student("Charlie", 19, "A+"),
+];
+
+students.forEach((student) => student.printDetails());
+```
+
+One class. Infinite students. If you need to add a method to all students later, you add it to the class once and every instance gets it. That's the reusability payoff.
+
+## Assignment: Build Your Own Student Class
+
+Here's something to try right now to lock in what you've learned.
+
+**Task**: Create a `Student` class with the following:
+
+1. Properties: `name`, `age`, and `subject`
+2. A method called `introduce()` that logs something like: "Hi, I'm [name], I'm [age] years old and I study [subject]."
+3. A method called `isTeenager()` that returns `true` if age is between 13 and 19.
+4. Create at least 3 Student objects and call both methods on each.
+
+**Starter code:**
+
+```javascript
+class Student {
+  constructor(name, age, subject) {
+    // your code here
+  }
+
+  introduce() {
+    // your code here
+  }
+
+  isTeenager() {
+    // your code here
+  }
+}
+
+// Create your students:
+const s1 = new Student("Riya", 17, "Mathematics");
+const s2 = new Student("Karan", 22, "Computer Science");
+const s3 = new Student("Meera", 15, "Biology");
+
+// Call introduce() and isTeenager() on each
+```
+
+Try it in your browser console or a Node.js file. The goal is to get comfortable with the constructor, `this`, and defining methods.
+
+## Key Takeaways
+
+OOP is not just a JavaScript thing. It's a mindset. Here's what to carry forward:
+
+- A **class** is a blueprint. An **object** is an instance of that blueprint.
+- The **constructor** runs on creation and sets up the object's initial state.
+- **Methods** define what an object can do. They use `this` to access the instance's own data.
+- **Encapsulation** means keeping related data and behavior together, and not exposing more than necessary.
+- **Inheritance** lets a child class extend a parent class, reusing its properties and methods without rewriting them.
+- **Polymorphism** means different classes can implement the same method in their own way. Write once, works for all.
+- **Abstraction** hides internal complexity and exposes only a clean, simple interface to the outside world.
+- Classes shine when you need to create many objects with the same structure. Define once, reuse everywhere.
+
+These four pillars encapsulation, inheritance, polymorphism, and abstraction are the foundation of OOP across every language, not just JavaScript. Get comfortable with them here, and that knowledge transfers everywhere.

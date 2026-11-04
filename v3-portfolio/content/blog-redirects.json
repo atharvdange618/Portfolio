@@ -1,0 +1,9 @@
+{
+  "i-intentionally-built-a-buggy-auth-system-heres-everything-that-was-wrong-with-it": "buggy-auth-system",
+  "building-chai-wind-how-i-cloned-tailwinds-core-idea-from-scratch": "building-chaiwind",
+  "understanding-nodejs-architecture-a-deep-dive-into-v8-libuv-and-everything-in-between": "understanding-nodejs-architecture",
+  "why-every-sitemap-tool-fails-on-modern-javascript-apps": "xml-sitemap-generator",
+  "i-built-all-5-web-rendering-strategies-from-scratch-heres-what-i-actually-learned": "rendering-strategies",
+  "layouts-that-persist-and-data-that-arrives-before-you-do": "layout-that-persists-and-data-that-arrives-before-you-do",
+  "what-actually-happens-when-you-click-a-link-in-react": "what-happens-when-you-click-a-link-in-react"
+}

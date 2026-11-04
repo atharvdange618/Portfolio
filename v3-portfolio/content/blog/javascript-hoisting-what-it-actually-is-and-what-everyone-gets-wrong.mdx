@@ -1,0 +1,423 @@
+---
+title: "JavaScript Hoisting: What It Actually Is (And What Everyone Gets Wrong)"
+publishedAt: "2026-02-11T20:03:38.354Z"
+featured: false
+description: >-
+  A deep dive into JavaScript hoisting covering var, let, const, function
+  declarations, and the temporal dead zone. Understand what hoisting actually is
+  and common misconceptions.
+summary: >-
+  Hoisting moves declarations to the top of their scope before execution, but
+  the way it works with var, let, const, and functions is more nuanced than most
+  tutorials explain. Understanding the temporal dead zone and initialization
+  differences is key to mastering JavaScript scope.
+updatedAt: "2026-02-21T23:07:49.920Z"
+category: JavaScript & Web APIs
+seoTitle: "JavaScript Hoisting Explained: var, let, const, and the Temporal Dead Zone"
+tags:
+  - JavaScript
+  - hoisting
+  - temporal dead zone
+  - var
+  - let
+  - const
+  - scope
+  - function declarations
+  - execution context
+  - compilation
+seoKeywords:
+  - javascript hoisting
+  - temporal dead zone
+  - let vs var
+  - const hoisting
+  - function hoisting
+  - javascript scope
+  - tdz javascript
+  - is let hoisted
+  - hoisting explained
+  - javascript execution context
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1770840179/from-scratch/olfclqbg1kyhgnlvusox.png
+---
+
+![JavaScript Hoisting: What It Actually Is (And What Everyone Gets Wrong)](https://res.cloudinary.com/dvwajyvot/image/upload/v1770840179/from-scratch/olfclqbg1kyhgnlvusox.png)
+
+You know how in a meeting, someone references a document that hasn't been distributed yet? Everyone's confused because they're talking about something that technically exists (it was mentioned in the agenda) but isn't accessible yet. That's basically what the temporal dead zone is in JavaScript.
+
+Hoisting is one of those JavaScript concepts that seems simple until you dig deeper. Most explanations stop at "variables are moved to the top," which is technically wrong and leads to all kinds of confusion. Let's break down what's actually happening under the hood.
+
+## What Hoisting Really Means
+
+Here's the thing: JavaScript doesn't physically move your code around. When people say "hoisting," they're describing the behavior you observe, not what the JavaScript engine actually does.
+
+Before any code runs, JavaScript does a compilation phase where it scans through your code and registers all variable and function declarations in memory. Think of it like a theater production where the stage manager walks through the script before opening night, noting every prop and actor that'll be needed. The props don't get moved to the beginning of the script, but they're allocated and tracked before the show starts.
+
+During this compilation phase, the engine creates variable entries in the appropriate scope (global, function, or block). What matters is what value these variables get initialized with, and when you can actually access them.
+
+```ascii
+COMPILATION PHASE          EXECUTION PHASE
+─────────────────────     ─────────────────
+
+┌─────────────────┐       ┌─────────────────┐
+│ Scan & Register │       │ Run Line by Line│
+│  Declarations   │ ───▶  │  Assign Values  │
+└─────────────────┘       └─────────────────┘
+        │                         │
+        ▼                         ▼
+  Memory Space               Actual Values
+   Allocated                  Are Assigned
+```
+
+Let's look at the actual differences between var, let, const, and function declarations.
+
+## How var Hoisting Works
+
+When JavaScript encounters a `var` declaration, it creates the variable in memory during compilation and initializes it to `undefined`. This is why you can reference a var variable before its declaration without getting a ReferenceError.
+
+```javascript
+console.log(name); // undefined
+var name = "Atharv";
+console.log(name); // "Atharv"
+```
+
+The engine sees this code like:
+
+```javascript
+var name; // declared and initialized to undefined
+console.log(name); // undefined
+name = "Atharv"; // assignment happens here
+console.log(name); // "Atharv"
+```
+
+Here's what's happening in memory:
+
+```ascii
+Memory During Compilation:
+┌──────────────────────┐
+│ Variable Environment │
+├──────────────────────┤
+│ name: undefined      │ ← Created and initialized
+└──────────────────────┘
+
+Memory During Execution:
+┌──────────────────────┐
+│ Variable Environment │
+├──────────────────────┤
+│ name: undefined      │ ← Line 1: Still undefined
+│ name: "Atharv"       │ ← Line 2: Now assigned
+└──────────────────────┘
+```
+
+The key insight: `var` declarations are both registered AND initialized to `undefined` during compilation. You can access the variable immediately, even if it's `undefined`.
+
+Function-scoped behavior with var can get weird:
+
+```javascript
+function example() {
+  console.log(x); // undefined, not ReferenceError
+
+  if (false) {
+    var x = 10; // This declaration is hoisted to function scope
+  }
+
+  console.log(x); // undefined
+}
+```
+
+Even though the `if` block never runs, `var x` is hoisted to the function scope and initialized to undefined. This is why var can be confusing and why let/const were introduced.
+
+## Function Hoisting: The Full Deal
+
+Function declarations get special treatment. They're not just registered in memory, they're also fully initialized with their entire function body during compilation.
+
+```javascript
+greet(); // "Hello!" - works perfectly
+
+function greet() {
+  console.log("Hello!");
+}
+```
+
+The entire function is available from the start of its scope. Here's the crucial difference between function declarations and function expressions:
+
+```javascript
+// Function Declaration - fully hoisted
+sayHi(); // "Hi!" - works
+
+function sayHi() {
+  console.log("Hi!");
+}
+
+// Function Expression - only variable is hoisted
+sayBye(); // TypeError: sayBye is not a function
+
+var sayBye = function () {
+  console.log("Bye!");
+};
+```
+
+With the function expression, only the variable `sayBye` is hoisted (initialized to undefined), not the function itself. So when you try to call it, you're essentially doing `undefined()`, which throws a TypeError.
+
+```ascii
+Function Declaration:
+┌────────────────────────┐
+│   Memory (Compile)     │
+├────────────────────────┤
+│ greet: [Function]      │ ← Complete function stored
+└────────────────────────┘
+
+Function Expression (var):
+┌────────────────────────┐
+│   Memory (Compile)     │
+├────────────────────────┤
+│ sayBye: undefined      │ ← Only variable, no function yet
+└────────────────────────┘
+```
+
+This is why function declarations are "fully hoisted" while function expressions follow the hoisting rules of their variable declaration (var, let, or const).
+
+## Let, Const, and the Temporal Dead Zone
+
+Now we get to the controversial part. Let me be direct: **let and const ARE hoisted**. They're registered in memory during compilation just like var. The difference is initialization.
+
+When JavaScript compiles your code and sees a let or const declaration, it registers the variable but doesn't initialize it. The variable exists in memory but is in an uninitialized state. Any attempt to access it before the line where it's declared results in a ReferenceError.
+
+```javascript
+console.log(age); // ReferenceError: Cannot access 'age' before initialization
+let age = 25;
+```
+
+This period between the start of the scope and the actual declaration line is called the Temporal Dead Zone (TDZ).
+
+```ascii
+Block Scope with Let:
+
+┌─────────────────────────────┐
+│  TDZ Starts                 │ ← Scope begins
+│                             │
+│  ┌─────────────────────┐    │
+│  │  console.log(age)   │    │ ← ReferenceError!
+│  └─────────────────────┘    │
+│                             │
+│  let age = 25; ──────────────  TDZ Ends (Variable initialized)
+│                             │
+│  ┌─────────────────────┐    │
+│  │  console.log(age)   │    │ ← Works! Returns 25
+│  └─────────────────────┘    │
+│                             │
+└─────────────────────────────┘
+```
+
+The TDZ exists to catch errors early. It's a feature, not a bug. With var, you could accidentally use a variable before assigning it and get undefined, leading to subtle bugs. With let/const, you get a clear error.
+
+Here's a tricky example that proves let is hoisted:
+
+```javascript
+let x = "outer";
+
+function test() {
+  console.log(x); // ReferenceError, not "outer"
+  let x = "inner";
+}
+
+test();
+```
+
+If `let x` inside the function wasn't hoisted, the console.log would access the outer `x` and print "outer". But it throws a ReferenceError because the inner `x` IS hoisted to the function scope, creating a TDZ. The variable exists but is uninitialized.
+
+Const works the same way as let regarding hoisting and TDZ, with the additional constraint that you must initialize it at declaration:
+
+```javascript
+const name; // SyntaxError: Missing initializer
+const name = "Atharv"; // Correct
+```
+
+## The "Is Let Hoisted?" Debate
+
+This debate exists because people conflate two separate concepts: declaration and initialization.
+
+Let's clear this up:
+
+**Yes, let IS hoisted.** The declaration is moved to the top of the block scope during compilation. The variable exists in memory.
+
+**No, let is NOT initialized until its line executes.** Unlike var (initialized to undefined) or function declarations (initialized to the full function), let remains uninitialized in the TDZ.
+
+The confusion comes from older definitions of hoisting that implied "hoisting = can access before declaration." That definition only worked for var. The modern understanding is:
+
+```ascii
+Hoisting = Declaration registered in memory during compilation
+         ≠ Immediate accessibility
+
+┌──────────────┬─────────────────┬────────────────────┐
+│   Variable   │  Declared When  │  Initialized When  │
+├──────────────┼─────────────────┼────────────────────┤
+│     var      │   Compilation   │   Compilation      │
+│              │                 │   (to undefined)   │
+├──────────────┼─────────────────┼────────────────────┤
+│     let      │   Compilation   │   Execution        │
+│              │                 │   (at declaration) │
+├──────────────┼─────────────────┼────────────────────┤
+│    const     │   Compilation   │   Execution        │
+│              │                 │   (at declaration) │
+├──────────────┼─────────────────┼────────────────────┤
+│   function   │   Compilation   │   Compilation      │
+│ (declaration)│                 │   (full function)  │
+└──────────────┴─────────────────┴────────────────────┘
+```
+
+So when someone asks "is let hoisted?", the answer is:
+
+- Declaration? Yes, hoisted to block scope.
+- Initialization? No, happens at the declaration line.
+- Accessible before declaration? No, TDZ prevents it.
+
+The ECMAScript specification literally uses the term "hoisted" for let and const. From the spec: "let and const declarations define variables that are scoped to the running execution context's LexicalEnvironment."
+
+## Common Misconceptions and Gotchas
+
+**Misconception 1: "Only var is hoisted"**
+
+Wrong. All declarations (var, let, const, function, class) are hoisted. The difference is initialization timing and TDZ behavior.
+
+**Misconception 2: "Hoisting moves code to the top"**
+
+The code doesn't move. The engine creates memory space for declarations during compilation before execution begins. Your code stays exactly where you wrote it.
+
+**Misconception 3: "Function expressions are hoisted"**
+
+Only the variable is hoisted, not the function. If you use var, the variable is initialized to undefined. If you use let/const, it's in the TDZ until initialized.
+
+```javascript
+// Arrow function with const
+doSomething(); // ReferenceError (TDZ)
+
+const doSomething = () => {
+  console.log("Done");
+};
+```
+
+**Misconception 4: "TDZ only exists at the top of the scope"**
+
+The TDZ is about time, not location. It starts when the scope is entered and ends when the variable is initialized.
+
+```javascript
+function complex() {
+  // TDZ for 'result' starts here
+
+  const a = 10;
+  const b = 20;
+
+  console.log(result); // ReferenceError - still in TDZ
+
+  const result = a + b; // TDZ ends here
+
+  console.log(result); // 30 - now accessible
+}
+```
+
+**Gotcha: Class declarations are also hoisted with TDZ**
+
+```javascript
+const instance = new MyClass(); // ReferenceError
+
+class MyClass {
+  constructor() {
+    this.name = "test";
+  }
+}
+```
+
+Classes follow the same hoisting behavior as let/const, even though they use the `class` keyword.
+
+## Practical Implications
+
+Understanding hoisting helps you avoid bugs and write clearer code:
+
+**1. Declare variables at the top of their scope**
+
+Even though let/const prevent you from accessing variables early, it's still good practice to declare them at the top for readability.
+
+```javascript
+// Good
+function calculate(x, y) {
+  const sum = x + y;
+  const average = sum / 2;
+  let result;
+
+  if (sum > 100) {
+    result = "high";
+  } else {
+    result = "low";
+  }
+
+  return result;
+}
+```
+
+**2. Avoid var in modern JavaScript**
+
+Use let for reassignable variables and const for constants. The TDZ catches more errors early.
+
+**3. Use function declarations when you need hoisting**
+
+If you need to call a function before it appears in the code (for organizational reasons), use function declarations:
+
+```javascript
+// Main logic at top (readable)
+init();
+
+// Implementation details below
+function init() {
+  setupEventListeners();
+  loadData();
+}
+
+function setupEventListeners() {
+  // ...
+}
+
+function loadData() {
+  // ...
+}
+```
+
+**4. Be aware of scope boundaries**
+
+Block scope with let/const means variables inside blocks aren't accessible outside:
+
+```javascript
+if (true) {
+  let blockScoped = "inside";
+  var functionScoped = "available";
+}
+
+console.log(blockScoped); // ReferenceError
+console.log(functionScoped); // "available"
+```
+
+## Key Takeaways
+
+Hoisting isn't magic, and it's not about moving code around. Here's what you need to remember:
+
+**For beginners:**
+
+- All declarations are processed before code runs
+- Use const by default, let when you need to reassign, avoid var
+- You'll get an error if you try to use let/const before declaring it
+- Function declarations can be called before they appear in code
+
+**For intermediate devs:**
+
+- Hoisting = declaration registered during compilation
+- var is initialized to undefined, let/const remain uninitialized (TDZ)
+- Function declarations are fully initialized during compilation
+- The TDZ is a temporal concept, not a spatial one
+
+**For advanced devs:**
+
+- Understanding the compilation and execution phases explains all hoisting behavior
+- The TDZ prevents access to uninitialized bindings, catching errors early
+- All declarations (including classes) are hoisted, but initialization timing varies
+- Block scope with let/const is determined during compilation, not execution
+
+The real lesson? Modern JavaScript with let/const is more predictable and safer than var. The TDZ might seem annoying at first, but it's catching bugs before they become runtime issues. That's a good trade-off.

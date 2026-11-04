@@ -4,7 +4,7 @@ import { getAllPosts, getAllProjects } from "@/lib/mdx";
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://www.atharvdange.com";
 
-  const staticRoutes = ["", "/blog", "/projects"].map((route) => ({
+  const staticRoutes = ["", "/blogs", "/projects"].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: "daily" as const,
@@ -13,7 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const posts = getAllPosts();
   const blogRoutes = posts.map((post) => ({
-    url: `${baseUrl}/blog/${post.slug}`,
+    url: `${baseUrl}/blogs/${post.slug}`,
     lastModified: new Date(post.updatedAt || post.publishedAt || new Date()),
     changeFrequency: "weekly" as const,
     priority: 0.6,

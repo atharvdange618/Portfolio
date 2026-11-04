@@ -16,7 +16,7 @@ function escapeXml(value: string): string {
 export function GET() {
   const items = getAllPosts()
     .map((p) => {
-      const url = `${baseUrl}/blog/${p.slug}`;
+      const url = `${baseUrl}/blogs/${p.slug}`;
       return `    <item>
       <title>${escapeXml(p.title)}</title>
       <link>${url}</link>
@@ -31,7 +31,7 @@ export function GET() {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Atharv Dange</title>
-    <link>${baseUrl}/blog</link>
+    <link>${baseUrl}/blogs</link>
     <description>Deep dives on auth, frameworks, and backend systems, built from scratch.</description>
     <language>en</language>
     <atom:link href="${baseUrl}/feed.xml" rel="self" type="application/rss+xml" />

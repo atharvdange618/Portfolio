@@ -7,6 +7,7 @@ import { FaArrowLeftLong } from "react-icons/fa6";
 
 export const metadata = {
   title: "Blog",
+  alternates: { canonical: "/blogs" },
   description:
     "Writing on JavaScript & Web fundamentals, frameworks, tools and software engineering",
 };

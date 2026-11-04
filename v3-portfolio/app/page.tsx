@@ -34,7 +34,6 @@ const jsonLd = {
   sameAs: [
     "https://github.com/atharvdange618",
     "https://linkedin.com/in/atharvdange",
-    "https://blog.atharvdange.com",
     "https://x.com/atharvdangedev",
   ],
   address: {

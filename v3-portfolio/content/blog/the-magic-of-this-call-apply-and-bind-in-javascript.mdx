@@ -1,0 +1,356 @@
+---
+title: "The Magic of `this`, `call()`, `apply()`, and `bind()` in JavaScript"
+publishedAt: "2026-03-11T06:46:23.055Z"
+featured: false
+description: >-
+  Learn how `this` works in JavaScript and how to control it using call(),
+  apply(), and bind().
+summary: >-
+  `this` is one of JavaScript's most misunderstood features, and `call()`,
+  `apply()`, and `bind()` are the tools that let you control it. Once you
+  understand who `this` points to and why, the rest clicks into place fast.
+updatedAt: "2026-03-11T06:46:23.079Z"
+category: JavaScript & Web APIs
+seoTitle: "Understanding `this`, `call()`, `apply()`, and `bind()` in JavaScript"
+tags:
+  - javascript
+  - this keyword
+  - call apply bind
+  - function context
+  - method borrowing
+  - javascript functions
+  - es6
+  - beginner javascript
+seoKeywords:
+  - this in javascript
+  - call apply bind javascript
+  - javascript this keyword
+  - how this works javascript
+  - bind vs call vs apply
+  - method borrowing javascript
+  - javascript function context
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1773211554/from-scratch/honalywlciporgggdssc.png
+---
+
+![The Magic of `this`, `call()`, `apply()`, and `bind()` in JavaScript](https://res.cloudinary.com/dvwajyvot/image/upload/v1773211554/from-scratch/honalywlciporgggdssc.png)
+
+Imagine you walk into a room and shout, "Hey, you!" Someone turns around. Who turned around depends entirely on the room you're in. Same words. Different context. Completely different result. That's exactly how `this` works in JavaScript. The keyword `this` doesn't have a fixed meaning. It means different things depending on where and how a function is called. Master that idea and you've cracked one of the trickiest parts of the language.
+
+## What Is `this`?
+
+`this` is a keyword in JavaScript that refers to the object that is currently calling the function. Not where the function was written. Not where it lives in the file. Who is calling it, right now, at the moment of execution.
+
+A simple mental model that works 90% of the time: **`this` is whatever is to the left of the dot when a function is called.**
+
+```ascii
+  person.greet()
+  ──────
+    │
+    └── this = person
+```
+
+If there's nothing to the left of the dot (a plain function call), `this` defaults to the global object in non-strict mode, or `undefined` in strict mode. Keep that in mind as you go.
+
+## `this` Inside a Regular Function
+
+Here's where beginners first get burned.
+
+```javascript
+function greet() {
+  console.log(this);
+}
+
+greet(); // Window (in browser) or global (in Node)
+```
+
+When you call a function without any object context, `this` points to the global object. The function isn't "owned" by anyone specific, so JavaScript defaults to the global scope. In strict mode (`"use strict"`), it's `undefined` instead, which is actually safer and catches bugs earlier.
+
+```javascript
+"use strict";
+
+function greet() {
+  console.log(this); // undefined
+}
+
+greet();
+```
+
+This is rarely what you want. It's one reason arrow functions exist, but we'll get to that in a moment.
+
+## `this` Inside an Object
+
+Here's where things start making sense.
+
+```javascript
+const person = {
+  name: "Atharv",
+  greet() {
+    console.log(`Hi, I'm ${this.name}`);
+  },
+};
+
+person.greet(); // Hi, I'm Atharv
+```
+
+`this.name` resolves to `"Atharv"` because `person` is the one calling `greet()`. The object to the left of the dot becomes `this`.
+
+Now watch what happens when you detach the method from its object:
+
+```javascript
+const person = {
+  name: "Atharv",
+  greet() {
+    console.log(`Hi, I'm ${this.name}`);
+  },
+};
+
+const standalone = person.greet;
+standalone(); // Hi, I'm undefined
+```
+
+You extracted the function, and now there's nothing to the left of the dot when it runs. `this` loses its context. `this.name` is `undefined`. Same function, broken behavior.
+
+This is the exact problem that `call()`, `apply()`, and `bind()` solve.
+
+```ascii
+  ┌────────────────────────────────────┐
+  │          THE this RULE             │
+  │                                    │
+  │  person.greet()                    │
+  │  ──────                            │
+  │    this = person   ✓               │
+  │                                    │
+  │  greet()                           │
+  │  (no owner)                        │
+  │    this = global / undefined  ✗    │
+  └────────────────────────────────────┘
+```
+
+## What Does `call()` Do?
+
+`call()` lets you invoke a function and explicitly tell it what `this` should be. You're taking control away from JavaScript's default rules and saying: "Run this function, and use this object as `this`."
+
+```javascript
+function introduce(city, hobby) {
+  console.log(`I'm ${this.name} from ${city}. I love ${hobby}.`);
+}
+
+const user = { name: "Riya" };
+
+introduce.call(user, "Mumbai", "painting");
+// I'm Riya from Mumbai. I love painting.
+```
+
+The first argument to `call()` is what `this` becomes. Everything after that is passed as regular arguments to the function, one by one.
+
+```ascii
+  introduce.call(user, "Mumbai", "painting")
+              │
+              ▼
+  ┌─────────────────────────────┐
+  │  this = user                │
+  │  city = "Mumbai"            │
+  │  hobby = "painting"         │
+  │                             │
+  │  function runs immediately  │
+  └─────────────────────────────┘
+```
+
+A real use case for `call()` is method borrowing. Say you have a method on one object and you want to use it for a completely different object, without copy-pasting the function.
+
+```javascript
+const cat = {
+  name: "Mochi",
+  describe() {
+    console.log(`My name is ${this.name}`);
+  },
+};
+
+const dog = { name: "Bruno" };
+
+cat.describe.call(dog); // My name is Bruno
+```
+
+`describe` lives on `cat`, but you ran it as if it belonged to `dog`. That's method borrowing, and it's one of the more practical patterns you'll see in JavaScript codebases.
+
+## What Does `apply()` Do?
+
+`apply()` does exactly the same thing as `call()`. The only difference is how you pass arguments. Where `call()` takes them one by one, `apply()` takes them as an array.
+
+```javascript
+function introduce(city, hobby) {
+  console.log(`I'm ${this.name} from ${city}. I love ${hobby}.`);
+}
+
+const user = { name: "Karan" };
+const args = ["Delhi", "coding"];
+
+introduce.apply(user, args);
+// I'm Karan from Delhi. I love coding.
+```
+
+```ascii
+  introduce.call(user,  "Delhi", "coding")
+  introduce.apply(user, ["Delhi", "coding"])
+                         ───────────────
+                         array of args
+```
+
+When would you use `apply()` over `call()`? When your arguments are already in an array and you don't want to destructure them manually. A classic example is `Math.max`:
+
+```javascript
+const numbers = [3, 7, 1, 9, 4];
+
+console.log(Math.max(...numbers)); // modern spread syntax: 9
+console.log(Math.max.apply(null, numbers)); // older apply approach: 9
+```
+
+Both give you `9`. The `apply` approach predates the spread operator and you'll still see it in older codebases. Knowing it means you won't be confused when you encounter it.
+
+## What Does `bind()` Do?
+
+Here's where the three diverge in an important way. `call()` and `apply()` run the function immediately. `bind()` does not. It returns a new function with `this` permanently locked to whatever you passed in.
+
+```javascript
+function greet() {
+  console.log(`Hello, I'm ${this.name}`);
+}
+
+const user = { name: "Meera" };
+
+const boundGreet = greet.bind(user);
+
+// Nothing has run yet. boundGreet is a new function.
+
+boundGreet(); // Hello, I'm Meera
+boundGreet(); // Hello, I'm Meera (still Meera, always Meera)
+```
+
+No matter how many times you call `boundGreet`, no matter what context it's called in, `this` is always `user`. It's locked in. You can pass it around, store it in a variable, pass it as a callback. The binding holds.
+
+```ascii
+  greet.bind(user)
+        │
+        ▼
+  ┌──────────────────────────┐
+  │  new function created    │
+  │  this = user (locked)    │
+  │  NOT executed yet        │
+  └──────────────┬───────────┘
+                 │ call later
+                 ▼
+          boundGreet()
+          runs with this = user
+```
+
+This is most useful in event handlers and callbacks, where functions get passed around and lose their original context.
+
+```javascript
+const timer = {
+  message: "Time's up!",
+  start() {
+    setTimeout(this.alert.bind(this), 2000);
+  },
+  alert() {
+    console.log(this.message);
+  },
+};
+
+timer.start(); // "Time's up!" after 2 seconds
+```
+
+Without the `.bind(this)`, `setTimeout` would call `alert` without any object context, and `this.message` would be `undefined`. Bind saves you from that.
+
+## call vs apply vs bind: The Comparison
+
+```ascii
+  ┌──────────┬──────────────┬──────────────────┬───────────────────┐
+  │          │  call()      │  apply()         │  bind()           │
+  ├──────────┼──────────────┼──────────────────┼───────────────────┤
+  │ Runs fn  │ Immediately  │ Immediately      │ Not immediately   │
+  │ Returns  │ fn result    │ fn result        │ New function      │
+  │ Args     │ One by one   │ As an array      │ One by one        │
+  │ Use case │ Borrow method│ Args already in  │ Store for later / │
+  │          │ once         │ array            │ callbacks         │
+  └──────────┴──────────────┴──────────────────┴───────────────────┘
+```
+
+A way to remember it: call and apply are siblings (both run immediately, differ only in argument format). bind is the one that plans ahead.
+
+## A Note on Arrow Functions
+
+Arrow functions don't have their own `this`. They inherit `this` from the surrounding context at the time they were defined. That means `call()`, `apply()`, and `bind()` have no effect on the `this` inside an arrow function.
+
+```javascript
+const person = {
+  name: "Sam",
+  greet: () => {
+    console.log(this.name); // undefined (inherits from outer scope, not person)
+  },
+};
+
+person.greet();
+```
+
+This trips people up a lot. If you need a method that uses `this` to refer to the object, use a regular function or the shorthand method syntax. Save arrow functions for callbacks inside methods, where inheriting outer `this` is exactly what you want.
+
+## Assignment: Put It All Together
+
+Here's a small challenge that touches every concept from this post.
+
+**Task**:
+
+1. Create an object called `developer` with properties `name` and `language`, and a method `introduce()` that uses `this`.
+2. Create a second object called `designer` with the same properties but no method.
+3. Use `call()` to run `developer.introduce` for `designer`.
+4. Write a standalone function `showSkills(skill1, skill2)` that logs `this.name` and both skills.
+5. Use `apply()` to call `showSkills` for `designer` with an array of skills.
+6. Use `bind()` to create a bound version of `showSkills` for `developer` and call it later.
+
+**Starter code:**
+
+```javascript
+const developer = {
+  name: "Atharv",
+  language: "JavaScript",
+  introduce() {
+    console.log(`Hi, I'm ${this.name} and I work with ${this.language}`);
+  },
+};
+
+const designer = {
+  name: "Priya",
+  language: "Figma",
+};
+
+// 1. Use call() to run developer.introduce for designer
+// developer.introduce.call(...)
+
+// 2. Standalone function
+function showSkills(skill1, skill2) {
+  console.log(`${this.name} knows: ${skill1} and ${skill2}`);
+}
+
+// 3. Use apply() with an array
+const skills = ["UI Design", "Prototyping"];
+// showSkills.apply(...)
+
+// 4. Use bind() and call later
+// const boundShow = showSkills.bind(...)
+// boundShow(...)
+```
+
+Run it. Break it. Change the objects. The goal is to get the intuition into muscle memory.
+
+## Key Takeaways
+
+- `this` refers to whoever is calling the function at runtime, not where the function is written.
+- The simplest rule: look to the left of the dot when a method is called. That's `this`.
+- A detached method loses its context. Plain function calls get the global object (or `undefined` in strict mode).
+- `call()` sets `this` and runs the function immediately. Arguments go in one by one.
+- `apply()` does the same thing, but takes arguments as an array.
+- `bind()` returns a new function with `this` permanently locked in. Runs later, not immediately.
+- Arrow functions don't have their own `this` and ignore `call`, `apply`, and `bind` for `this` binding.
+
+Once you build the habit of asking "who is calling this function right now?", `this` stops being magic and starts being predictable. And with `call`, `apply`, and `bind` in your toolkit, you're in full control of the answer.

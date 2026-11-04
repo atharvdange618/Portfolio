@@ -1,0 +1,259 @@
+---
+title: Spread vs Rest Operators in JavaScript
+publishedAt: "2026-05-08T11:57:18.788Z"
+featured: false
+description: >-
+  Learn the difference between JavaScript's spread and rest operators. Same
+  syntax, opposite behavior.
+summary: >-
+  Spread and rest both use `...` but do opposite things. Spread expands an
+  iterable into individual elements. Rest collects individual elements into a
+  single array. This post breaks down each one clearly with real examples.
+updatedAt: "2026-05-08T11:57:18.868Z"
+category: JavaScript & Web APIs
+seoTitle: "Spread vs Rest Operators in JavaScript: Expanding vs Collecting Values"
+tags:
+  - javascript
+  - spread-operator
+  - rest-operator
+  - es6
+  - destructuring
+  - arrays
+  - objects
+  - modern-javascript
+seoKeywords:
+  - spread vs rest javascript
+  - spread operator javascript
+  - rest operator javascript
+  - javascript three dots
+  - spread array javascript
+  - rest parameters javascript
+  - object spread es2018
+  - destructuring rest javascript
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1778241371/from-scratch/nupijmfcrlrfruunxqs5.png
+---
+
+![Spread vs Rest Operators in JavaScript](https://res.cloudinary.com/dvwajyvot/image/upload/v1778241371/from-scratch/nupijmfcrlrfruunxqs5.png)
+
+Here's the thing that trips people up: it's the same three dots (`...`) doing two completely different jobs depending on where you put them. Think of it like a cardboard box. Spread is emptying the box and laying everything out on the table. Rest is collecting everything scattered on the table and putting it into the box. Same motion, opposite direction.
+
+## The Spread Operator: Expanding Values
+
+Spread takes something iterable (an array, a string, an object) and expands it into individual pieces.
+
+```ascii
+┌─────────────────────────────────────┐
+│          Spread Operator            │
+│                                     │
+│  [1, 2, 3]  ──►  ...  ──►  1  2  3  │
+│                                     │
+│  One thing      expands    many     │
+│  (array)         into      pieces   │
+└─────────────────────────────────────┘
+```
+
+### Spread with Arrays
+
+```javascript
+const fruits = ["apple", "banana"];
+const moreFruits = ["mango", ...fruits, "grape"];
+
+console.log(moreFruits);
+// ["mango", "apple", "banana", "grape"]
+```
+
+Without spread, you'd get a nested array:
+
+```javascript
+const wrong = ["mango", fruits, "grape"];
+// ["mango", ["apple", "banana"], "grape"]  ← not what you want
+```
+
+Spread also makes copying arrays clean and explicit:
+
+```javascript
+const original = [1, 2, 3];
+const copy = [...original];
+
+copy.push(4);
+console.log(original); // [1, 2, 3]  ← untouched
+console.log(copy); // [1, 2, 3, 4]
+```
+
+This is a shallow copy. Primitives are copied by value. Nested objects inside the array are still referenced, not duplicated.
+
+Merging arrays becomes one line:
+
+```javascript
+const a = [1, 2, 3];
+const b = [4, 5, 6];
+const merged = [...a, ...b];
+// [1, 2, 3, 4, 5, 6]
+```
+
+### Spread with Objects
+
+Spread works on objects too, available since ES2018:
+
+```javascript
+const defaults = { theme: "light", lang: "en", fontSize: 14 };
+const userPrefs = { theme: "dark", fontSize: 16 };
+
+const config = { ...defaults, ...userPrefs };
+// { theme: "dark", lang: "en", fontSize: 16 }
+```
+
+Later properties overwrite earlier ones. `userPrefs.theme` overwrites `defaults.theme`. This pattern is everywhere in React for merging props and state updates.
+
+Copying an object with one modification:
+
+```javascript
+const user = { name: "Atharv", role: "admin", active: true };
+const deactivated = { ...user, active: false };
+
+// user is unchanged, deactivated has active: false
+```
+
+## The Rest Operator: Collecting Values
+
+Rest does the opposite. It gathers multiple values into a single array. The key constraint: rest must always be last.
+
+```ascii
+┌───────────────────────────────────────┐
+│           Rest Operator               │
+│                                       │
+│  1  2  3  4  ──►  ...  ──►  [1,2,3,4] │
+│                                       │
+│  many pieces    collects   one thing  │
+│                  into      (array)    │
+└───────────────────────────────────────┘
+```
+
+### Rest in Function Parameters
+
+The classic use case: a function that accepts any number of arguments.
+
+```javascript
+function sum(...numbers) {
+  return numbers.reduce((total, n) => total + n, 0);
+}
+
+sum(1, 2, 3); // 6
+sum(10, 20, 30, 40); // 100
+```
+
+`numbers` is a real array, not the old `arguments` object. You can call `map`, `filter`, `reduce` on it directly.
+
+You can mix fixed parameters with rest:
+
+```javascript
+function logWithPrefix(prefix, ...messages) {
+  messages.forEach((msg) => console.log(`[${prefix}] ${msg}`));
+}
+
+logWithPrefix("INFO", "Server started", "Listening on port 3000");
+// [INFO] Server started
+// [INFO] Listening on port 3000
+```
+
+`prefix` captures the first argument. `messages` collects everything after it. Rest must be last: you can't put fixed parameters after `...rest`.
+
+### Rest in Destructuring
+
+Rest also works in array and object destructuring to collect what's left over:
+
+```javascript
+// Array destructuring
+const [first, second, ...remaining] = [1, 2, 3, 4, 5];
+// first = 1, second = 2, remaining = [3, 4, 5]
+
+// Object destructuring
+const { name, role, ...rest } = {
+  name: "Atharv",
+  role: "admin",
+  active: true,
+  plan: "pro",
+};
+// name = "Atharv", role = "admin"
+// rest = { active: true, plan: "pro" }
+```
+
+The object rest pattern is especially useful when you need to extract specific keys and pass the remainder somewhere else:
+
+```javascript
+function createUser({ password, ...safeData }) {
+  // password is extracted and handled separately
+  // safeData = everything except password
+  saveToDatabase(safeData);
+}
+```
+
+## Spread vs Rest: Side by Side
+
+Same syntax. Context determines the job.
+
+```ascii
+┌───────────────────────────────────────────────────────────┐
+│                  Where you see ...                        │
+├─────────────────────────────┬─────────────────────────────┤
+│           Spread            │            Rest             │
+├─────────────────────────────┼─────────────────────────────┤
+│ On the right side of =      │ On the left side of =       │
+│ const b = [...a]            │ const [x, ...rest] = a      │
+│                             │                             │
+│ In a function call          │ In a function definition    │
+│ fn(...args)                 │ function fn(...args) {}     │
+│                             │                             │
+│ Expanding into a target     │ Collecting into an array    │
+│ Many ──► many               │ Many ──► one                │
+└─────────────────────────────┴─────────────────────────────┘
+```
+
+The mental shortcut: if `...` is producing values into a context (array literal, object literal, function call), it's spread. If `...` is receiving values from a context (function parameters, destructuring), it's rest.
+
+## Practical Use Cases
+
+**Cloning without mutation:**
+
+```javascript
+// Prefer this over Object.assign({}, obj)
+const updated = { ...existingRecord, updatedAt: new Date() };
+```
+
+**Passing array elements as function arguments:**
+
+```javascript
+const nums = [5, 1, 8, 3];
+Math.max(...nums); // 8
+
+// Without spread: Math.max(5, 1, 8, 3) — you'd have to write them out
+```
+
+**Omitting keys from an object:**
+
+```javascript
+const { password, __v, ...publicUser } = fullUserDocument;
+// publicUser has everything except password and __v
+```
+
+**Flexible API functions:**
+
+```javascript
+function applyMiddleware(app, ...middlewares) {
+  middlewares.forEach((mw) => app.use(mw));
+}
+
+applyMiddleware(app, cors(), helmet(), rateLimiter);
+```
+
+## Key Takeaways
+
+- Spread and rest use the same `...` syntax but do opposite things.
+- Spread expands an iterable into individual elements. Use it in function calls, array literals, and object literals.
+- Rest collects individual values into a single array. Use it in function parameters and destructuring.
+- The position tells you which one it is: producing values (spread) vs collecting values (rest).
+- Object spread is a clean way to copy and override properties without mutating the original.
+- Rest in destructuring lets you extract specific keys and bundle the remainder.
+
+Once the expanding-vs-collecting mental model clicks, you'll start seeing these patterns everywhere in modern JavaScript. They're in React props, Express middleware chains, utility functions, and API handlers. At that point the syntax stops being a puzzle and starts being a tool.

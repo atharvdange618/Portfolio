@@ -1,0 +1,526 @@
+---
+title: >-
+  Building a Custom E-Book Reader in React Native: When Libraries Fail, Build
+  Your Own
+publishedAt: "2026-01-31T12:57:36.128Z"
+featured: false
+description: >-
+  How I built a custom PDF text extraction and rendering system in bare React
+  Native using Kotlin native modules when every existing library failed to
+  provide proper dark mode support.
+summary: >-
+  A friend complained about eye strain from reading white-backgrounded PDFs at
+  night. What started as a simple CSS fix turned into building a custom PDF text
+  extraction and rendering system in bare React Native when every existing
+  library failed.
+updatedAt: "2026-02-21T23:07:49.888Z"
+category: Frameworks & Tools
+seoTitle: Building a Custom E-Book Reader in React Native with Native Modules
+tags:
+  - React Native
+  - Android
+  - Kotlin
+  - PDF Processing
+  - Native Modules
+  - PDFBox
+  - Mobile Development
+  - Text Extraction
+  - Dark Mode
+  - UX Design
+seoKeywords:
+  - React Native
+  - native modules
+  - PDF text extraction
+  - PDFBox Android
+  - Kotlin React Native
+  - custom e-book reader
+  - React Native dark mode
+  - mobile PDF reader
+  - bare React Native
+  - Android native modules
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1769863632/from-scratch/dgqbvsi0bhy0diiapzl2.png
+---
+
+![Building a Custom E-Book Reader in React Native: When Libraries Fail, Build Your Own](https://res.cloudinary.com/dvwajyvot/image/upload/v1769863632/from-scratch/dgqbvsi0bhy0diiapzl2.png)
+
+Here's the thing: sometimes the best solutions come from the worst failures. My friend was tired of her eyes burning from reading PDFs late at night. "Just make it dark mode," she said. Simple enough, right? Turns out, making PDFs actually readable in dark mode is way harder than it sounds.
+
+This is the story of how I went from "let me just add some CSS" to building a complete text extraction and rendering system in bare React Native, complete with custom native modules in Kotlin.
+
+## The Problem: White PDFs Are Eye-Blinding Weapons
+
+Most e-books and PDFs come with bright white backgrounds. At 2 AM, that's basically staring into a flashlight. My friend wanted something like Kindle's reading experience but for her existing PDF collection. The requirements were straightforward:
+
+- Read existing PDFs without the blinding white background
+- Preserve text formatting and readability
+- Create an actual book-like reading experience
+- Work in React Native (no Expo, bare workflow)
+
+Seemed reasonable. Turns out, it wasn't.
+
+## Attempt #1: The CSS Disaster
+
+My first instinct was to keep it simple. Just render the PDF in a WebView and slap some CSS on it to invert colors or change the background.
+
+```tsx
+// What I tried first - spoiler: doesn't work
+<WebView
+  source={{ uri: pdfPath }}
+  style={{ backgroundColor: "#000" }}
+  injectedJavaScript={`
+    document.body.style.backgroundColor = '#000';
+    document.body.style.filter = 'invert(1)';
+  `}
+/>
+```
+
+The problems showed up immediately:
+
+1. PDFs rendered in WebView don't expose the DOM the same way HTML does
+2. The background color injection didn't penetrate the PDF rendering layer
+3. Even when it partially worked, text remained on white backgrounds embedded in the PDF itself
+
+This approach was dead on arrival. CSS can't fix what it can't see, and PDF rendering engines don't play by web rules.
+
+## Attempt #2: The Filter Fiasco
+
+Okay, CSS failed. What about applying visual filters to tone down the brightness? I found a few React Native libraries that let you apply filters to views.
+
+I tried the color inversion approach at the native layer. Here's what that looked like in Kotlin:
+
+```kotlin
+private fun applyColorInversion(view: View) {
+    val colorMatrix = ColorMatrix()
+
+    // Invert colors: multiply by -1 and add 255
+    colorMatrix.set(floatArrayOf(
+        -1f, 0f, 0f, 0f, 255f,
+        0f, -1f, 0f, 0f, 255f,
+        0f, 0f, -1f, 0f, 255f,
+        0f, 0f, 0f, 1f, 0f
+    ))
+
+    val paint = Paint()
+    paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+    view.setLayerType(View.LAYER_TYPE_HARDWARE, paint)
+}
+```
+
+This actually worked technically. The white turned dark, the black text turned white. But here's what I didn't account for:
+
+- Images and diagrams in PDFs looked absolutely terrible inverted
+- Charts became unreadable
+- The inverted colors had this weird, unnatural feeling
+- Text rendering quality degraded because of the filter layer
+
+My friend tried it for five minutes and said "this is worse than the white background."
+
+Back to the drawing board.
+
+## Attempt #3: The Library Hunt
+
+At this point, I figured someone must have solved this already. I spent days researching and testing PDF rendering libraries for React Native:
+
+**react-native-pdf** - The most popular option. Great for displaying PDFs, zero support for text extraction or custom rendering. It's essentially a wrapper around native PDF viewers, which means you're stuck with whatever display options they provide.
+
+**react-native-pdf-lib** - Focused on creating and manipulating PDFs, not extracting text from them. Wrong tool for the job.
+
+**rn-pdf-reader-js** - Uses PDF.js in a WebView. Performance was terrible on complex PDFs, and the dark mode implementation was the same filter approach that already failed.
+
+**react-native-view-pdf** - Another viewer library. Again, great for viewing, useless for text extraction.
+
+I tried about six more libraries. None of them could do what I needed: extract the actual text content from a PDF so I could re-render it with full control over the styling.
+
+## The Solution: Build It Yourself
+
+When the libraries fail, you write native modules. Here's what I needed to build:
+
+1. A native module to extract text from PDFs page by page
+2. A custom reader UI that renders the extracted text with proper formatting
+3. A progress tracking system so users don't lose their place
+4. Smooth pagination that feels like a real e-book reader
+
+## Part 1: Text Extraction with PDFBox
+
+For the Android side, I used Apache PDFBox. It's a mature Java library for PDF manipulation, and it has Android compatibility through PDFBox-Android.
+
+First, add the dependency to your `android/app/build.gradle`:
+
+```gradle
+dependencies {
+    implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
+}
+```
+
+Then I created a native module that exposes PDF text extraction to React Native:
+
+```kotlin
+package com.atharv.reverie
+
+import com.facebook.react.bridge.*
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
+import java.io.File
+
+class PdfTextExtractorModule(reactContext: ReactApplicationContext) :
+    ReactContextBaseJavaModule(reactContext) {
+
+    override fun getName(): String {
+        return "PdfTextExtractor"
+    }
+
+    @ReactMethod
+    fun extractText(filePath: String, promise: Promise) {
+        try {
+            PDFBoxResourceLoader.init(reactApplicationContext)
+
+            val file = File(filePath)
+            if (!file.exists()) {
+                promise.reject("FILE_NOT_FOUND", "PDF file not found at: $filePath")
+                return
+            }
+
+            val document = PDDocument.load(file)
+            val stripper = PDFTextStripper()
+
+            // These settings are critical for preserving layout
+            stripper.setSortByPosition(true)
+            stripper.setLineSeparator("\n")
+            stripper.setWordSeparator(" ")
+            stripper.setAddMoreFormatting(true)
+            stripper.setIndentThreshold(2.0f)
+            stripper.setDropThreshold(2.5f)
+            stripper.setAverageCharTolerance(0.3f)
+            stripper.setSpacingTolerance(0.5f)
+
+            val pageCount = document.numberOfPages
+            val result = Arguments.createMap()
+            result.putInt("pageCount", pageCount)
+
+            val pages = Arguments.createArray()
+
+            for (i in 1..pageCount) {
+                stripper.startPage = i
+                stripper.endPage = i
+
+                var pageText = stripper.getText(document)
+
+                // Post-process to improve paragraph detection
+                pageText = pageText.replace(Regex("\\n\\s*\\n"), "\n\n")
+                pageText = pageText.replace(Regex("[ \\t]+"), " ")
+                pageText = pageText.replace(Regex(" +\\n"), "\n")
+
+                val pageData = Arguments.createMap()
+                pageData.putInt("pageNumber", i)
+                pageData.putString("text", pageText.trim())
+
+                pages.pushMap(pageData)
+            }
+
+            result.putArray("pages", pages)
+            document.close()
+
+            promise.resolve(result)
+
+        } catch (e: Exception) {
+            promise.reject("EXTRACTION_ERROR", "Failed to extract text: ${e.message}", e)
+        }
+    }
+}
+```
+
+The key here is configuring the `PDFTextStripper` properly. Those tolerance and threshold values took a lot of trial and error to get right. Too strict and paragraphs break incorrectly. Too loose and you lose formatting structure.
+
+Register the module in your package:
+
+```kotlin
+package com.atharv.reverie
+
+import com.facebook.react.ReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.uimanager.ViewManager
+
+class PdfTextExtractorPackage : ReactPackage {
+    override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
+        return listOf(PdfTextExtractorModule(reactContext))
+    }
+
+    override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
+        return emptyList()
+    }
+}
+```
+
+And add it to your `MainApplication.kt`:
+
+```kotlin
+class MainApplication : Application(), ReactApplication {
+  override val reactHost: ReactHost by lazy {
+    getDefaultReactHost(
+      context = applicationContext,
+      packageList =
+        PackageList(this).packages.apply {
+          add(PdfTextExtractorPackage())
+        },
+    )
+  }
+}
+```
+
+## Part 2: The Reader Component
+
+Now that we can extract text, we need to render it properly. The goal was to make it feel like reading an actual book, not just scrolling through plain text.
+
+Here's the core reader component:
+
+```tsx
+export interface BookReaderProps {
+  filePath: string;
+  bookId: number;
+  currentPage?: number;
+  onPageChanged?: (page: number, totalPages?: number) => void;
+  onLoadComplete?: (totalPages: number) => void;
+  fontSize?: number;
+  lineSpacing?: number;
+  enableDarkMode?: boolean;
+}
+
+export const BookReader: React.FC<BookReaderProps> = memo(({
+  filePath,
+  bookId,
+  currentPage: _currentPage,
+  onPageChanged,
+  fontSize: propFontSize,
+  lineSpacing: propLineSpacing,
+  enableDarkMode,
+}) => {
+  const systemColorScheme = useColorScheme();
+  const isDark = enableDarkMode ?? systemColorScheme === 'dark';
+
+  const [bookContent, setBookContent] = useState<BookContent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Theme configuration
+  const theme = {
+    background: isDark ? '#121212' : '#FAFAFA',
+    surface: isDark ? '#1E1E1E' : '#FFFFFF',
+    text: isDark ? '#E8E8E8' : '#1A1A1A',
+    textSecondary: isDark ? '#A0A0A0' : '#666666',
+  };
+
+  const loadBook = useCallback(async () => {
+    setLoading(true);
+    try {
+      const content = await TextExtractor.extractBook(filePath, bookId);
+      setBookContent(content);
+      onLoadComplete?.(content.pages.length);
+    } catch (err) {
+      console.error('[BookReader] Failed to load book:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filePath, bookId]);
+
+  useEffect(() => {
+    loadBook();
+  }, [loadBook]);
+```
+
+The pagination is handled with horizontal scrolling:
+
+```tsx
+const handleScroll = useCallback(
+  (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { x } = event.nativeEvent.contentOffset;
+    setScrollPosition(x);
+
+    const pageIndex = Math.round(x / SCREEN_WIDTH);
+    const newPage = Math.max(
+      1,
+      Math.min(pageIndex + 1, bookContent?.pages.length || 1),
+    );
+
+    if (newPage !== currentPage && bookContent) {
+      setCurrentPage(newPage);
+      onPageChanged?.(newPage, bookContent.pages.length);
+    }
+  },
+  [currentPage, bookContent],
+);
+```
+
+The actual rendering creates book-like pages:
+
+```tsx
+  return (
+    <ScrollView
+      ref={scrollViewRef}
+      horizontal
+      pagingEnabled
+      showsHorizontalScrollIndicator={false}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
+      decelerationRate="fast"
+    >
+      {bookContent.pages.map(page => (
+        <View key={page.pageNumber} style={[styles.pageWrapper, { width: SCREEN_WIDTH }]}>
+          <View style={styles.pageInnerWrapper}>
+            <View
+              style={[
+                styles.bookPage,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <Text style={[styles.pageNumber, { color: theme.textSecondary }]}>
+                {page.pageNumber}
+              </Text>
+
+              <ScrollView
+                style={styles.contentWrapper}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
+                {formatExtractedText(page.text)
+                  .split('\n\n')
+                  .filter(para => para.trim().length > 0)
+                  .map((paragraph, pIndex) => {
+                    const isHeading =
+                      paragraph.length < 60 &&
+                      (paragraph.toLowerCase().includes('chapter') ||
+                        paragraph.match(/^[A-Z\s]+$/) ||
+                        pIndex === 0);
+
+                    return (
+                      <Text
+                        key={`p-${page.pageNumber}-${pIndex}`}
+                        style={[
+                          isHeading ? styles.chapterHeading : styles.paragraph,
+                          {
+                            color: theme.text,
+                            fontSize: isHeading
+                              ? actualFontSize * 1.3
+                              : actualFontSize,
+                            lineHeight: isHeading
+                              ? actualFontSize * 1.5
+                              : actualLineHeight,
+                          },
+                        ]}
+                      >
+                        {paragraph}
+                      </Text>
+                    );
+                  })}
+              </ScrollView>
+            </View>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  );
+});
+```
+
+## Part 3: The Details That Matter
+
+A few things that made a huge difference in the reading experience:
+
+**Typography and Spacing**
+
+```tsx
+const baseFontSize = 14;
+const actualFontSize = baseFontSize * fontSize; // fontSize is user-adjustable
+const actualLineHeight = actualFontSize * lineSpacing; // lineSpacing is user-adjustable
+```
+
+Letting users control font size and line spacing is critical. Everyone reads differently.
+
+**Paragraph Detection**
+
+The post-processing in the text extraction is crucial:
+
+```kotlin
+// Remove excessive whitespace while preserving paragraph breaks
+pageText = pageText.replace(Regex("\\n\\s*\\n"), "\n\n")
+pageText = pageText.replace(Regex("[ \\t]+"), " ")
+pageText = pageText.replace(Regex(" +\\n"), "\n")
+```
+
+PDFs don't have semantic paragraph markers. You have to infer them from spacing patterns.
+
+**Chapter Heading Detection**
+
+```tsx
+const isHeading =
+  paragraph.length < 60 &&
+  (paragraph.toLowerCase().includes("chapter") ||
+    paragraph.match(/^[A-Z\s]+$/) ||
+    pIndex === 0);
+```
+
+This heuristic isn't perfect, but it catches most chapter headings and section titles. Short paragraphs in all caps or containing "chapter" get styled as headings.
+
+**Reading Progress Persistence**
+
+```tsx
+useEffect(() => {
+  return () => {
+    if (bookContent) {
+      saveReadingProgress(
+        bookId.toString(),
+        currentPage,
+        scrollPosition,
+        bookContent.pageCount,
+        "book",
+      );
+    }
+  };
+}, [bookId, currentPage, scrollPosition, bookContent]);
+```
+
+When the component unmounts, save where the user was. When they come back, restore that exact position.
+
+## What I Learned
+
+**Libraries aren't always the answer.** I wasted two days trying to force existing libraries to do something they weren't designed for. Sometimes building your own solution is faster.
+
+**Native modules aren't scary.** I'd avoided writing native code for React Native projects before this. Turns out, for specific use cases like this, native modules are the only way to get real control.
+
+**Text extraction is harder than it looks.** PDFs store text in weird ways. Getting clean, readable output requires tuning a bunch of parameters and doing post-processing. There's no universal "extract text" button that works perfectly.
+
+**Reading experience is about details.** The difference between a usable reader and a great one came down to things like proper line spacing, smooth pagination, and persistent reading progress.
+
+**Performance matters.** Loading and rendering a 300-page book could easily freeze the UI. Using `memo`, `useCallback`, and proper state management kept everything smooth.
+
+## The Result
+
+My friend can now read her PDFs at night without her eyes burning. The dark mode actually works because we're rendering text, not filtering a PDF. She can adjust font size and line spacing to her preference. Progress is saved automatically.
+
+More importantly, I learned that when the existing solutions don't work, building your own isn't as daunting as it seems. You just need to break the problem down:
+
+1. Extract the data (text from PDFs)
+2. Transform it (clean up formatting)
+3. Render it (custom UI with full control)
+4. Polish it (typography, persistence, UX details)
+
+The code is rough in places. There are edge cases I haven't handled. But it works, and it solved the actual problem.
+
+Sometimes that's all you need.
+
+## Key Takeaways
+
+- CSS and filters can't fix PDFs because they don't expose the DOM structure
+- Text extraction from PDFs requires native libraries like PDFBox for reliable results
+- PDFTextStripper configuration is critical for preserving paragraph structure
+- Building custom native modules in React Native is more approachable than it seems
+- Reading experience depends on typography, spacing, and persistence, not just content
+- When libraries fail to meet your needs, building a focused custom solution often works better than trying to force-fit existing tools

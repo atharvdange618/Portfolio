@@ -1,0 +1,267 @@
+---
+title: What is Middleware in Express and How It Works
+publishedAt: "2026-05-09T20:17:43.111Z"
+featured: false
+description: >-
+  Learn how Express middleware works, what next() does, the types of middleware,
+  auth, and validation.
+summary: >-
+  Middleware is code that runs between a request arriving and a response being
+  sent. In Express, every middleware function in the chain gets a chance to
+  inspect, modify, or stop a request. This post covers what middleware is, how
+  `next()` controls the flow, and where it gets used in real applications.
+updatedAt: "2026-05-09T20:17:43.237Z"
+category: Frameworks & Tools
+seoTitle: What is Middleware in Express and How It Works
+tags:
+  - express
+  - middleware
+  - nodejs
+  - authentication
+  - request-pipeline
+  - next-function
+  - backend
+  - javascript
+seoKeywords:
+  - express middleware
+  - what is middleware express
+  - next function express
+  - express application middleware
+  - express router middleware
+  - express js tutorial
+  - middleware execution order
+  - express authentication middleware
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1778357832/from-scratch/nidu6ax6rnatyu8cabpt.png
+---
+
+![What is Middleware in Express and How It Works](https://res.cloudinary.com/dvwajyvot/image/upload/v1778357832/from-scratch/nidu6ax6rnatyu8cabpt.png)
+
+Every HTTP request your Express server receives goes through a pipeline before it reaches your route handler. Middleware is everything that lives in that pipeline. It's not a special category of code - it's a function with access to the request, the response, and the ability to either pass control forward or stop the chain. Logging, authentication, body parsing, rate limiting: all of it is middleware.
+
+## What a Middleware Function Looks Like
+
+A middleware function takes three arguments: `req`, `res`, and `next`.
+
+```javascript
+function myMiddleware(req, res, next) {
+  // do something with the request or response
+  next(); // pass control to the next function in the chain
+}
+```
+
+That's it. The shape is identical to a route handler. The difference is that middleware calls `next()` to continue the chain, while a route handler typically ends it by sending a response.
+
+## Where Middleware Sits
+
+```ascii
+ Incoming Request
+         │
+         ▼
+┌─────────────────┐
+│  Middleware 1   │  (e.g., logging)
+│  runs next()    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Middleware 2   │  (e.g., auth check)
+│  runs next()    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Middleware 3   │  (e.g., validate body)
+│  runs next()    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Route Handler  │  (e.g., app.post('/users'))
+│  sends response │
+└────────┬────────┘
+         │
+         ▼
+ Outgoing Response
+```
+
+Each middleware runs in the order it was registered. If any middleware doesn't call `next()`, the chain stops there. If none of them send a response, the request hangs.
+
+## The Role of `next()`
+
+`next()` is what moves a request forward. Call it and control passes to the next middleware or route handler. Don't call it and the request stops exactly where it is.
+
+```javascript
+// This middleware logs every request and moves on
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next(); // without this, nothing after runs
+});
+
+// This middleware checks auth and can short-circuit
+app.use((req, res, next) => {
+  const token = req.headers.authorization;
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized" }); // stops here
+  }
+  next(); // valid token, continue
+});
+```
+
+In the auth example, an invalid token sends a `401` response and never calls `next()`. The route handler below never runs. This is the pattern for any middleware that acts as a gate.
+
+Calling `next(error)` is also valid. It skips all remaining regular middleware and jumps to an error-handling middleware if one exists.
+
+## Types of Middleware
+
+### Application-Level Middleware
+
+Registered with `app.use()` or `app.METHOD()`. It runs for every request to the app, or for requests matching a specific path.
+
+```javascript
+// Runs for every single request
+app.use((req, res, next) => {
+  req.requestTime = Date.now();
+  next();
+});
+
+// Runs only for requests starting with /api
+app.use("/api", (req, res, next) => {
+  console.log("API request received");
+  next();
+});
+```
+
+### Router-Level Middleware
+
+Same as application-level but attached to an `express.Router()` instance. Useful for grouping middleware that should only apply to a subset of routes.
+
+```javascript
+const router = express.Router();
+
+// Applies only to routes defined on this router
+router.use(authenticate);
+router.use(validateInput);
+
+router.get('/profile', (req, res) => { ... });
+router.put('/settings', (req, res) => { ... });
+```
+
+If `authenticate` is only needed for protected routes, attaching it to a router keeps it scoped. Global middleware on `app.use()` runs for everything, which you don't always want.
+
+### Built-In Middleware
+
+Express ships with a few middleware functions ready to use:
+
+```javascript
+app.use(express.json()); // parses JSON request bodies → req.body
+app.use(express.urlencoded({ extended: true })); // parses form data
+app.use(express.static("public")); // serves static files from /public
+```
+
+`express.json()` is the one you'll use in virtually every API. Without it, `req.body` is `undefined` on POST requests.
+
+## Execution Order Matters
+
+Middleware runs in the order it's registered. Register it in the wrong order and it either doesn't apply or causes bugs.
+
+```javascript
+// WRONG: route runs before auth check
+app.get("/dashboard", getDashboard);
+app.use(authenticate); // never reached for /dashboard
+
+// RIGHT: auth check registered before the route
+app.use(authenticate);
+app.get("/dashboard", getDashboard);
+```
+
+A common real-world order looks like this:
+
+```javascript
+app.use(express.json()); // 1. Parse body first
+app.use(requestLogger); // 2. Log every request
+app.use("/api", authenticate); // 3. Auth for protected routes
+app.use("/api", router); // 4. Route handlers
+app.use(errorHandler); // 5. Error middleware last
+```
+
+## Real-World Examples
+
+**Request logging:**
+
+```javascript
+function requestLogger(req, res, next) {
+  const start = Date.now();
+  res.on("finish", () => {
+    const ms = Date.now() - start;
+    console.log(`${req.method} ${req.url} ${res.statusCode} - ${ms}ms`);
+  });
+  next();
+}
+```
+
+Hooks into the response `finish` event so it logs after the response is sent, capturing the actual status code.
+
+**Authentication:**
+
+```javascript
+function authenticate(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Token required" });
+  }
+  try {
+    const token = authHeader.split(" ")[1];
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+}
+```
+
+Attaches `req.user` so every downstream route handler knows who's asking without re-verifying the token.
+
+**Request validation:**
+
+```javascript
+function validateCreateUser(req, res, next) {
+  const { name, email } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ error: "name and email required" });
+  }
+  if (!email.includes("@")) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+  next();
+}
+
+app.post("/users", validateCreateUser, createUser);
+```
+
+Keeping validation in middleware means `createUser` receives clean, validated input and never needs to handle bad data. The responsibilities are separated.
+
+## Multiple Middleware on One Route
+
+You can pass multiple middleware functions directly to a route:
+
+```javascript
+app.post(
+  "/users",
+  authenticate, // must be logged in
+  validateCreateUser, // must send valid data
+  createUser, // actually create the user
+);
+```
+
+Each function runs in order. If any of them send a response, the rest don't run. This is the cleanest way to compose route-specific logic without putting everything inside one handler.
+
+## Key Takeaways
+
+- Middleware is a function with `(req, res, next)` that runs between the request arriving and the response being sent.
+- `next()` passes control forward. Without it, the chain stops. `next(error)` jumps to the error handler.
+- Register application-level middleware with `app.use()`. Use `express.Router()` to scope middleware to specific route groups.
+- Order matters. Body parsers and loggers go first. Auth middleware before protected routes. Error handlers last.
+- Logging, authentication, and validation are the three most common real-world uses. Each one belongs in its own middleware function, not mixed into route handlers.
+
+Middleware is the mechanism that keeps Express applications clean and composable. Once you think in terms of the pipeline - each function doing one thing and passing the request forward - route handlers become simple and business logic stays testable.

@@ -37,7 +37,7 @@ const links = [
   },
   {
     label: "Blog",
-    href: "https://blog.atharvdange.com",
+    href: "/blogs",
     icon: LuBookOpenText,
     modeHover: "BLOG" as Mode,
   },
@@ -141,8 +141,8 @@ export function Footer() {
                 <Link
                   key={label}
                   href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target={href.startsWith("/") ? undefined : "_blank"}
+                  rel={href.startsWith("/") ? undefined : "noopener noreferrer"}
                   onMouseEnter={() => setMode(modeHover)}
                   onMouseLeave={() => setMode("NORMAL")}
                   onClick={
@@ -157,7 +157,9 @@ export function Footer() {
                   aria-label={label}
                 >
                   <Icon className="w-3.5 h-3.5 text-comment group-hover:text-fg transition-colors" />
-                  <span className="sr-only"> (opens in new tab)</span>
+                  {!href.startsWith("/") && (
+                    <span className="sr-only"> (opens in new tab)</span>
+                  )}
                 </Link>
               ))}
             </nav>

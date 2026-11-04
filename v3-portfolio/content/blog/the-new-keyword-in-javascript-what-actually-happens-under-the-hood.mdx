@@ -1,0 +1,302 @@
+---
+title: "The `new` Keyword in JavaScript: What Actually Happens Under the Hood"
+publishedAt: "2026-04-20T12:59:12.654Z"
+featured: false
+description: >-
+  Learn exactly what the `new` keyword does in JavaScript, from creating objects
+  and binding `this` to linking prototypes and returning instances.
+summary: >-
+  The `new` keyword in JavaScript does a lot more than it looks like. This post
+  breaks down exactly what it does, step by step, from creating objects to
+  wiring up prototypes.
+updatedAt: "2026-04-20T12:59:12.741Z"
+category: JavaScript & Web APIs
+seoTitle: "The new Keyword in JavaScript: What Actually Happens Under the Hood"
+tags:
+  - javascript
+  - new keyword
+  - constructor functions
+  - prototype
+  - object creation
+  - prototypal inheritance
+  - javascript internals
+  - js fundamentals
+seoKeywords:
+  - new keyword javascript
+  - javascript constructor function
+  - how new works in javascript
+  - javascript prototype chain
+  - object creation javascript
+  - prototypal inheritance
+  - javascript new keyword explained
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1776689811/from-scratch/cxj2xcuple7yd3vrxlol.png
+---
+
+![The `new` Keyword in JavaScript: What Actually Happens Under the Hood](https://res.cloudinary.com/dvwajyvot/image/upload/v1776689811/from-scratch/cxj2xcuple7yd3vrxlol.png)
+
+Think of a cookie cutter. You have one shape, one template, and you can stamp out as many cookies as you want. Each cookie is its own thing, but they all share the same form. That is essentially what constructor functions and the `new` keyword are doing in JavaScript. You define the template once, and `new` does the work of stamping out individual objects for you.
+
+But unlike cookie cutters, there is a lot of invisible machinery running when you use `new`. Let us dig into all of it.
+
+## Constructor Functions: The Template
+
+Before `new` makes any sense, you need to understand what it is working with: constructor functions.
+
+A constructor function is just a regular function, but it is written with the intention of being called with `new`. By convention, the name starts with a capital letter. That capital letter is not enforced by JavaScript, it is just a signal to other developers (and your future self) that this function is a constructor.
+
+```javascript
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+```
+
+If you call this without `new`, `this` will either be the global object (in non-strict mode) or `undefined` (in strict mode). Neither is what you want. The `new` keyword is what makes `this` point to a brand new object.
+
+## What `new` Actually Does, Step by Step
+
+Here is the thing: `new` is not magic. It just does four very specific things in order. Once you know the steps, the whole thing becomes obvious.
+
+```ascii
+Step 1: Create a new empty object
+Step 2: Set its [[Prototype]] to the constructor's .prototype
+Step 3: Run the constructor function with `this` bound to the new object
+Step 4: Return the new object (unless the constructor explicitly returns another object)
+```
+
+Let us visualize this flow:
+
+```ascii
+  new Person("Atharv", 24)
+         │
+         ▼
+┌─────────────────────────┐
+│  Step 1: Create {}      │
+│  newObj = {}            │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│  Step 2: Link prototype │
+│  newObj.__proto__ =     │
+│  Person.prototype       │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│  Step 3: Run constructor│
+│  Person.call(newObj,    │
+│  "Atharv", 24)          │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│  Step 4: Return newObj  │
+│  { name: "Atharv",      │
+│    age: 24 }            │
+└─────────────────────────┘
+```
+
+Let us run through a concrete example:
+
+```javascript
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+const atharv = new Person("Atharv", 24);
+
+console.log(atharv.name); // "Atharv"
+console.log(atharv.age); // 24
+```
+
+When `new Person("Atharv", 24)` runs, JavaScript creates a fresh empty object, links its prototype, runs the `Person` function with `this` pointing at that empty object (so `this.name = name` writes onto it), and returns the result. You get back a fully formed object.
+
+## The Prototype Link: Where Things Get Interesting
+
+Step 2 is the most important one, and also the most overlooked. When you use `new`, the new object's `[[Prototype]]` is set to `Constructor.prototype`. This is what enables inheritance in JavaScript.
+
+Here is what that looks like in practice:
+
+```javascript
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+Person.prototype.greet = function () {
+  return `Hi, I'm ${this.name}`;
+};
+
+const atharv = new Person("Atharv", 24);
+
+console.log(atharv.greet()); // "Hi, I'm Atharv"
+```
+
+`atharv` does not have `greet` as its own property. But when JavaScript looks for `greet` on `atharv` and does not find it, it walks up the prototype chain to `Person.prototype`, finds it there, and calls it.
+
+This is the prototype chain doing its job.
+
+```ascii
+           atharv (instance)
+           ┌──────────────────┐
+           │ name: "Atharv"   │
+           │ age: 24          │
+           │ [[Prototype]] ───┼──────────────┐
+           └──────────────────┘              │
+                                             ▼
+                                    Person.prototype
+                                    ┌────────────────────┐
+                                    │ greet: fn          │
+                                    │ constructor: Person│
+                                    │ [[Prototype]]   ───┼──┐
+                                    └────────────────────┘  │
+                                                            ▼
+                                                  Object.prototype
+                                                  ┌───────────────────┐
+                                                  │ toString: fn      │
+                                                  │ hasOwnProperty    │
+                                                  │ [[Prototype]]:null│
+                                                  └───────────────────┘
+```
+
+Every instance you create with `new Person()` shares the same `Person.prototype`. This is efficient because the `greet` method lives in one place in memory, not duplicated on every object.
+
+## Multiple Instances from One Constructor
+
+This is where the cookie cutter analogy holds. Each call to `new Person()` creates a completely independent object with its own `name` and `age`. But they all share the same prototype.
+
+```javascript
+const atharv = new Person("Atharv", 24);
+const maithili = new Person("Maithili", 24);
+
+console.log(atharv.name); // "Atharv"
+console.log(maithili.name); // "Maithili"
+
+console.log(atharv.greet === maithili.greet); // true - same function reference
+```
+
+The own properties (set via `this.x = y`) are unique to each instance. Methods on the prototype are shared. This is a key mental model to lock in.
+
+```ascii
+  Constructor: Person
+         │
+         │  new Person("Atharv", 24)
+         ├──────────────────────────► atharv { name, age }
+         │                                         │
+         │  new Person("Maithili", 24)             │ [[Proto]]
+         └──────────────────────────► maithili  { name, age }
+                                                   │       │
+                                            [[Proto]]      │
+                                                   │       │
+                                                   ▼       ▼
+                                              Person.prototype { greet }
+```
+
+## What Happens If You Forget `new`?
+
+This is a classic JavaScript gotcha worth knowing. If you call a constructor function without `new`, `this` inside the function will not point to a new object. In non-strict mode, it binds to the global object (`window` in browsers, `global` in Node). In strict mode, `this` is `undefined` and you get a `TypeError`.
+
+```javascript
+// Non-strict mode - dangerous
+function Person(name) {
+  this.name = name;
+}
+
+const oops = Person("Atharv"); // forgot new
+console.log(oops); // undefined (no return value)
+console.log(window.name); // "Atharv" - polluted the global object!
+```
+
+This was one of the motivations behind ES6 classes. The `class` syntax enforces that you use `new`. Calling a class without `new` always throws a `TypeError`, no matter the mode.
+
+## The Return Value Edge Case
+
+One more thing worth covering: what if your constructor explicitly returns something?
+
+If the constructor returns a primitive (string, number, boolean, null, undefined), JavaScript ignores it and returns the newly created object anyway.
+
+But if the constructor returns an object, `new` will return that object instead of the freshly created one.
+
+```javascript
+function Weird() {
+  this.x = 1;
+  return { x: 99 }; // returning a plain object
+}
+
+const w = new Weird();
+console.log(w.x); // 99 - returned object wins
+```
+
+```javascript
+function Fine() {
+  this.x = 1;
+  return 42; // returning a primitive
+}
+
+const f = new Fine();
+console.log(f.x); // 1 - primitive is ignored, new object is returned
+```
+
+This is an edge case that almost never comes up in real code, but it matters when you are writing factories or doing metaprogramming.
+
+## `new` Under the Hood: A Mental Simulation
+
+If you want to really understand what `new` does, here is a manual recreation of it:
+
+```javascript
+function myNew(Constructor, ...args) {
+  // Step 1: Create a new empty object
+  const obj = {};
+
+  // Step 2: Link the prototype
+  Object.setPrototypeOf(obj, Constructor.prototype);
+
+  // Step 3: Call the constructor with `this` = obj
+  const result = Constructor.apply(obj, args);
+
+  // Step 4: Return the object (unless constructor returned an object)
+  return result instanceof Object ? result : obj;
+}
+
+// Usage:
+const atharv = myNew(Person, "Atharv", 24);
+console.log(atharv.name); // "Atharv"
+console.log(atharv.greet()); // "Hi, I'm Atharv"
+```
+
+This is not just an exercise. Writing this out makes the four steps click in a way that just reading about them does not.
+
+## ES6 Classes: `new` in a Cleaner Coat
+
+Modern JavaScript uses `class` syntax, but it is prototype-based inheritance under the hood. The `new` keyword works exactly the same way.
+
+```javascript
+class Person {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+
+  greet() {
+    return `Hi, I'm ${this.name}`;
+  }
+}
+
+const atharv = new Person("Atharv", 24);
+console.log(atharv.greet()); // "Hi, I'm Atharv"
+```
+
+`greet` still ends up on `Person.prototype`. The instance still gets created via the same four-step process. Classes are syntax sugar. The prototype chain wiring happens the same way.
+
+## Key Takeaways
+
+- `new` does four things: creates an empty object, links its prototype, runs the constructor with `this` pointing at the new object, and returns it.
+- Methods defined on `Constructor.prototype` are shared across all instances. Own properties (set via `this`) are not.
+- Forgetting `new` with a plain constructor function silently pollutes the global scope in non-strict mode. ES6 classes protect against this.
+- If a constructor explicitly returns an object, that object takes precedence over the newly created one.
+- Writing a manual recreation of `new` is the best way to internalize how it works.
+
+The `new` keyword is not complicated once you see the four steps clearly. What makes it feel mysterious is that JavaScript does all of it invisibly. Now you know exactly what is happening behind that one word.

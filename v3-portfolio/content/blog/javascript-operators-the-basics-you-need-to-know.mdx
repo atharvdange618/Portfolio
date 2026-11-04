@@ -1,0 +1,296 @@
+---
+title: "JavaScript Operators: The Basics You Need to Know"
+publishedAt: "2026-02-26T22:21:50.284Z"
+featured: false
+description: >-
+  Learn how JavaScript operators work, including arithmetic, comparison,
+  logical, and assignment operators.
+summary: >-
+  Operators are the foundation of every piece of logic you write in JavaScript.
+  This post breaks them down clearly, from simple arithmetic to logical
+  conditions, so you actually understand what's happening in your code.
+updatedAt: "2026-02-26T22:21:50.305Z"
+category: JavaScript & Web APIs
+seoTitle: JavaScript Operators Explained
+tags:
+  - javascript
+  - operators
+  - beginner javascript
+  - arithmetic operators
+  - comparison operators
+  - logical operators
+  - assignment operators
+  - javascript basics
+  - "== vs ==="
+  - javascript fundamentals
+seoKeywords:
+  - javascript operators
+  - arithmetic operators javascript
+  - comparison operators javascript
+  - logical operators javascript
+  - "== vs === javascript"
+  - javascript for beginners
+  - assignment operators
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1772144392/from-scratch/dwc9tadwbmojsavjvlfc.png
+---
+
+![JavaScript Operators: The Basics You Need to Know](https://res.cloudinary.com/dvwajyvot/image/upload/v1772144392/from-scratch/dwc9tadwbmojsavjvlfc.png)
+
+If you've ever written something like `if (age >= 18)` or `let total = price * quantity`, you've already used operators. You might not have thought much about them, but they're doing real work every single time. Let's break down what they are and how to use each type confidently.
+
+## What Are Operators?
+
+Think of operators as instructions you give JavaScript to do something with values. Just like a calculator has buttons for adding, subtracting, and comparing, JavaScript has symbols (operators) that tell it what to do with the numbers, strings, or booleans you feed in.
+
+The values you operate on are called **operands**. So in `5 + 3`, the `+` is the operator and `5` and `3` are the operands. Simple as that.
+
+Here's the big picture before we get into each category:
+
+```ascii
+┌─────────────────────────────────────────────────────────────┐
+│                 JavaScript Operator Categories              │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│   Category      │   Symbols       │   Everyday Use          │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│ Arithmetic      │ +, -, *, /, %   │ Basic Math              │
+│ Assignment      │ =, +=, -=       │ Storing Values          │
+│ Comparison      │ ==, ===, >, <   │ Making Decisions        │
+│ Logical         │ &&, ||, !       │ Combining Rules         │
+└─────────────────┴─────────────────┴─────────────────────────┘
+```
+
+Now let's go through each one.
+
+## Arithmetic Operators
+
+Arithmetic operators are the most intuitive because we use them every day. Imagine calculating your total grocery bill or splitting a restaurant check with friends.
+
+The basic arithmetic operators are:
+
+- Addition: `+`
+- Subtraction: `-`
+- Multiplication: `*`
+- Division: `/`
+- Remainder/Modulo: `%`
+
+Let's start with simple math examples in our console.
+
+```javascript
+// Adding costs of items
+const coffeePrice = 4;
+const bagelPrice = 3;
+const totalCost = coffeePrice + bagelPrice;
+console.log("Total Cost:", totalCost); // Output: 7
+
+// Calculating a discount
+const discount = 2;
+const finalPrice = totalCost - discount;
+console.log("Final Price:", finalPrice); // Output: 5
+
+// Splitting the bill
+const totalBill = 50;
+const people = 2;
+const amountPerPerson = totalBill / people;
+console.log("Per Person:", amountPerPerson); // Output: 25
+```
+
+The `%` (modulo) operator might look like a percentage sign, but in JavaScript, it returns the remainder of a division. For example, if you have 10 slices of pizza and 3 people, everyone gets 3 slices, and 1 slice is left over. `10 % 3` gives you `1`.
+
+Here's the thing: modulo is actually super useful in real code. Want to know if a number is even or odd? `num % 2 === 0` means even. Want to loop through items and wrap back around? Modulo handles that too.
+
+Advanced tip: When using the `+` operator, JavaScript can sometimes perform string concatenation instead of mathematical addition if one of the operands is a string (e.g., `5 + "5"` results in `"55"`). Always ensure your data types are numbers when performing arithmetic. Subtraction, on the other hand, forces JavaScript to convert strings to numbers. So `"5" - 2` becomes `3`. This is known as implicit **type coercion**.
+
+## Assignment Operators
+
+If arithmetic operators are tools for calculation, assignment operators are the containers. Imagine having an empty box labeled "Savings". When you put a $20 bill inside, you are assigning a value to that box.
+
+The most common assignment operator is the equals sign `=`. It does not mean "is equal to" in programming; it means "take the value on the right and put it into the variable on the left."
+
+```javascript
+// Basic assignment
+let mySavings = 20;
+
+// Adding to the existing value
+mySavings = mySavings + 10;
+console.log(mySavings); // Output: 30
+```
+
+Writing `mySavings = mySavings + 10` is repetitive. To make this cleaner, JavaScript provides shorthand assignment operators like `+=` and `-=`.
+
+```javascript
+let mySavings = 20;
+
+// Shorthand addition assignment
+mySavings += 10; // Exactly the same as mySavings = mySavings + 10
+console.log(mySavings); // Output: 30
+
+// Shorthand subtraction assignment
+mySavings -= 5;
+console.log(mySavings); // Output: 25
+```
+
+There are also `*=` for multiplication assignment and `/=` for division, which operate exactly the same way.
+
+## Comparison Operators
+
+Comparison operators are like the bouncers at a club. Their entire job is to look at two things and answer a simple yes or no question: Are these two things the same? Is this person old enough?
+
+They always return a boolean value: `true` or `false`.
+
+```javascript
+const myAge = 25;
+const requiredAge = 18;
+
+// Is myAge greater than requiredAge?
+console.log(myAge > requiredAge); // Output: true
+
+// Is myAge less than requiredAge?
+console.log(myAge < requiredAge); // Output: false
+```
+
+### == vs ===
+
+This is one of the most common sources of bugs for beginners and honestly, even experienced devs who aren't paying attention.
+
+`==` checks for **loose equality**. It will convert types if needed before comparing.
+`===` checks for **strict equality**. Both the value and the type must match.
+
+```javascript
+console.log(5 == "5"); // true  → "5" gets converted to 5
+console.log(5 === "5"); // false → number vs string, different types
+
+console.log(0 == false); // true  → false becomes 0
+console.log(0 === false); // false → number vs boolean
+
+console.log(null == undefined); // true  → loose check
+console.log(null === undefined); // false → different types
+```
+
+The rule of thumb: always use `===` unless you have a very specific reason not to. Loose equality introduces subtle bugs that are annoying to track down, especially when you're dealing with API responses where types can be unpredictable.
+
+```ascii
+   == (Loose Equality)              === (Strict Equality)
+  ┌────────────────────┐           ┌─────────────────────┐
+  │  Convert types     │           │  No type conversion │
+  │  then compare      │           │  Compare as-is      │
+  │                    │           │                     │
+  │  5 == "5"  → true  │           │  5 === "5" → false  │
+  └────────────────────┘           └─────────────────────┘
+```
+
+And `!=` is just the opposite of `==`. It returns `true` when values are NOT equal (with the same loose type conversion behavior). Use `!==` for strict not-equal checks.
+
+## Logical Operators
+
+Logical operators are used when you have multiple rules that need to be evaluated together. Think of applying for a bank loan. The bank manager might say: "You get the loan if you have a good credit score AND an income." If either is missing, you are denied.
+
+The three primary logical operators are:
+
+- AND: `&&`
+- OR: `||`
+- NOT: `!`
+
+Here's the truth table so you can see exactly what each operator does across all combinations:
+
+```ascii
+┌──────────┬──────────┬───────────┬──────────┬──────────┐
+│    A     │    B     │  A && B   │  A || B  │   !A     │
+├──────────┼──────────┼───────────┼──────────┼──────────┤
+│  true    │  true    │   true    │  true    │  false   │
+│  true    │  false   │   false   │  true    │  false   │
+│  false   │  true    │   false   │  true    │  true    │
+│  false   │  false   │   false   │  false   │  true    │
+└──────────┴──────────┴───────────┴──────────┴──────────┘
+```
+
+Let's look at a small condition applying these rules:
+
+```javascript
+const hasGoodCredit = true;
+const hasIncome = false;
+
+// AND operator (&&): Both must be true
+const canGetLoan = hasGoodCredit && hasIncome;
+console.log("Can get loan:", canGetLoan); // Output: false
+
+// OR operator (||): At least one must be true
+const canGetCoSigner = hasGoodCredit || hasIncome;
+console.log("Can get cosigner:", canGetCoSigner); // Output: true
+
+// NOT operator (!): Reverses the boolean value
+const isNotEmployed = !hasIncome;
+console.log("Is not employed:", isNotEmployed); // Output: true
+```
+
+Important insight: If the first condition in an `&&` chain is false, JavaScript completely ignores the rest of the conditions because the final result can never be true, `&&` and `||` don't always return `true` or `false` specifically. They return one of the actual operand values. This is called **short-circuit evaluation**.
+
+```javascript
+console.log("hello" && "world"); // "world" → truthy && returns second
+console.log("" || "default"); // "default" → falsy || returns second
+console.log(null && "anything"); // null → falsy && stops early
+```
+
+This is why you see patterns like `user && user.name` in React code. If `user` is null, JavaScript short-circuits and never tries to access `.name`, avoiding a crash. It's a genuinely useful pattern once you internalize it. Similarly, with the `||` operator, if the first value is true, JavaScript will immediately return it and skip evaluating the second value. You can leverage this to provide powerful, concise control flow instead of writing long `if-else` blocks.
+
+## Putting It All Together
+
+Here's a small snippet that uses all four operator types working together, the kind of thing you'd write in actual code:
+
+```javascript
+let cartItems = 5;
+let pricePerItem = 20;
+let discount = 15;
+let isMember = true;
+let hasCoupon = false;
+
+// Arithmetic: calculate total
+let total = cartItems * pricePerItem;
+console.log(total); // 100
+
+// Assignment compound: apply discount
+total -= discount;
+console.log(total); // 85
+
+// Comparison: check if order qualifies for free shipping
+let qualifiesForFreeShipping = total >= 75;
+console.log(qualifiesForFreeShipping); // true
+
+// Logical: apply extra member discount only if member and no coupon used
+if (isMember && !hasCoupon) {
+  total -= 10;
+}
+
+console.log(total); // 75
+```
+
+Every line in that example uses at least one operator. That's just how JavaScript works.
+
+## Assignment
+
+Try this on your own before moving on. It'll lock these concepts in far better than just reading.
+
+**Task 1: Arithmetic**
+Declare two variables `num1` and `num2` with any numbers you want. Log the result of all five arithmetic operations on them (`+`, `-`, `*`, `/`, `%`).
+
+**Task 2: Equality comparison**
+Create a variable with the value `42` (number) and another with `"42"` (string). Compare them using both `==` and `===` and log the results. Then explain to yourself in plain English why the outputs differ.
+
+**Task 3: Logical condition**
+Write a condition that logs "Access granted" if a user's `age` is 18 or older AND their `isVerified` flag is `true`. Otherwise log "Access denied".
+
+```javascript
+// Your starting point:
+let age = 20;
+let isVerified = true;
+
+// Write your condition here
+```
+
+## Key Takeaways
+
+Operators are the engine that drives logic in JavaScript. Arithmetic operators handle the math, assignment operators store our data, comparison operators ask questions, and logical operators combine those questions into complex decisions.
+
+The one thing worth burning into memory: use `===` over `==`. Loose equality has its place in very specific scenarios, but strict equality is the right default. Save yourself the headache.
+
+Once these feel natural, you're ready to tackle things like ternary operators, nullish coalescing (`??`), and optional chaining (`?.`), which are all just extensions of the same ideas you learned here.

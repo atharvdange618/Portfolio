@@ -1,0 +1,195 @@
+---
+title: Array Flatten in JavaScript
+publishedAt: "2026-05-06T13:52:22.389Z"
+featured: false
+description: >-
+  Learn what nested arrays are, why flattening matters, and how to flatten
+  arrays in JavaScript using flat(), reduce, and recursion
+summary: >-
+  Flattening arrays means collapsing nested structures into a single level. This
+  post covers what nested arrays are, why you'd want to flatten them, and every
+  real approach you'll encounter, including the ones that show up in interviews.
+updatedAt: "2026-05-06T13:52:22.603Z"
+category: JavaScript & Web APIs
+seoTitle: "Array Flatten in JavaScript: flat(), reduce Explained"
+tags:
+  - javascript
+  - arrays
+  - flatten
+  - array-methods
+  - reduce
+  - recursion
+  - interview-prep
+  - es2019
+seoKeywords:
+  - flatten array javascript
+  - array flat method
+  - javascript flat infinity
+  - flatten nested array
+  - reduce concat flatten
+  - recursive flatten javascript
+  - javascript interview array questions
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1778075537/from-scratch/gmssu0ooend78926ftdi.png
+---
+
+![Array Flatten in JavaScript](https://res.cloudinary.com/dvwajyvot/image/upload/v1778075537/from-scratch/gmssu0ooend78926ftdi.png)
+
+Picture a set of Russian nesting dolls. Each doll contains another, and you have to keep opening them to find the ones inside. Now imagine someone asked you to line all the dolls up in a single row. That's exactly what flattening an array does: it reaches into every layer and pulls everything out into one flat list.
+
+## What Are Nested Arrays?
+
+A nested array is an array that contains other arrays as elements. JavaScript doesn't restrict how deep this nesting can go.
+
+```javascript
+const flat = [1, 2, 3]; // 1 level
+const nested = [1, [2, 3], 4]; // 2 levels
+const deepNest = [1, [2, [3, [4, [5]]]]]; // 5 levels
+```
+
+Visually, here's what that structure looks like:
+
+```ascii
+deepNest
+├── 1
+└── array
+    ├── 2
+    └── array
+        ├── 3
+        └── array
+            ├── 4
+            └── array
+                └── 5
+```
+
+Each bracket is a layer you have to unwrap to reach the values inside.
+
+## Why Would You Need to Flatten?
+
+Real-world data comes in all shapes. An API returns paginated results as arrays of arrays. A recursive function builds up nested collections. A multi-dimensional matrix needs to be processed as a stream. In all these cases, you need a single, ordered list before you can sort, filter, map, or reduce it.
+
+```javascript
+// Result from fetching multiple pages
+const pages = [[{ id: 1 }, { id: 2 }], [{ id: 3 }, { id: 4 }], [{ id: 5 }]];
+
+// You want this
+// [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }]
+```
+
+Before you can do anything useful with `pages`, you have to flatten it.
+
+## The Transformation, Step by Step
+
+```ascii
+Input:  [ 1, [ 2, 3 ], [ 4, [ 5, 6 ] ] ]
+               ↓
+Step 1: [ 1,   2, 3,     4, [ 5, 6 ] ]   ← depth 1
+               ↓
+Step 2: [ 1,   2, 3,     4,   5, 6   ]   ← depth 2 (fully flat)
+```
+
+Each pass through removes one layer of nesting. How many passes you need depends on how deep the array goes.
+
+## Approaches to Flatten Arrays
+
+### 1. `Array.prototype.flat()` - The Modern Standard
+
+Introduced in ES2019, `flat()` is the cleanest solution. It takes an optional depth argument.
+
+```javascript
+const arr = [1, [2, [3, [4]]]];
+
+arr.flat(); // [1, 2, [3, [4]]]  - default depth is 1
+arr.flat(2); // [1, 2, 3, [4]]
+arr.flat(3); // [1, 2, 3, 4]
+arr.flat(Infinity); // [1, 2, 3, 4]  - flattens everything
+```
+
+`Infinity` is the go-to when you don't know or don't care how deep the nesting goes. It's readable, concise, and expressive.
+
+### 2. `reduce()` + `concat()` - One Level, Manually
+
+Understanding this approach is where the real learning happens. It's the building block for everything else.
+
+```javascript
+const arr = [1, [2, 3], [4, 5]];
+
+const result = arr.reduce((acc, val) => acc.concat(val), []);
+// [1, 2, 3, 4, 5]
+```
+
+```ascii
+Initial acc: []
+
+Pass 1: acc = [].concat(1)       → [1]
+Pass 2: acc = [1].concat([2, 3]) → [1, 2, 3]
+Pass 3: acc = [1, 2, 3].concat([4, 5]) → [1, 2, 3, 4, 5]
+```
+
+`concat` unwraps one level of nesting automatically. If an element is an array, its contents get merged in. If it's a primitive, it just gets appended.
+
+### 3. Recursive Flattening - Any Depth
+
+When you need arbitrary depth without reaching for `flat(Infinity)`, recursion is the answer. It's also the approach interviewers love to ask about.
+
+```javascript
+function flattenDeep(arr) {
+  return arr.reduce((acc, val) => {
+    return Array.isArray(val)
+      ? acc.concat(flattenDeep(val)) // go deeper
+      : acc.concat(val); // it's a value, keep it
+  }, []);
+}
+
+flattenDeep([1, [2, [3, [4]]]]); // [1, 2, 3, 4]
+```
+
+The logic: for each element, check if it's an array. If yes, recurse. If no, push it into the accumulator. Simple mental model, powerful result.
+
+```ascii
+flattenDeep([1, [2, [3]]])
+  ↓ 1 → not array, add to acc
+  ↓ [2, [3]] → is array, recurse
+      ↓ 2 → not array, add
+      ↓ [3] → is array, recurse
+          ↓ 3 → not array, add
+Result: [1, 2, 3]
+```
+
+## Common Interview Scenarios
+
+**"Flatten without using flat()"** - They want to see `reduce` + recursion. Write `flattenDeep` from scratch.
+
+**"Flatten to a specific depth"** - Add a `depth` parameter and decrement it on each recursive call:
+
+```javascript
+function flattenToDepth(arr, depth = 1) {
+  return arr.reduce((acc, val) => {
+    if (Array.isArray(val) && depth > 0) {
+      return acc.concat(flattenToDepth(val, depth - 1));
+    }
+    return acc.concat(val);
+  }, []);
+}
+
+flattenToDepth([1, [2, [3, [4]]]], 2); // [1, 2, 3, [4]]
+```
+
+**"What's the time complexity?"** - O(n) where n is the total number of elements across all levels. You visit each element exactly once.
+
+**"What if the array contains non-array objects?"** - `Array.isArray()` handles this correctly. Objects, strings, numbers, `null`: anything that isn't an array gets added as-is.
+
+```javascript
+flattenDeep([1, { a: 2 }, [3, null, [true]]]);
+// [1, { a: 2 }, 3, null, true]
+```
+
+## Key Takeaways
+
+- Nested arrays are common in real data: paginated APIs, recursive structures, matrix data.
+- `flat(Infinity)` is your everyday tool. Readable and concise.
+- `reduce` + `concat` is the one-level manual version. Know how it works.
+- Recursive `flattenDeep` is what interviewers want to see. The pattern is: check if array, recurse or push.
+- Depth-aware flattening is just recursion with a counter.
+
+Flattening is a small concept with a big surface area in interviews. The real skill isn't memorizing the APIs. It's understanding that flattening is a traversal problem, and once you see it that way, every variation becomes a minor twist on the same idea.

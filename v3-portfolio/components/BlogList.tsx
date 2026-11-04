@@ -27,7 +27,7 @@ export function BlogList({ posts }: Props) {
 
           <div className="flex items-center justify-between gap-4">
             <Link
-              href={`/blog/${post.slug}`}
+              href={`/blogs/${post.slug}`}
               className="text-blue hover:text-purple active:scale-[0.98] transition-all duration-200 font-medium text-xl"
             >
               {post.title}

@@ -10,7 +10,7 @@ export function GET() {
     .join("\n");
 
   const posts = getAllPosts()
-    .map((p) => `- [${p.title}](${baseUrl}/blog/${p.slug}): ${p.description}`)
+    .map((p) => `- [${p.title}](${baseUrl}/blogs/${p.slug}): ${p.description}`)
     .join("\n");
 
   const body = `# Atharv Dange

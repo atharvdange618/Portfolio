@@ -1,0 +1,462 @@
+---
+title: "How JavaScript Engines Actually Work: A Deep Dive Under the Hood"
+publishedAt: "2026-02-10T19:52:18.853Z"
+featured: false
+description: >-
+  Deep dive into JavaScript engine internals - learn how V8, SpiderMonkey, and
+  JavaScriptCore parse, compile, and execute your code with JIT optimization,
+  garbage collection, and memory management
+summary: >-
+  Ever wondered what happens when you hit "run" on your JavaScript code? Let's
+  break down how modern JavaScript engines transform your code into
+  lightning-fast machine instructions, and why understanding this matters for
+  writing better code.
+updatedAt: "2026-02-21T23:07:49.910Z"
+category: JavaScript & Web APIs
+seoTitle: "How JavaScript Engines Work: V8, SpiderMonkey, and JIT Compilation Explained"
+tags:
+  - javascript
+  - v8
+  - javascript-engine
+  - performance
+  - jit-compilation
+  - optimization
+  - memory-management
+  - garbage-collection
+  - call-stack
+  - bytecode
+seoKeywords:
+  - javascript engine
+  - v8 engine
+  - jit compilation
+  - javascript performance
+  - javascript internals
+  - how javascript works
+  - garbage collection
+  - call stack
+  - javascript optimization
+  - bytecode
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1770753108/from-scratch/kfei27p9ithswk6nqksw.png
+---
+
+![How JavaScript Engines Actually Work: A Deep Dive Under the Hood](https://res.cloudinary.com/dvwajyvot/image/upload/v1770753108/from-scratch/kfei27p9ithswk6nqksw.png)
+
+You write JavaScript. You run it. It works. But what actually happens between those steps?
+
+Here's the thing: when you run JavaScript code, you're not just executing text. Your code goes through a sophisticated pipeline that involves parsing, compilation, optimization, and execution. And understanding this pipeline isn't just academic it changes how you think about performance, debugging, and writing efficient code.
+
+Let's break down exactly how JavaScript engines like V8, SpiderMonkey, and JavaScriptCore turn your human-readable code into machine instructions that run at near-native speeds.
+
+## What Is a JavaScript Engine, Really?
+
+A JavaScript engine is a specialized program that takes your JavaScript code and executes it. Think of it as a translator and executor rolled into one.
+
+Early JavaScript engines worked like interpreters they read your code line by line and executed it on the spot. But modern engines are far more sophisticated. They use a combination of interpretation and just-in-time (JIT) compilation to achieve remarkable performance.
+
+The major players in this space are:
+
+- **V8** (powers Chrome and Node.js)
+- **SpiderMonkey** (powers Firefox)
+- **JavaScriptCore** (powers Safari)
+- **Chakra** (powered the old Microsoft Edge)
+
+What makes these engines different from simple interpreters is their multi-tiered approach to optimization. They don't just execute your code they study it, learn from it, and continuously optimize it as it runs.
+
+Here's the big picture:
+
+```ascii
+┌─────────────────┐
+│  Source Code    │
+│  function add() │
+│  { ... }        │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│    PARSING      │
+│  ┌────────────┐ │
+│  │Tokenization│ │
+│  └─────┬──────┘ │
+│        ▼        │
+│  ┌───────────┐  │
+│  │AST Builder│  │
+│  └───────────┘  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  COMPILATION    │
+│  ┌───────────┐  │
+│  │ Bytecode  │  │
+│  │Generation │  │
+│  └─────┬─────┘  │
+│        ▼        │
+│  ┌───────────┐  │
+│  │    JIT    │  │
+│  │ Compiler  │  │
+│  └───────────┘  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   EXECUTION     │
+│  ┌───────────┐  │
+│  │Call Stack │  │
+│  ├───────────┤  │
+│  │   Heap    │  │
+│  ├───────────┤  │
+│  │    GC     │  │
+│  └───────────┘  │
+└─────────────────┘
+         │
+         ▼
+    [Output]
+```
+
+## The Three Core Phases: Parsing, Compilation, and Execution
+
+Every JavaScript engine follows a similar pipeline. Your code goes through three main phases before it actually runs.
+
+### Phase 1: Parsing - Breaking Down Your Code
+
+The first step is parsing. This is where the engine makes sense of your code's structure.
+
+Imagine you're reading a complex recipe. Before you start cooking, you first need to understand the structure what are the ingredients, what are the steps, what comes first. That's exactly what the parser does.
+
+The parsing phase has two sub-steps:
+
+**Tokenization** is where the engine breaks your code into meaningful chunks called tokens. When you write `let name = "Alice";`, the engine sees this as separate tokens: `let` (keyword), `name` (identifier), `=` (operator), `"Alice"` (string literal), and `;` (punctuation).
+
+**AST Generation** takes those tokens and builds an Abstract Syntax Tree. This is a tree-like representation of your code's grammatical structure. The AST captures the relationships between different parts of your code which expressions are nested inside functions, what order operations happen in, and so on.
+
+Here's a simple example:
+
+```javascript
+function greet(name) {
+  return "Hello, " + name;
+}
+```
+
+The AST for this code would represent the function declaration, with child nodes for the parameter, the return statement, and the string concatenation operation. Each node knows its role and its relationships to other nodes.
+
+Here's what that AST looks like visually:
+
+```ascii
+                  FunctionDeclaration
+                         |
+        ┌────────────────┼────────────────┐
+        │                │                │
+   Identifier      ParameterList    BlockStatement
+    "greet"             |                |
+                   Identifier      ReturnStatement
+                    "name"               |
+                                  BinaryExpression
+                                    (operator: +)
+                                         |
+                            ┌────────────┴────────────┐
+                            │                         │
+                      StringLiteral              Identifier
+                      "Hello, "                   "name"
+```
+
+Each box is a node that contains information about a piece of your code. The tree structure shows relationships the `BinaryExpression` has two children (the string literal and the identifier), which represent the two sides of the `+` operator.
+
+Why does this matter? Because the AST is what the rest of the engine works with. It's a structured representation that makes it easy to analyze, optimize, and compile your code.
+
+### Phase 2: Compilation - From Code to Machine Instructions
+
+This is where modern engines get interesting. Instead of interpreting the AST directly, they compile it but in a very clever way.
+
+**Bytecode Generation** is the first compilation step. The engine converts your AST into bytecode, which is a lower-level representation of your code. Bytecode sits between high-level JavaScript and machine code. It's platform-independent and more efficient to execute than raw source code.
+
+Think of bytecode as assembly instructions for a virtual machine. It's not tied to any specific processor architecture, so the same bytecode can run on different computers.
+
+**Just-In-Time (JIT) Compilation** is where the magic happens. As your code runs, the engine profiles it it watches which functions get called frequently, which loops run thousands of times, which code paths are hot.
+
+When the engine identifies hot code (code that runs frequently), it kicks in the JIT compiler. The JIT compiler takes that bytecode and compiles it into highly optimized machine code specific to your processor.
+
+Here's the real insight: the engine doesn't compile everything upfront. It compiles on demand, focusing its optimization efforts on the code that actually matters for performance.
+
+```ascii
+Source Code
+     │
+     ▼
+┌─────────────────────┐
+│ Bytecode (Ignition) │  ← Fast startup, interpreted
+└──────────┬──────────┘
+           │
+           │ (Profiling detects hot code)
+           │
+           ▼
+    ┌──────────────┐
+    │ Is it hot?   │
+    └──┬────────┬──┘
+       │ No     │ Yes
+       │        │
+       ▼        ▼
+   Keep      ┌──────────────────────┐
+   using     │ Optimized Machine    │  ← Specialized, fast
+   bytecode  │ Code (TurboFan)      │
+             └──────────┬───────────┘
+                        │
+                        │ (Assumption breaks)
+                        │
+                        ▼
+                  ┌────────────┐
+                  │De-optimize │  ← Fall back if types change
+                  └────────────┘
+```
+
+**Optimization Techniques** used by modern engines are surprisingly sophisticated:
+
+**Inline caching** is where the engine remembers where object properties are located in memory. When you access `user.name`, the engine doesn't search for `name` every time it remembers where it was last time and checks there first.
+
+Inline caching is exactly about remembering how a property lookup succeeded before, but it is less about a fixed memory slot and more about remembering the shape of the object. Modern engines like V8 attach a small cache to a specific property access site in your code. If `user.name` has been seen on objects with the same internal layout, the engine skips the generic lookup and goes straight to the offset it learned earlier. When different shapes show up, the cache can become polymorphic, meaning it remembers a handful of shapes. If too many different shapes appear, it goes megamorphic and performance drops back toward the slow path.
+
+**Hidden classes**, often called shapes or maps, are the backbone of this. When you create objects with properties added in the same order, engines give them the same hidden class. That lets the engine treat dynamic objects more like structs in C. Property name plus hidden class becomes a fast offset lookup instead of a hash table search. Change the property order or add properties later in a different sequence and you force hidden class transitions, which can kick optimized code back to generic mode.
+
+**Type specialization**, The engine watches your code run in the interpreter, collects type feedback, then an optimizing compiler generates machine code assuming those types stay consistent. If a function always gets small integers, it can use unboxed integer math instead of generic number operations. If a string suddenly shows up, that optimized code can deoptimize, meaning the engine throws away the fast version and falls back to a safer one. This dance between speculation and bailout is a core performance story in modern JS engines.
+
+There are more layers too. Arrays have different element kinds depending on whether they hold small integers, doubles, or objects. Staying consistent keeps them in fast contiguous storage. Mix types randomly and the engine has to generalize the array representation, which slows things down. Functions can also get inlined into their callers if the engine is confident about behavior, removing call overhead and enabling even more optimization across boundaries.
+
+What this really means is that JavaScript engines are constantly making educated bets about your code. Write code with consistent object shapes and stable types and the engine rewards you with near native performance. Write code that changes structure and types all the time and the engine shrugs, turns off the fancy tricks, and runs the safe but slower paths.
+
+### Phase 3: Execution - Running Your Code
+
+With optimized machine code in hand, the engine can finally execute your program.
+
+**The Call Stack** manages function execution. When you call a function, the engine pushes a new execution context onto the stack. This context contains the function's local variables, its parameters, and a reference to its outer scope.
+
+When the function returns, its context is popped off the stack. This stack structure is why you get that familiar call stack in error messages it's literally showing you the stack of function calls that led to the error.
+
+```javascript
+function first() {
+  second();
+}
+
+function second() {
+  third();
+}
+
+function third() {
+  console.trace(); // Shows the call stack
+}
+
+first();
+// Output shows: third() -> second() -> first()
+```
+
+Let's visualize what the call stack looks like at each step:
+
+```ascii
+Step 1: first() called        Step 2: second() called       Step 3: third() called
+┌────────────────┐            ┌────────────────┐            ┌────────────────┐
+│                │            │                │            │   third()      │ ← Top
+├────────────────┤            ├────────────────┤            ├────────────────┤
+│                │            │   second()     │            │   second()     │
+├────────────────┤            ├────────────────┤            ├────────────────┤
+│   first()      │            │   first()      │            │   first()      │
+├────────────────┤            ├────────────────┤            ├────────────────┤
+│   (global)     │            │   (global)     │            │   (global)     │
+└────────────────┘            └────────────────┘            └────────────────┘
+
+When third() returns, its frame is popped off. Then second(), then first().
+This is why errors show you the stack trace—it's this literal stack of calls.
+```
+
+**Memory Management** happens in two places: the stack and the heap.
+
+The stack holds primitive values and references. It's fast and automatically managed when a function returns, its stack frame is immediately cleared.
+
+The heap holds objects, arrays, and functions. This is where things get more complex because objects can have references to each other, creating a web of connections.
+
+```ascii
+Memory Layout:
+
+STACK (Fast, Auto-managed)          HEAP (Slower, GC-managed)
+┌──────────────────────┐            ┌─────────────────────────┐
+│  function context    │            │                         │
+│  ┌────────────────┐  │            │   ┌──────────────┐      │
+│  │ num: 42        │  │            │   │ user object  │      │
+│  │ str: "hello"   │  │            │   │ {            │      │
+│  │ ref: ────────────────────────→ │   │  name: "...", │     │
+│  └────────────────┘  │            │   │  age: 25     │      │
+│                      │            │   └──────────────┘      │
+│  function context    │            │                         │
+│  ┌────────────────┐  │            │   ┌──────────────┐      │
+│  │ arr: ──────────────────────────→   │ [1, 2, 3]    │      │
+│  │ count: 3       │  │            │   └──────────────┘      │
+│  └────────────────┘  │            │                         │
+└──────────────────────┘            │   (Objects, Arrays,     │
+    ↑                               │    Functions live here) │
+    │ Grows down                    └─────────────────────────┘
+    │ on each call
+```
+
+Primitives like numbers and strings live on the stack. Objects and arrays live on the heap. The stack just holds references (pointers) to heap objects.
+
+**Garbage Collection** is how the engine reclaims memory from objects that are no longer needed. Modern engines use sophisticated algorithms like mark-and-sweep and generational collection.
+
+The basic idea is simple: the engine periodically traces through all reachable objects starting from root references (like global variables and local variables on the stack). Any objects it can't reach are considered garbage and their memory is reclaimed.
+
+Here's how the garbage collector determines what to keep:
+
+```ascii
+Root References (Stack, Global Variables)
+        │
+        ├─────→ [Object A] ─────→ [Object B]
+        │          │
+        │          └─────→ [Object C]
+        │
+        └─────→ [Object D]
+
+     [Object X] ←─── (No reference path from roots)
+     [Object Y] ←─── (No reference path from roots)
+
+Reachable: A, B, C, D (keep these)
+Garbage: X, Y (reclaim this memory)
+```
+
+The collector marks all reachable objects, then sweeps through memory and reclaims anything unmarked. This happens automatically in the background.
+
+Here's why this matters for your code: creating lots of short-lived objects puts pressure on the garbage collector. In performance-critical code, minimizing allocations can make a real difference.
+
+## A Real-World Analogy: The Restaurant Kitchen
+
+Let's tie this all together with an analogy that makes the whole pipeline clear.
+
+Imagine a JavaScript engine as a high-end restaurant kitchen.
+
+**Parsing is the head chef reading the order ticket.** The server hands over a handwritten order (your source code), and the head chef needs to understand it. They break it down into individual items (tokenization), then organize those items into a structured cooking plan (the AST) which dishes need to be prepared first, what can be cooked in parallel, what garnishes go where.
+
+**Compilation is prep work and cooking.** The sous chef takes that plan and starts prepping ingredients (bytecode generation). For dishes that are ordered frequently (hot code paths), they keep pre-cooked components ready to go (JIT compilation). The line cooks specialize in specific stations one handles proteins, another handles sauces (specialized optimized code). They remember where ingredients are stored and develop muscle memory for common preparations (inline caching).
+
+**Execution is plating and service.** The dishes are assembled in the correct order (call stack), using both the prep station (stack memory) and the main storage area (heap memory). After service, the kitchen is cleaned up and unused ingredients are thrown out (garbage collection).
+
+The better organized your order (your code), the more efficiently the kitchen can work. Clear structure, predictable patterns, and reasonable complexity make everyone's job easier.
+
+## V8 in Action: A Concrete Example
+
+Let's walk through exactly what happens when you run this simple code in V8:
+
+```javascript
+function calculateTotal(price, quantity) {
+  return price * quantity;
+}
+
+let total = calculateTotal(19.99, 3);
+console.log(total);
+```
+
+Here's the complete flow through V8:
+
+```ascii
+Source Code
+    │
+    ▼
+┌───────────────────────────────────────┐
+│ Scanner (Lexer)                       │
+│ Tokenizes source code                 │
+└──────────────┬────────────────────────┘
+               │ Tokens
+               ▼
+┌───────────────────────────────────────┐
+│ Parser                                │
+│ Builds Abstract Syntax Tree           │
+└──────────────┬────────────────────────┘
+               │ AST
+               ▼
+┌───────────────────────────────────────┐
+│ Bytecode Generator                    │
+│ Converts AST to bytecode              │
+└──────────────┬────────────────────────┘
+               │ Bytecode
+               ▼
+┌───────────────────────────────────────┐
+│ Ignition (Bytecode Interpreter)       │
+│ Executes bytecode                     │
+└──────────────┬────────────────────────┘
+               │
+               │ (Function called 1000x times)
+               │
+               ▼
+┌───────────────────────────────────────┐
+│ Profiler                              │
+│ "calculateTotal is hot!"              │
+└──────────────┬────────────────────────┘
+               │
+               ▼
+┌───────────────────────────────────────┐
+│ TurboFan (Optimizing Compiler)        │
+│ - Notices: price & quantity are       │
+│   always numbers                      │
+│ - Generates: specialized number       │
+│   multiplication machine code         │
+│ - Removes: type checks                │
+└──────────────┬────────────────────────┘
+               │ Optimized Machine Code
+               ▼
+┌───────────────────────────────────────┐
+│ EXECUTION                             │
+│ Call Stack:                           │
+│   [calculateTotal(19.99, 3)]          │
+│   [global]                            │
+│                                       │
+│ Result: 59.97 → assigned to total     │
+└───────────────────────────────────────┘
+```
+
+**Parsing phase:** V8's Scanner (lexer) tokenizes your code into tokens. Then the Parser takes those tokens and builds an AST, recognizing the function declaration, the variable declaration, the function call, and the console.log statement. Each becomes a node in the syntax tree.
+
+**Compilation phase:** The AST is passed to V8's bytecode generator, which converts it into bytecode. Ignition, V8's bytecode interpreter, then executes this bytecode. As the code runs, V8's profiler watches for hot code.
+
+If `calculateTotal` gets called thousands of times in a loop, TurboFan (V8's optimizing compiler) kicks in. It notices that `price` and `quantity` are always numbers, so it generates specialized machine code for number multiplication eliminating type checks and using efficient CPU instructions.
+
+**Execution phase:** When `calculateTotal(19.99, 3)` runs, V8 pushes a new frame onto the call stack with `price=19.99` and `quantity=3`. The multiplication happens using optimized machine code. The result `59.97` is returned, the frame is popped, and the value is assigned to `total`.
+
+Finally, `console.log` is called with `59.97` as an argument, and your result appears in the console.
+
+**After execution:** The `total` variable remains in memory as long as it's in scope. Once the script finishes and there are no more references to it, the garbage collector will eventually reclaim that memory.
+
+## Why This Matters for Your Code
+
+Understanding the engine changes how you write JavaScript in subtle but important ways.
+
+**Consistent types help optimization.** When you write functions that always receive the same types, you're giving the JIT compiler exactly what it needs to optimize aggressively. Mixing types in hot code paths forces de-optimization.
+
+**Object shape consistency matters.** Creating objects with the same properties in the same order lets the engine use hidden classes effectively. Adding or deleting properties dynamically breaks these optimizations.
+
+**Premature optimization is still bad.** The engine is remarkably good at optimizing on its own. Write clear, idiomatic code first. Profile before optimizing. The engine handles most performance concerns automatically.
+
+**Memory patterns affect GC pressure.** Creating massive numbers of temporary objects in tight loops gives the garbage collector more work. Sometimes pooling objects or using primitives where possible can help in performance-critical sections.
+
+**Async doesn't mean faster.** Understanding the call stack helps you see why promises and async/await don't make computation faster they just allow other code to run while waiting for I/O. The engine still executes your synchronous code sequentially.
+
+## Different Engines, Different Approaches
+
+While all modern engines follow similar principles, they have different implementation strategies.
+
+**V8** uses a two-tier approach with Ignition (bytecode interpreter) and TurboFan (optimizing compiler). It's aggressive about optimization and willing to speculate on types, but it pays the cost of de-optimization when assumptions break.
+
+**SpiderMonkey** has evolved through multiple JIT compilers TraceMonkey, JägerMonkey, and IonMonkey. Its current architecture uses a baseline compiler for quick startup and an optimizing compiler for hot code.
+
+**JavaScriptCore** uses multiple JIT tiers starting with LLInt (low-level interpreter), moving to the Baseline JIT for warm code, and then to the DFG (Data Flow Graph) JIT and FTL (Faster Than Light) JIT for hot code.
+
+Each engine makes different trade-offs between startup time, memory usage, and peak performance. This is why the same JavaScript code might run at different speeds in different browsers.
+
+## Key Takeaways
+
+JavaScript engines are sophisticated pieces of software that transform your high-level code into optimized machine instructions through parsing, compilation, and execution.
+
+The parsing phase breaks your code into tokens and builds an Abstract Syntax Tree that represents your program's structure.
+
+Modern engines use JIT compilation to optimize hot code paths dynamically, employing techniques like inline caching, hidden classes, and type specialization.
+
+The execution phase manages memory through the call stack and heap, with garbage collection automatically reclaiming unused memory.
+
+Understanding these internals helps you write more performant code by working with the engine's optimization strategies rather than against them.
+
+The engines keep getting better. But the fundamental principles remain the same: predictable structure, consistent types, and clear patterns make optimization easier and your code faster.
+
+P.S. This is why, when you finally learn TypeScript, you'll understand the beauty of properly structured, strongly typed code.

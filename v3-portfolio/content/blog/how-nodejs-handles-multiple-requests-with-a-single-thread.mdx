@@ -1,0 +1,160 @@
+---
+title: How Node.js Handles Multiple Requests with a Single Thread
+publishedAt: "2026-05-07T12:39:58.424Z"
+featured: false
+description: >-
+  Learn how Node.js handles thousands of concurrent requests using a single
+  thread, the event loop, and libuv's thread pool.
+summary: >-
+  Node.js runs JavaScript on a single thread, yet handles thousands of
+  concurrent requests without breaking a sweat. This post explains how that's
+  actually possible, what the event loop does, and where the real work gets
+  delegated.
+updatedAt: "2026-05-07T12:40:25.983Z"
+category: Frameworks & Tools
+seoTitle: How Node.js Handles Multiple Requests with a Single Thread
+tags:
+  - nodejs
+  - event-loop
+  - concurrency
+  - single-thread
+  - libuv
+  - javascript
+  - backend
+  - performance
+  - async
+seoKeywords:
+  - nodejs single thread
+  - node js event loop explained
+  - how nodejs handles concurrent requests
+  - libuv thread pool
+  - nodejs concurrency vs parallelism
+  - nodejs non blocking io
+  - nodejs scaling
+  - event loop nodejs
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1778157247/from-scratch/brimhnuybibxlvw4lut2.png
+---
+
+![How Node.js Handles Multiple Requests with a Single Thread](https://res.cloudinary.com/dvwajyvot/image/upload/v1778157247/from-scratch/brimhnuybibxlvw4lut2.png)
+
+Picture a chef at a small restaurant. There's only one of them. But they're not stuck waiting at the stove staring at a pot until it boils. They start the broth, then go chop vegetables, then check on the bread in the oven, then plate a dish that finished earlier. Nothing gets their full attention every second, but everything gets handled. That's Node.js. One thread. Constant progress. No idle waiting.
+
+## What "Single-Threaded" Actually Means
+
+A thread is the smallest unit of execution a CPU can schedule. Most languages spawn multiple threads to handle concurrent work: one thread per request, for example. If ten requests arrive at a Java server simultaneously, ten threads spin up and each handles one request in parallel.
+
+Node.js takes a different bet. It runs your JavaScript on exactly one thread. One call stack. One piece of JavaScript executing at any given moment.
+
+```ascii
+Multi-threaded server:               Node.js:
+
+Request 1 ──► Thread 1               Request 1 ──┐
+Request 2 ──► Thread 2               Request 2 ──┤
+Request 3 ──► Thread 3               Request 3 ──┤──► Single Thread
+Request 4 ──► Thread 4               Request 4 ──┘
+
+Parallel execution                   Concurrent, not parallel
+```
+
+The key word is concurrent, not parallel. Parallel means doing multiple things at the same time. Concurrent means managing multiple things at once by switching attention between them efficiently. Node.js is concurrent. The difference matters.
+
+## The Event Loop: The Engine Behind It
+
+The event loop is what makes this work. It's a continuous loop that checks: "Is there any pending work? Any callbacks ready to run? Any I/O that finished?" When something is ready, it pulls it in and runs it.
+
+```ascii
+┌────────────────────────────────────────┐
+│           Event Loop                   │
+│                                        │
+│  ┌──────────────┐     ┌─────────────┐  │
+│  │  timers      │     │ I/O events  │  │
+│  │(setTimeout   │     │(file reads, │  │
+│  │ setInterval) │     │network, db) │  │
+│  └────┬─────────┘     └──────┬──────┘  │
+│       │                      │         │
+│       └───────┬──────────────┘         │
+│               ▼                        │
+│       ┌───────────────┐                │
+│       │  Call Stack   │                │
+│       │  (your code)  │                │
+│       └───────────────┘                │
+└────────────────────────────────────────┘
+```
+
+When a request comes in, Node.js runs your handler synchronously until it hits something that involves waiting: reading a file, querying a database, making an HTTP call. At that point, Node.js hands that task off and moves on. It doesn't sit there. When the task completes, the callback (or resolved promise) gets placed in a queue, and the event loop picks it up on its next iteration.
+
+Your single thread is almost never blocked. It's always either running code or waiting for the event loop to give it the next thing to run.
+
+## Where the Work Actually Goes: libuv
+
+Here's what most explanations skip: Node.js delegates blocking operations to libuv, a C library underneath Node.js. libuv maintains a thread pool (4 threads by default) for tasks that are genuinely blocking at the OS level: file system reads, DNS lookups, cryptographic operations.
+
+```ascii
+Node.js Process
+
+┌──────────────────────┐       ┌──────────────────────┐
+│ V8 (JS Engine)       │       │ libuv                │
+│ Single JS thread     │       │ Async I/O/thread pool│
+└──────────┬───────────┘       └──────────┬───────────┘
+           │  request: fs.readFile()      │
+           ├──────────────────────────────►
+           │  continues next request      │
+           │                              │  file / DNS / crypto work
+           │                              │  completes asynchronously
+           ◄──────────────────────────────┤
+           │  callback queued             │
+```
+
+Network I/O (like outgoing HTTP requests or database queries over TCP) doesn't use the thread pool at all. It uses the OS's non-blocking I/O system calls directly, which are event-driven by design. libuv just listens for the completion events.
+
+## Handling Multiple Client Requests
+
+When three requests arrive at your Express server nearly simultaneously, here's what actually happens:
+
+```ascii
+Time ──────────────────────────────────────────────►
+
+Request A arrives: handler runs, hits DB query, hands off to libuv
+                   │
+Request B arrives: handler runs, hits DB query, hands off to libuv
+                   │
+Request C arrives: handler runs, returns static data immediately ──► Response C sent
+                               │
+                   DB result for A ready ──► callback runs ──► Response A sent
+                               │
+                   DB result for B ready ──► callback runs ──► Response B sent
+```
+
+The single thread is rarely idle. It's always processing whichever callback is next in the queue. The I/O waits happen in parallel in the background, managed by libuv and the OS. When they complete, results get queued and processed one by one.
+
+## Why Node.js Scales Well (and Where It Doesn't)
+
+Node.js is excellent for I/O-bound work: REST APIs, real-time apps, proxies, anything that involves waiting for databases, external services, or file reads. The single thread is almost never the bottleneck because it spends almost no time blocked.
+
+The ceiling is CPU-bound work: image processing, video encoding, large JSON transformations, complex calculations. When your JavaScript is doing heavy computation, it's occupying the single thread. Every other request waits. This is why you don't write image compression logic directly in a Node.js API handler. You offload it to a worker thread or a separate service.
+
+```ascii
+I/O-bound (Node.js thrives):     CPU-bound (Node.js bottlenecks):
+
+read file ──► wait ──► done      compress image
+fetch DB  ──► wait ──► done      ↕
+call API  ──► wait ──► done      (single thread stuck here)
+                                 next request waits...
+Thread barely runs during wait.  Thread maxed out the whole time.
+```
+
+Node.js exposes `worker_threads` for CPU-intensive tasks if you need to keep things in-process, but the cleaner move is usually a dedicated worker service.
+
+## Key Takeaways
+
+- Node.js runs JavaScript on one thread. One call stack, one thing executing at a time.
+- Concurrent, not parallel: Node.js manages many in-flight requests by not waiting around for I/O to complete.
+- The event loop is what keeps things moving: it checks for completed work and dispatches callbacks to the call stack.
+- libuv handles genuinely blocking operations in a background thread pool. Your JavaScript thread never blocks on file reads or DNS lookups.
+- Network I/O uses the OS's non-blocking system calls directly, no thread pool needed.
+- Node.js is the wrong tool for CPU-heavy work. The single thread gets occupied and every other request queues up behind it.
+
+The single-threaded model isn't a limitation. It's a deliberate design that eliminates a massive class of concurrency bugs (race conditions, deadlocks, shared mutable state between threads) while handling I/O-heavy workloads with very low overhead. Once you understand what the event loop is actually doing, Node.js stops feeling like magic and starts feeling like a very well-engineered trade-off.
+
+---

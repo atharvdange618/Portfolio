@@ -1,0 +1,298 @@
+---
+title: >-
+  Linux File System Hunting: What I Found When I Stopped Running Commands and
+  Started Reading
+publishedAt: "2026-04-21T19:23:02.809Z"
+featured: false
+description: A deep dive into the Linux file system and how Linux actually works.
+summary: >-
+  Linux exposes its entire nervous system through the file system. This is what
+  I found when I stopped treating it as a place to store files and started
+  treating it as documentation.
+updatedAt: "2026-04-21T19:23:02.946Z"
+category: Software Engineering
+seoTitle: "Linux File System Hunting: 10 Deep Findings Beyond Basic Commands"
+tags:
+  - linux
+  - filesystem
+  - sysadmin
+  - networking
+  - security
+  - proc
+  - systemd
+  - dns
+  - devops
+seoKeywords:
+  - linux filesystem exploration
+  - proc filesystem
+  - etc resolv.conf dns
+  - linux shadow file
+  - systemd unit files
+  - dev null zero random
+  - linux routing table proc net route
+  - linux auth log
+  - linux file descriptors proc fd
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1776799321/from-scratch/ghsfldwuetztmlhgivmu.png
+---
+
+![Linux File System Hunting: What I Found When I Stopped Running Commands and Started Reading](https://res.cloudinary.com/dvwajyvot/image/upload/v1776799321/from-scratch/ghsfldwuetztmlhgivmu.png)
+
+Most people interact with Linux like they interact with a vending machine: put in a command, get something back. But here's the thing, the file system is not just storage. It is the OS talking to itself, and if you know where to look, you can eavesdrop on nearly every conversation it's having.
+
+This is what I found when I spent time actually reading the file system instead of just navigating it.
+
+## Finding 1: `/proc` is Not a Directory, It is a Window Into the Kernel
+
+```ascii
+┌──────────────────────────────────────────────┐
+│              Physical Disk                   │
+│    /home  /etc  /var  /usr  ...              │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│         Kernel Memory (RAM)                  │
+│    process table, network state, CPU info    │
+│                   │                          │
+│          exposed via /proc                   │
+│    (no bytes on disk, generated on-read)     │
+└──────────────────────────────────────────────┘
+```
+
+When you run `ls -lh /proc/meminfo`, the file size shows 0 bytes. But when you `cat` it, you get a full breakdown of RAM usage. That is not a trick. The file literally does not exist on disk. It is synthesized by the kernel at the moment you read it.
+
+`/proc` is a virtual filesystem (technically a `procfs`) mounted in memory. Every number-named subdirectory inside it corresponds to a running process ID. So `/proc/1234/` is the full universe of PID 1234: its open file descriptors, memory maps, environment variables, and the exact command that spawned it.
+
+The insight that hit me was `/proc/self`. It is a symlink that always resolves to whichever process is reading it right now. When your shell reads `/proc/self/status`, it sees its own process status. When your browser does it, it sees its own. Same path, different data depending on who's asking. The kernel is contextually aware of the reader.
+
+Why it exists: before `/proc`, you needed privileged system calls to inspect process state. Now any program with read access can query the OS about itself without special privileges.
+
+## Finding 2: `/etc/resolv.conf` and the Truth About How DNS Actually Works
+
+When you type `google.com` into a browser, something on your machine has to figure out the IP. That something is configured in one file: `/etc/resolv.conf`.
+
+```bash
+# /etc/resolv.conf (typical content)
+nameserver 127.0.0.53
+nameserver 8.8.8.8
+search home.lan
+```
+
+The `nameserver` lines tell your system which DNS resolver to ask. The `search` directive is the interesting one. It means if you type just `myserver` (no dots), the OS will try `myserver.home.lan` before giving up. This is how internal network hostnames work without full qualification.
+
+But here is the twist on modern Ubuntu systems: `nameserver 127.0.0.53` is not a real DNS server on the internet. It is `systemd-resolved`, a local caching stub running on your own machine. So your DNS query goes: browser → `/etc/resolv.conf` → local stub at `127.0.0.53` → actual upstream DNS → back.
+
+The reason this matters: `/etc/resolv.conf` on modern systems is often a symlink to `/run/systemd/resolve/stub-resolv.conf`. The file you think controls DNS is actually pointing to a runtime file managed by a service. Change it directly and it gets overwritten on the next boot. The right place to configure DNS is `systemd-resolved`'s config, not `/etc/resolv.conf`.
+
+## Finding 3: `/etc/hosts` Wins Every DNS Fight
+
+```ascii
+DNS resolution order on Linux:
+
+  hostname query
+       │
+       ▼
+  /etc/nsswitch.conf  ─── defines the order
+       │
+       ▼
+  "files dns"  ─── means: check /etc/hosts FIRST, then DNS
+       │
+  ┌────┴────────────────────┐
+  ▼                         ▼
+/etc/hosts              DNS resolver
+(local, instant)        (network, slower)
+```
+
+`/etc/hosts` predates DNS entirely. Before the internet had distributed name servers, every machine on the network maintained its own flat file mapping hostnames to IPs. We still ship that file in every Linux installation.
+
+What I found interesting is `/etc/nsswitch.conf` (Name Service Switch), which is the actual authority deciding the resolution order. The line `hosts: files dns` in that file means `/etc/hosts` is always checked before any DNS query goes out. Flip it to `hosts: dns files` and DNS wins instead.
+
+This is why developers use `/etc/hosts` for local development tricks like pointing `api.production.com` to `127.0.0.1` to test something locally. The OS never even makes a network request; it hits the file and stops.
+
+The security implication is real though. If an attacker can write to `/etc/hosts`, they can silently redirect any hostname on that machine to any IP. No DNS poisoning needed.
+
+## Finding 4: The Routing Table Lives in `/proc/net/route`
+
+```ascii
+┌──────────────────────────────────────────────────┐
+│             /proc/net/route                      │
+│                                                  │
+│  Iface  Destination  Gateway   Flags  Metric ... │
+│  eth0   00000000     0101A8C0  0003   100   ...  │
+│  eth0   0001A8C0     00000000  0001   100   ...  │
+└──────────────────────────────────────────────────┘
+              │
+              │  (hex, little-endian, need to decode)
+              ▼
+   Destination 00000000 = 0.0.0.0 = default route
+   Gateway 0101A8C0 = 192.168.1.1 = your router
+```
+
+Every decision about where a network packet goes is made by the kernel's routing table. You can read it with `ip route` or `netstat -rn`, but those tools are just reading `/proc/net/route` and translating the raw hex for you.
+
+The file stores IPs in hex, little-endian byte order. `0101A8C0` decodes to `192.168.1.1`. It looks like noise until you know the encoding, at which point it becomes very readable.
+
+What I found genuinely interesting: there is also `/proc/net/tcp` and `/proc/net/tcp6`, which list every active TCP connection your machine currently has. Port numbers are in hex too. You can see which processes have open sockets, to which remote IPs, and what state the connection is in (ESTABLISHED, TIME_WAIT, LISTEN). This is roughly what `ss -tnp` gives you, but reading the raw file reveals that the tool is just a reader for kernel memory exported as text.
+
+## Finding 5: `/etc/shadow` and Why Passwords Are Split Across Two Files
+
+Early Unix stored password hashes in `/etc/passwd`. The problem: that file has to be world-readable because programs constantly look up usernames, UIDs, and home directories. So every user could read every password hash. In the 1980s this became a serious problem.
+
+The fix was `/etc/shadow`: a second file with strict permissions (`640`, owned by `root:shadow`) that holds only the sensitive parts. Now `/etc/passwd` still exists and is still readable, but the password field is just `x`, meaning "look in shadow."
+
+```ascii
+/etc/passwd  (world-readable, rw-r--r--)
+  atharv:x:1000:1000::/home/atharv:/bin/bash
+         │
+         └── 'x' = actual hash is in shadow
+
+/etc/shadow  (restricted, rw-r-----, root:shadow)
+  atharv:$6$rounds=5000$salt$hashedpassword:19450:0:99999:7:::
+         │                                  │
+         │  SHA-512 hash ($6$)              └── days since last change
+         └──────────────────────────────────────
+```
+
+The hash format `$6$rounds=5000$salt$hash` tells you the algorithm (6 = SHA-512), the number of rounds (makes brute-forcing slower), and the salt (prevents rainbow table attacks). Change any one of those and the same password produces a completely different hash.
+
+What this also means: on systems with weak shadow permissions, or if a backup of `/etc/shadow` is accidentally made world-readable, every password on the machine becomes crackable offline. The file existing is not enough; the permissions protecting it are.
+
+---
+
+## Finding 6: systemd Units Are Just Config Files and That Changes Everything
+
+```ascii
+/etc/systemd/system/
+├── my-app.service       ← your custom service
+├── nginx.service        ← override for nginx
+└── multi-user.target.wants/
+    └── my-app.service   ← symlink = "start at boot"
+```
+
+Before systemd, services were started by shell scripts in `/etc/init.d/`. Figuring out why a service failed meant reading shell scripts and guessing. systemd replaced that with declarative unit files.
+
+A basic service file:
+
+```ini
+[Unit]
+Description=My Node App
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node /home/atharv/app/index.js
+Restart=always
+User=atharv
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`After=network.target` is the important line. It tells systemd this service needs the network to be up before starting. It is a dependency declaration, not a script that checks for network availability. systemd resolves the entire dependency graph before starting anything, which is why boot on modern systems is so much faster: services that don't depend on each other start in parallel.
+
+The other thing I found: `/etc/systemd/system/` takes priority over `/lib/systemd/system/` (where package-installed units live). Drop a file with the same name in `/etc/systemd/system/` and you override the package's default without touching the package's files. This is how you customize a service's behavior without it getting wiped on the next `apt upgrade`.
+
+---
+
+## Finding 7: `/dev/null`, `/dev/zero`, and `/dev/random` Are Not Files
+
+```ascii
+/dev/
+├── null     ← the void: accepts any write, returns nothing on read
+├── zero     ← infinite zeros: returns 0x00 bytes forever
+├── random   ← entropy pool: blocks when entropy is low
+├── urandom  ← entropy pool: never blocks, slightly less random
+├── sda      ← your actual disk
+└── tty      ← your terminal
+```
+
+Everything in `/dev` is a device file, not a regular file. They have major and minor numbers instead of sizes. The kernel maps them to drivers.
+
+`/dev/null` is the classic: write anything to it and it disappears. But `cat /dev/null > file.txt` is a common trick to empty a file without deleting it (preserves permissions and ownership).
+
+`/dev/zero` outputs an infinite stream of null bytes. It is used for creating empty files of exact sizes: `dd if=/dev/zero of=test.img bs=1M count=100` creates a 100MB file filled with zeros. Useful for benchmarking disk write speed or creating disk images.
+
+`/dev/random` vs `/dev/urandom` is where it gets interesting. `/dev/random` draws from the kernel's entropy pool (sources like disk I/O timing, network packet timing, keyboard input) and blocks when entropy runs low. On a headless server with no keyboard or mouse, it can actually stall. `/dev/urandom` uses a CSPRNG seeded from the entropy pool and never blocks. For almost every real-world cryptographic purpose, `/dev/urandom` is the right choice.
+
+## Finding 8: `/var/log/auth.log` is a Security Feed
+
+```log
+/var/log/auth.log (Debian/Ubuntu)
+/var/log/secure   (RHEL/CentOS)
+
+Sample entries:
+
+Apr 18 03:41:12 server sshd[8821]: Failed password for root from 45.33.32.156 port 54321 ssh2
+Apr 18 03:41:13 server sshd[8821]: Failed password for root from 45.33.32.156 port 54322 ssh2
+Apr 18 03:41:14 server sshd[8821]: Failed password for root from 45.33.32.156 port 54323 ssh2
+```
+
+If your machine has SSH open on port 22, this file is actively being written to right now. There are automated scanners constantly hitting known IP ranges trying common credentials. On any public-facing server, you will see hundreds to thousands of failed SSH attempts per day.
+
+What this reveals about system design: Linux logs authentication events separately from general system logs (`/var/log/syslog`) because security auditing needs a clean stream. When you run `sudo`, it writes here. When SSH authenticates a user, it writes here. When PAM (Pluggable Authentication Modules) validates anything, it writes here.
+
+The practical implication: tools like `fail2ban` watch this file in real time and automatically add firewall rules to block IPs that fail too many times. The log file is not just a record, it is an input to active security systems.
+
+## Finding 9: `/proc/[pid]/fd` Shows Every Open File Descriptor
+
+Every running process has an entry in `/proc/[pid]/fd/` that lists all its currently open file descriptors as symlinks.
+
+```bash
+ls -la /proc/$$/fd
+```
+
+```bash
+lrwx------ 1 atharv atharv 64 Apr 18 10:00 0 -> /dev/pts/0
+lrwx------ 1 atharv atharv 64 Apr 18 10:00 1 -> /dev/pts/0
+lrwx------ 1 atharv atharv 64 Apr 18 10:00 2 -> /dev/pts/0
+lr-x------ 1 atharv atharv 64 Apr 18 10:00 3 -> /proc/15043/fd
+```
+
+Descriptors 0, 1, and 2 are stdin, stdout, and stderr. They point to your terminal (`/dev/pts/0`). This is why when you redirect output with `> file.txt`, you are replacing what FD 1 points to.
+
+Here is the deep insight: if a process opens a file and that file gets deleted from the filesystem, the process still holds the file descriptor. The data still exists on disk until that FD is closed. This is why `lsof` can recover log data from a deleted log file if the logging process is still running. The inode is still live, held open by the process. `/proc/[pid]/fd/[number]` will still point to it.
+
+This is also how some malware hides: write a payload to a file, open it, delete the file from the directory listing, execute from the still-open FD. The file appears gone but the process is running from it.
+
+## Finding 10: `/etc/environment` vs `/etc/profile` and Why They Are Different
+
+```ascii
+Environment variable loading on login:
+
+  Login shell starts
+       │
+       ├── /etc/environment   (simple KEY=VALUE, no scripts, system-wide)
+       │
+       ├── /etc/profile       (shell script, runs for all users)
+       │
+       ├── /etc/profile.d/*.sh  (modular additions)
+       │
+       └── ~/.bashrc or ~/.profile  (user-specific)
+```
+
+`/etc/environment` is the bare minimum: a flat file of `KEY=VALUE` pairs, no shell syntax, no variable expansion, no `export` keyword. It is read by PAM (the authentication layer) before any shell even starts. This means environment variables set here are available to graphical apps, desktop sessions, and services, not just terminal sessions.
+
+`/etc/profile` is a shell script that runs for login shells. You can write conditionals, loops, call other scripts. But it only runs when a user actually logs in, not when a service starts.
+
+The distinction matters in practice. If you set `JAVA_HOME` in `/etc/profile`, a systemd service running as your user might not see it because services don't get login shells by default. If you set it in `/etc/environment`, PAM injects it into every session including service sessions.
+
+Fish shell (which I use) ignores both by default and uses `~/.config/fish/config.fish` and `~/.config/fish/conf.d/`. Understanding this separation is what makes environment variable debugging on Linux go from maddening to predictable.
+
+## The Pattern Behind All of This
+
+```ascii
+┌─────────────────────────────────────────────────┐
+│            Everything is a file                 │
+│                                                 │
+│  Config files  ──► controls behavior            │
+│  /proc entries ──► exposes kernel state         │
+│  /dev nodes    ──► interfaces to hardware       │
+│  Log files     ──► records system events        │
+│  /sys entries  ──► hardware control knobs       │
+│                                                 │
+│  Read the right file, understand the system.    │
+└─────────────────────────────────────────────────┘
+```
+
+Linux's "everything is a file" philosophy is not just a design choice. It is a philosophy about how systems should be transparent. You should be able to read what the OS is doing without needing special tools or proprietary interfaces. `cat`, `grep`, and `ls` are enough to understand almost everything happening on the machine.
+
+The file system is documentation. Most people just never read it.

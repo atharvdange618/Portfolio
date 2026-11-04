@@ -24,6 +24,11 @@ export type BlogFrontmatter = {
   featured: boolean;
   description: string;
   summary?: string;
+  cover?: string;
+  seoTitle?: string;
+  seoKeywords?: string[];
+  category?: string;
+  tags?: string[];
 };
 
 export type ProjectMeta = ProjectFrontmatter & {

@@ -1,0 +1,399 @@
+---
+title: "Reiatsu 1.2 Release: Fixing Critical Security & Performance Issues"
+publishedAt: "2026-01-07T06:40:02.672Z"
+featured: false
+description: >-
+  Deep dive into fixing memory leaks, DoS vulnerabilities, and type safety
+  issues in a TypeScript HTTP framework. Learn about systematic code review and
+  security best practices.
+summary: >-
+  A comprehensive code review of Reiatsu uncovered critical security
+  vulnerabilities and performance issues. This post chronicles the systematic
+  fixes that took the framework from v1.1.0 to v1.2.1, addressing memory leaks,
+  DoS vulnerabilities, type safety improvements, and much more.
+updatedAt: "2026-02-21T23:07:49.743Z"
+category: Project Logs
+seoTitle: "Reiatsu 1.2 Release: Fixing Critical Security & Performance Issues"
+tags:
+  - typescript
+  - security
+  - performance
+  - code-review
+  - framework-development
+  - reiatsu
+  - node.js
+seoKeywords:
+  - typescript
+  - security
+  - performance
+  - code-review
+  - framework-development
+  - reiatsu
+  - node.js
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1767767859/from-scratch/gs7wvyz13egogkqmuzrt.png
+---
+
+![Reiatsu 1.2 Release: Fixing Critical Security & Performance Issues](https://res.cloudinary.com/dvwajyvot/image/upload/v1767767859/from-scratch/gs7wvyz13egogkqmuzrt.png)
+
+## The Wake-Up Call
+
+After building Reiatsu from first principles and getting it to a functional state, I decided it was time for a reality check. I ran a deep code review on the entire framework every middleware, every utility, every line of code. The goal? Find weaknesses before production users did.
+
+What I discovered was both humbling and educational. While the core architecture was solid, there were **30+ issues** ranging from critical security vulnerabilities to subtle performance drains. This blog post is the story of how I systematically addressed them.
+
+## The Review Process
+
+I categorized every issue into four priority levels:
+
+- **P0 (Critical)**: Security vulnerabilities, memory leaks, potential DoS attacks
+- **P1 (High)**: Type safety issues, code quality problems, developer experience
+- **P2 (Medium)**: Error handling improvements, performance optimizations
+- **P3 (Low)**: Documentation, test coverage, code duplication
+
+## Critical Fixes (P0)
+
+### 1. Memory Leak in Rate Limiter
+
+**The Problem:** The rate limiter stored client request counts in a `Map`, but never cleaned up expired entries. Over time, this would cause unbounded memory growth.
+
+```typescript
+// Before: Memory leak waiting to happen
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
+// Map just keeps growing...
+```
+
+**The Fix:** Added a cleanup interval that runs every 60 seconds to remove expired entries:
+
+```typescript
+// Cleanup expired entries every 60 seconds to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, data] of requestCounts.entries()) {
+    if (now > data.resetTime) {
+      requestCounts.delete(key);
+    }
+  }
+}, 60000);
+```
+
+**Impact:** Prevents memory exhaustion in long-running servers with high traffic.
+
+### 2. Memory Leak in Cache Middleware
+
+**Similar Issue:** The cache middleware had the same problem TTL-based entries never got cleaned up.
+
+**The Fix:** 30-second cleanup interval for expired cache entries:
+
+```typescript
+// Clean up expired cache entries every 30 seconds
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of cacheStore.entries()) {
+    if (now > entry.expiresAt) {
+      cacheStore.delete(key);
+    }
+  }
+}, 30000);
+```
+
+### 3. DoS Vulnerability: No Body Size Limit
+
+**The Problem:** The body parser had **no size limit**. An attacker could send gigabytes of data and crash the server.
+
+```typescript
+// Before: Accept unlimited data
+req.on("data", (chunk) => {
+  rawBody += chunk.toString(); // No limit!
+});
+```
+
+**The Fix:** Added a 10MB limit with proper cleanup:
+
+```typescript
+let size = 0;
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+req.on("data", (chunk) => {
+  size += chunk.length;
+
+  if (size > MAX_SIZE) {
+    exceededLimit = true;
+    return; // Stop processing
+  }
+
+  rawBody += chunk.toString();
+});
+```
+
+**Why not `req.destroy()`?** Destroying the stream can cause race conditions. The `exceededLimit` flag lets us handle the error gracefully after the stream ends.
+
+### 4. Race Condition in Request Timeout
+
+**The Problem:** The timeout handler could fire _after_ the request completed, causing errors and resource leaks.
+
+**The Fix:** Always clear the timeout in a `finally` block:
+
+```typescript
+try {
+  await Promise.race([next(), timeoutPromise]);
+} finally {
+  clearTimeout(timeoutId!); // Always cleanup
+}
+```
+
+## High Priority Fixes (P1)
+
+### 1. Deprecated Redundant AsyncHandler
+
+The `asyncHandler` utility was just wrapping handlers in a try-catch and re-throwing completely redundant with native async/await:
+
+```typescript
+// Before: Unnecessary wrapper
+export const asyncHandler = (handler: Handler): Handler => {
+  return async (ctx: Context) => {
+    try {
+      await handler(ctx);
+    } catch (error) {
+      throw error; // Why?!
+    }
+  };
+};
+
+// After: Simple pass-through with deprecation notice
+/**
+ * @deprecated This utility is redundant with native async/await.
+ * Will be removed in v2.0.0. Use async handlers directly.
+ */
+export const asyncHandler = (handler: Handler): Handler => {
+  return handler;
+};
+```
+
+### 2. Improved Email Validation
+
+The original email regex was way too simple: `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`
+
+**Problems:**
+
+- Allows double dots: `user..name@domain.com`
+- No TLD validation
+- Allows invalid characters
+
+**New RFC 5322-compliant regex:**
+
+```typescript
+const emailRegex =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+```
+
+Also fixed a template literal bug where error messages were evaluated at definition time instead of validation time:
+
+```typescript
+// Before: ${len} evaluates immediately (wrong!)
+min(len: number, msg = `Must be at least ${len} characters`)
+
+// After: Lazy evaluation
+min(len: number, msg?: string) {
+  const message = msg || `Must be at least ${len} characters`;
+  // ...
+}
+```
+
+### 3. CORS Security Warnings
+
+The `origin: true` preset reflects _any_ origin, effectively disabling CORS protection. I added clear warnings:
+
+```typescript
+/**
+ * @security WARNING: origin: true reflects ANY requesting origin,
+ * effectively disabling CORS protection. Use only in development.
+ */
+development: {
+  origin: true, // Reflects any origin
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+}
+```
+
+### 4. Type Safety for Context Augmentation
+
+**The Problem:** Middleware added properties to `Context` via declaration merging, but there was no type-safe way to use them:
+
+```typescript
+// User has to just "know" these exist
+ctx.user?.sub;
+ctx.requestId;
+ctx.files;
+```
+
+**The Solution:** Explicit interfaces that compose with `Context`:
+
+```typescript
+export interface AuthContext {
+  isAuthenticated: boolean;
+  user?: UserPayload;
+}
+
+export interface RequestIdContext {
+  requestId: string;
+}
+
+// Usage with type safety!
+const handler = (ctx: Context & AuthContext & RequestIdContext) => {
+  console.log(ctx.user.sub); // Type-safe!
+  console.log(ctx.requestId); // Autocomplete works!
+};
+```
+
+## Medium Priority Fixes (P2)
+
+### Static File Error Handling
+
+Enhanced error handling to distinguish between different failure modes:
+
+```typescript
+catch (err: any) {
+  if (err.code === "ENOENT") {
+    await next(); // File not found, try next middleware
+  } else if (err.code === "EACCES" || err.code === "EPERM") {
+    ctx.res.writeHead(403, { "Content-Type": "text/plain" });
+    ctx.res.end("Forbidden");
+  } else if (err.code === "EISDIR") {
+    await next(); // Tried to read a directory
+  } else {
+    // Other I/O errors
+    console.error("Static file error:", err);
+    ctx.res.writeHead(500);
+  }
+}
+```
+
+### Template Engine Security
+
+The template engine uses `new Function()` (similar to `eval()`). I added validation and clear warnings:
+
+```typescript
+/**
+ * @security WARNING: This function uses `new Function()` which is similar to `eval()`.
+ * Only use with trusted template sources. Do NOT use with user-generated content.
+ */
+export function compile(template: string) {
+  // Validate against obvious injection attempts
+  if (
+    template.includes("require(") ||
+    template.includes("import(") ||
+    template.includes("process.") ||
+    template.includes("global.")
+  ) {
+    throw new Error("Template contains forbidden code patterns");
+  }
+  // ...
+}
+```
+
+### Logger Performance Optimization
+
+The logger was creating log objects unconditionally, even when they might not be used. I changed it to lazy creation:
+
+```typescript
+// Before: Always create the object
+const logData: LogData = {
+  /* ... */
+};
+
+// After: Create only when needed
+const createLogData = (): LogData => ({
+  requestId: ctx.requestId,
+  method: method || "UNKNOWN",
+  // ... only built when actually logging
+});
+
+console.log(formatIncomingRequest(createLogData(), config));
+```
+
+This reduces unnecessary object allocations on every request.
+
+## What I Learned
+
+### 1. Memory Management Matters
+
+JavaScript has garbage collection, but that doesn't mean you can ignore memory management. Long-running servers with unbounded `Map` or `Set` structures **will** leak memory. Always ask: "When does this data structure get cleaned up?"
+
+### 2. Security is in the Details
+
+Small oversights compound into critical vulnerabilities:
+
+- No size limit = DoS attack vector
+- `origin: true` = CORS bypass
+- `new Function()` = code injection risk
+
+Security isn't one big thing it's hundreds of small things done right.
+
+### 3. Type Safety is Worth It
+
+Spending time on proper TypeScript interfaces pays dividends. The `Context & AuthContext` pattern gives users:
+
+- IDE autocomplete
+- Compile-time error checking
+- Self-documenting code
+
+### 4. Tests Reveal Truth
+
+Writing tests for the critical fixes revealed edge cases I hadn't considered:
+
+- What happens when timeout fires after response?
+- How do we handle body size exceeded gracefully?
+- Does cleanup actually prevent memory growth?
+
+Tests aren't just for catching bugs they're for understanding your own code.
+
+### 5. Documentation is Code
+
+Adding `@security` JSDoc warnings, deprecation notices, and usage examples makes the framework safer by default. Good documentation prevents mistakes before they happen.
+
+## What's Next?
+
+The framework is in much better shape, but there's more to do:
+
+**Remaining P2 Issues:**
+
+- Cookie serialization edge cases
+- Better IP extraction logic
+- Security headers presets
+- JWT token refresh mechanism
+
+**P3 Improvements:**
+
+- Comprehensive test coverage
+- Middleware composition utilities
+- Router instance isolation
+- Performance benchmarks
+
+**Architecture Ideas:**
+
+- Sub-router mounting
+- Dependency injection support
+- Plugin system
+
+## Try It Out!
+
+Reiatsu v1.2.1 is live on npm:
+
+```bash
+npm install reiatsu
+```
+
+The security and performance improvements are transparent existing code just works better and safer.
+
+Check out the [GitHub repo](https://github.com/atharvdange618/Reiatsu) for the full source code and documentation.
+
+## Final Thoughts
+
+This exercise reinforced something important: **code review isn't about finding flaws, it's about continuous improvement**. Every issue I fixed made me a better developer. Every test I wrote deepened my understanding.
+
+Building from first principles means you own every line of code. That's both empowering and humbling. You learn by doing, breaking, fixing, and iterating.
+
+If you're building your own framework or library, I highly recommend doing a systematic code review like this. Document everything. Fix issues in priority order. Write tests. Learn from the process.
+
+The code will get better, and so will you.

@@ -28,33 +28,32 @@ export async function generateMetadata({
   if (!post) return {};
   const fm = post.data as BlogFrontmatter;
   return {
-    title: fm.title,
+    title: fm.seoTitle ?? fm.title,
     description: fm.description,
+    keywords: fm.seoKeywords ?? fm.tags,
     alternates: {
-      canonical: `/blog/${slug}`,
+      canonical: `/blogs/${slug}`,
     },
     openGraph: {
       type: "article",
-      url: `https://www.atharvdange.com/blog/${slug}`,
-      title: fm.title,
+      url: `https://www.atharvdange.com/blogs/${slug}`,
+      title: fm.seoTitle ?? fm.title,
       description: fm.description,
       publishedTime: fm.publishedAt,
       modifiedTime: fm.updatedAt,
       authors: ["Atharv Dange"],
       images: [
         {
-          url: "/og-image.png",
-          width: 1912,
-          height: 962,
+          url: fm.cover ?? "/og-image.png",
           alt: fm.title,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: fm.title,
+      title: fm.seoTitle ?? fm.title,
       description: fm.description,
-      images: ["/og-image.png"],
+      images: [fm.cover ?? "/og-image.png"],
     },
   };
 }
@@ -88,7 +87,7 @@ export default async function BlogPostPage({
     dateModified: fm.updatedAt ?? fm.publishedAt,
     wordCount,
     timeRequired: `PT${readingTime}M`,
-    url: `https://www.atharvdange.com/blog/${slug}`,
+    url: `https://www.atharvdange.com/blogs/${slug}`,
     author: {
       "@type": "Person",
       name: "Atharv Dange",
@@ -100,7 +99,7 @@ export default async function BlogPostPage({
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://www.atharvdange.com/blog/${slug}`,
+      "@id": `https://www.atharvdange.com/blogs/${slug}`,
     },
   };
 
@@ -111,7 +110,7 @@ export default async function BlogPostPage({
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <Link
-        href="/blog"
+        href="/blogs"
         className="flex items-center gap-2 text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 text-sm w-fit"
       >
         <FaArrowLeftLong className="w-3 h-3" />
@@ -190,7 +189,7 @@ export default async function BlogPostPage({
           >
             {older && (
               <Link
-                href={`/blog/${older.slug}`}
+                href={`/blogs/${older.slug}`}
                 className="flex flex-col gap-1 border border-border p-4 hover:border-purple transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-purple"
               >
                 <span className="text-comment text-sm">Previous post</span>
@@ -199,7 +198,7 @@ export default async function BlogPostPage({
             )}
             {newer && (
               <Link
-                href={`/blog/${newer.slug}`}
+                href={`/blogs/${newer.slug}`}
                 className="flex flex-col gap-1 border border-border p-4 hover:border-purple transition-colors duration-200 sm:col-start-2 sm:text-right focus-visible:outline-2 focus-visible:outline-purple"
               >
                 <span className="text-comment text-sm">Next post</span>
@@ -210,7 +209,7 @@ export default async function BlogPostPage({
         )}
 
         <Link
-          href="/blog"
+          href="/blogs"
           className="flex items-center gap-2 text-comment hover:text-fg active:scale-[0.98] transition-all duration-200 text-sm w-fit py-2"
         >
           <FaArrowLeftLong className="w-3 h-3" />

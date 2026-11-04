@@ -1,0 +1,951 @@
+---
+title: "Designing an Idempotent API System: The Complete Guide"
+publishedAt: "2026-02-21T22:39:46.620Z"
+featured: false
+description: >-
+  Design bulletproof idempotent APIs that prevent duplicate requests and handle
+  race conditions. Complete guide with Redis, PostgreSQL & distributed locks.
+summary: >-
+  Learn how to build production-ready idempotent APIs that prevent duplicate
+  operations, handle race conditions, and maintain data consistency even when
+  clients retry failed requests.
+updatedAt: "2026-02-21T23:17:49.293Z"
+category: Software Engineering
+seoTitle: Building Production-Ready Idempotent APIs
+tags:
+  - API Design
+  - Distributed Systems
+  - Idempotency
+  - Redis
+  - PostgreSQL
+  - System Architecture
+  - Concurrency
+  - Backend Development
+  - Node.js
+  - Database Design
+seoKeywords:
+  - idempotent API
+  - API idempotency
+  - distributed systems
+  - prevent duplicate requests
+  - Redis locks
+  - PostgreSQL unique constraint
+  - race condition handling
+  - API retry logic
+  - backend architecture
+  - payment API design
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1771713365/from-scratch/meujgd1qygizjac08mex.png
+---
+
+![Designing an Idempotent API System: The Complete Guide](https://res.cloudinary.com/dvwajyvot/image/upload/v1771713365/from-scratch/meujgd1qygizjac08mex.png)
+
+Picture this: You're buying concert tickets online. You click "Purchase" the page freezes. Did it work? You're not sure, so you click again. And again. The next morning, you wake up to three separate charges for the same concert. Three tickets you don't need. Three painful refund requests ahead.
+
+This nightmare scenario is exactly what idempotent API design prevents. But here's the thing: building a truly bulletproof idempotent system isn't just about checking if a request has been seen before. It's about handling the chaos of distributed systems network failures, server crashes, race conditions, and the thousand ways things can go wrong when two requests arrive at the exact same millisecond.
+
+In this guide, we'll build an idempotent API system from the ground up, starting with the fundamentals and progressing to production-grade solutions that handle every edge case. Whether you're just learning about idempotency or architecting systems that process millions of transactions, you'll find actionable insights here.
+
+## What Is Idempotency and Why Should You Care?
+
+Let's start with the simplest possible definition: **An idempotent operation produces the same result no matter how many times you perform it.**
+
+Think of a light switch. Press it once the light turns on. Press it a thousand times while it's already on the light stays on. That's idempotency. The action can be repeated safely without changing the outcome after the first execution.
+
+In the context of APIs, idempotency means that sending the same request multiple times has the same effect as sending it once. The first request might create a resource or charge a payment. Every subsequent identical request recognizes "I've already done this" and returns the same result without duplicating the operation.
+
+### The Problem Idempotency Solves
+
+Network requests fail. It's not a question of if, but when. A mobile client loses signal mid-request. A load balancer times out. A server crashes after processing but before responding. From the client's perspective, these all look the same: no response received.
+
+The responsible thing for a client to do? **Retry the request.**
+
+But here's where things get dangerous. If your API isn't idempotent, that retry creates a duplicate operation:
+
+- Payment processed twice $$
+- Inventory decremented twice
+- Email sent twice
+- Database record created twice
+
+Users notice. Support tickets flood in. Revenue gets lost in refunds. Database integrity breaks down.
+
+### HTTP Methods and Built-In Idempotency
+
+Some HTTP methods are naturally idempotent by design:
+
+**GET** Reading data doesn't change anything, so it's inherently safe to repeat.
+
+**PUT** "Set resource X to state Y" is idempotent because setting something to the same state multiple times doesn't change the outcome.
+
+**DELETE** Deleting something that's already deleted leaves you in the same state: it doesn't exist.
+
+But **POST** the most common method for creating resources and processing payments? **Not idempotent by default.** Send a POST request five times, and you typically create five separate resources.
+
+This is the operation we need to make smart about. This is where idempotency keys come in.
+
+## The Foundation: Idempotency Keys
+
+The most widely adopted solution to the POST problem is elegantly simple: **let the client tell the server "this specific request should only happen once."**
+
+This is done through an **idempotency key** a unique identifier (typically a UUID) that the client generates and includes in a request header. Here's what it looks like:
+
+```ascii
+POST /api/orders
+Idempotency-Key: 7f3e9c2a-8d1b-4c5a-b9e6-1f0a2c3d4e5f
+Content-Type: application/json
+
+{
+  "items": [...],
+  "total": 299.99
+}
+```
+
+The contract is simple:
+
+1. **Client generates a unique key** for each logically distinct operation
+2. **Client sends that key** with the request
+3. **Server checks**: Have I seen this key before?
+   - If yes → return the cached result
+   - If no → process the request and cache the result
+
+Here's the basic flow visualized:
+
+```ascii
+┌──────────┐
+│  Client  │
+└────┬─────┘
+     │ POST /orders
+     │ Idempotency-Key: abc-123
+     ▼
+┌──────────────────┐
+│     Server       │──────► Check: Key exists?
+└──────────────────┘              │
+                                  │
+                    ┌─────────────┴──────────────┐
+                    │                            │
+                   YES                          NO
+                    │                            │
+                    ▼                            ▼
+           ┌────────────────┐          ┌────────────────┐
+           │ Return Cached  │          │ Process Request│
+           │   Response     │          │  Save Result   │
+           └────────────────┘          └────────────────┘
+```
+
+### Why This Works
+
+The key insight is that **retry logic is now safe**. The client can retry with confidence because:
+
+- Same key = same result
+- No duplicate charge
+- No duplicate resource created
+- System state remains consistent
+
+For first-time builders, this might seem like enough. Check if key exists, process if not, done. But production systems face three critical challenges that this simple approach doesn't handle:
+
+1. **The Race Condition** Two requests with the same key arrive simultaneously
+2. **The In-Flight Problem** A retry arrives while the first request is still processing
+3. **The Crash Scenario** Server dies mid-processing, leaving the system in limbo
+
+Let's solve each one.
+
+## Strategic Decision #1: The Storage Layer
+
+Before we can detect duplicates, we need to answer: **where do we store these keys?**
+
+### What Information Do We Store?
+
+Every idempotency key entry needs at minimum:
+
+| Field             | Type          | Description                                   |
+| ----------------- | ------------- | --------------------------------------------- |
+| `idempotency_key` | UUID (Unique) | The key sent by the client                    |
+| `status`          | ENUM          | `started`, `executing`, `completed`, `failed` |
+| `response_body`   | JSONB         | The final result (null if still processing)   |
+| `created_at`      | Timestamp     | Used for cleanup and monitoring               |
+
+The `status` field is critical it tells us whether a request is done or still being worked on. The `response_body` stores the complete API response so we can replay it exactly for duplicate requests.
+
+### The Database Choice: Redis vs PostgreSQL
+
+This is one of the most important architectural decisions you'll make. Let's compare both options:
+
+**Redis The Speed Champion**
+
+```ascii
+┌──────────────────────────────────┐
+│         Redis (In-Memory)        │
+│                                  │
+│  ✓ Sub-millisecond lookups       │
+│  ✓ Built-in TTL for auto-cleanup │
+│  ✓ Atomic operations (SET NX)    │
+│                                  │
+│  ✗ Data can be lost on crash     │
+│  ✗ Another service to manage     │
+└──────────────────────────────────┘
+```
+
+**PostgreSQL The Durability Champion**
+
+```ascii
+┌──────────────────────────────────┐
+│    PostgreSQL (Disk-Based)       │
+│                                  │
+│  ✓ ACID guarantees               │
+│  ✓ Data survives crashes         │
+│  ✓ Already in your stack         │
+│                                  │
+│  ✗ Slower than in-memory         │
+│  ✗ Manual cleanup required       │
+└──────────────────────────────────┘
+```
+
+### The Hybrid Approach: Use Both
+
+Here's the strategic insight that powers production systems: **you don't have to choose**. Use both, each for what it does best.
+
+```ascii
+┌─────────────┐
+│   Request   │
+└──────┬──────┘
+       │
+       ▼
+┌──────────────┐
+│    Redis     │ ◄──── Fast duplicate detection (cache layer)
+│  (Lookup)    │
+└──────┬───────┘
+       │ Key not found
+       ▼
+┌──────────────┐
+│  PostgreSQL  │ ◄──── Source of truth (persistent layer)
+│ (Transaction)│
+└──────┬───────┘
+       │ Save result
+       ▼
+┌──────────────┐
+│   Update     │ ◄──── Cache for next duplicate
+│    Redis     │
+└──────────────┘
+```
+
+This layered defense strategy means:
+
+- **90% of duplicate requests** are caught by Redis instantly (cache hit)
+- **The first request** goes through PostgreSQL for durability
+- **If Redis crashes**, the system still works (slower, but safe)
+- **Postgres provides** the permanent audit trail for compliance
+
+## The Write-Through Strategy: Order Matters
+
+Here's a mistake many developers make: they update Redis first, then the database. This creates a timing window where the system can fail in an inconsistent state.
+
+**The Wrong Sequence:**
+
+```ascii
+1. Save to Redis ← Server crashes here
+2. Save to PostgreSQL ← Never happens
+```
+
+Result: Redis says "already processed" but there's no record in the database. The operation never actually completed, but future requests think it did.
+
+**The Correct Sequence:**
+
+```ascii
+                   ┌─────────────────────────────┐
+                   │   START TRANSACTION         │
+                   └────────────┬────────────────┘
+                                │
+                   ┌────────────▼────────────────┐
+                   │  Check processed_requests   │
+                   │  table for key              │
+                   └────────────┬────────────────┘
+                                │
+                      ┌─────────┴──────────┐
+                      │                    │
+                    Exists            Not Exists
+                      │                    │
+                      ▼                    ▼
+              ┌───────────────┐   ┌───────────────┐
+              │   ROLLBACK    │   │ Insert record │
+              │ Return cached │   │ status: exec  │
+              └───────────────┘   └───────┬───────┘
+                                          │
+                                          ▼
+                                  ┌───────────────┐
+                                  │ Execute Logic │
+                                  │ (Create Order)│
+                                  └───────┬───────┘
+                                          │
+                                          ▼
+                                  ┌───────────────┐
+                                  │ Update status │
+                                  │ Save response │
+                                  └───────┬───────┘
+                                          │
+                                          ▼
+                                  ┌───────────────┐
+                                  │    COMMIT     │
+                                  └───────┬───────┘
+                                          │
+                                          ▼
+                                  ┌───────────────┐
+                                  │ Update Redis  │
+                                  │  (Cache it)   │
+                                  └───────────────┘
+```
+
+**Why this order is critical:**
+
+1. **PostgreSQL transaction happens first** this is the atomic unit. Either everything succeeds or nothing does.
+2. **Redis update happens last** if this fails, it's not critical. The next request will just hit Postgres (slower but works).
+3. **Crash safety** if the server crashes after committing to Postgres but before updating Redis, the system is still consistent. The state is safely in the database.
+
+## Strategic Decision #2: The Race Condition
+
+Here's where things get interesting. Two identical requests hit your server at the **exact same millisecond**. Both check Redis neither sees a cached result. Both start a database transaction. What stops both from succeeding?
+
+This is the atomicity challenge. Let's visualize the problem:
+
+```ascii
+Time ────────────────────────────────────────►
+
+Request A: Check Redis ────► None found ────► Start DB Transaction ────► ?
+Request B: Check Redis ────► None found ────► Start DB Transaction ────► ?
+                    │                                  │
+                    └────── Both happen at T0 ─────────┘
+```
+
+### The Solution: Database-Level Uniqueness Constraint
+
+The answer is elegantly simple: **let the database enforce uniqueness**.
+
+In PostgreSQL, add a `UNIQUE` constraint on the `idempotency_key` column:
+
+```sql
+CREATE TABLE processed_requests (
+  id SERIAL PRIMARY KEY,
+  idempotency_key UUID UNIQUE NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  response_body JSONB,
+  version INTEGER NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_idempotency_key ON processed_requests(idempotency_key);
+```
+
+Now when two transactions race to insert:
+
+```ascii
+Request A: BEGIN → INSERT → SUCCESS → Process Order → COMMIT
+Request B: BEGIN → INSERT → ERROR 23505 (Unique Violation) → ROLLBACK
+```
+
+**Request B receives a unique constraint violation error**. In your application code, this is your signal:
+
+```javascript
+try {
+  await db.query(
+    "INSERT INTO processed_requests (idempotency_key, status) VALUES ($1, $2)",
+    [idempotencyKey, "executing"],
+  );
+  // Process the request...
+} catch (error) {
+  if (error.code === "23505") {
+    // Unique violation
+    // Another request is processing this key
+    const result = await db.query(
+      "SELECT response_body FROM processed_requests WHERE idempotency_key = $1",
+      [idempotencyKey],
+    );
+    return result.rows[0].response_body;
+  }
+  throw error;
+}
+```
+
+This is the **first wall of defense** against race conditions. The database guarantees atomicity only one transaction can claim the key.
+
+## Strategic Decision #3: The In-Flight Problem
+
+The unique constraint handles simultaneous arrivals, but there's a subtler problem: **what if Request B arrives while Request A is still processing?**
+
+Scenario: Request A is calling a slow third-party payment API. This takes 8 seconds. Request B arrives at second 3 with the same idempotency key. Request A hasn't finished yet, so there's no `response_body` in the database. What should Request B do?
+
+### Three Options for Handling In-Flight Requests
+
+**Option 1: Fast-Fail (409 Conflict)**
+
+```ascii
+Request B → Check DB → Status: "executing" → Return 409 Conflict
+```
+
+Simplest approach, but terrible UX. The client has to implement retry logic with exponential backoff.
+
+**Option 2: Transparent Wait**
+
+```ascii
+Request B → Check DB → Status: "executing" → Wait → Poll → Return result
+```
+
+Better UX Request B waits for Request A to finish, then returns the same result. But this has a hidden danger: **request timeouts** if the original request takes too long.
+
+**Option 3: Transparent Wait with Graceful Timeout (The Production Approach)**
+
+```ascii
+Request B → Poll briefly → Still processing? → Return 202 Accepted with status URL
+Request B → Poll briefly → Completed? → Return result
+```
+
+This is the production-grade solution. It combines Option 2's transparent waiting with timeout handling. **We'll implement this by building Option 2 first (distributed locks + polling), then adding graceful timeout degradation.**
+
+### The Foundation: Distributed Locks for Transparent Waiting
+
+To make Option 2 work safely, we need a **distributed lock**. This prevents multiple processes from starting work on the same key simultaneously. Enter Redis `SET NX` (Set if Not eXists):
+
+```ascii
+SET lock:idempotency_key:<uuid> 1 NX EX 30
+```
+
+This command says: "Set this key to value 1, **only if it doesn't already exist**, and expire it after 30 seconds."
+
+Here's the complete flow with locking:
+
+```ascii
+┌─────────────┐
+│  Request A  │
+└──────┬──────┘
+       │
+       ▼
+   Try lock in Redis
+   SET lock:abc-123 NX
+       │
+       ▼ SUCCESS
+   ┌───────────────┐
+   │ Process Order │
+   │  (8 seconds)  │
+   └───────┬───────┘
+           │
+           ▼
+   Save to DB & Release lock
+
+
+┌─────────────┐
+│  Request B  │ (arrives at second 3)
+└──────┬──────┘
+       │
+       ▼
+   Try lock in Redis
+   SET lock:abc-123 NX
+       │
+       ▼ FAILED (lock exists)
+   ┌─────────────┐
+   │ Wait & Poll │ ◄─┐
+   └──────┬──────┘   │
+          │          │
+          ▼ Lock still held
+   Sleep 200ms ──────┘
+          │
+          ▼ Lock released (Request A done)
+   Query DB for result
+   Return cached response
+```
+
+### The Async Polling Pattern in Node.js
+
+**Critical mistake to avoid:** Never use a blocking loop in Node.js. This will freeze the entire event loop:
+
+```javascript
+// WRONG - Blocks the event loop
+while (!lockAcquired) {
+  lockAcquired = await tryAcquireLock();
+  // This blocks all other requests
+}
+```
+
+**The correct pattern** uses non-blocking delays:
+
+```javascript
+async function waitForLock(idempotencyKey, maxWaitMs = 5000) {
+  const startTime = Date.now();
+  const pollIntervalMs = 200;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    // Check if the request is complete
+    const result = await db.query(
+      "SELECT status, response_body FROM processed_requests WHERE idempotency_key = $1",
+      [idempotencyKey],
+    );
+
+    if (result.rows[0]?.status === "completed") {
+      return result.rows[0].response_body;
+    }
+
+    // Non-blocking delay
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+  }
+
+  // Timeout reached - graceful handoff
+  return {
+    status: 202,
+    message: "Processing",
+    statusUrl: `/api/orders/status/${idempotencyKey}`,
+  };
+}
+```
+
+This pattern:
+
+- **Polls every 200ms** to check if the original request finished
+- **Doesn't block** other incoming requests
+- **Times out gracefully** after 5 seconds and returns a status URL
+
+## Completing Option 3: Graceful Timeout Handling
+
+We've built the foundation with distributed locks and polling. Now we need to handle the reality of **HTTP connection timeouts**. Most infrastructure has hard limits:
+
+- **Load balancers (Nginx):** 60 seconds
+- **Cloud providers (AWS ALB):** 60 seconds
+- **Browsers:** 30-120 seconds
+
+If Request A takes 45 seconds to process, and Request B has been polling for 39 seconds, the connection might get severed before Request A finishes.
+
+### The 202 Accepted Pattern: When Polling Times Out
+
+This is the graceful degradation piece that completes Option 3. Instead of letting Request B's connection hang until it times out, we **proactively hand off to a status-based architecture**:
+
+**Phase 1 Initial Request**
+
+```ascii
+POST /api/orders
+Idempotency-Key: abc-123
+
+← 202 Accepted
+{
+  "message": "Your order is being processed",
+  "statusUrl": "/api/orders/status/abc-123",
+  "idempotencyKey": "abc-123"
+}
+```
+
+**Phase 2 Client Polls Status Endpoint**
+
+```ascii
+GET /api/orders/status/abc-123
+
+← 200 OK
+{
+  "status": "processing"
+}
+
+... wait 2 seconds ...
+
+GET /api/orders/status/abc-123
+
+← 200 OK
+{
+  "status": "completed",
+  "result": {
+    "orderId": "order-789",
+    "total": 299.99
+  }
+}
+```
+
+This pattern is how services like Stripe handle long-running operations. The benefit:
+
+- **No connection timeouts** client controls the polling interval
+- **Better UX** frontend can show a loading spinner with real status
+- **Resilient to failures** if the frontend crashes, user can reload and check status
+
+## The Crash Scenario: The Janitor Process
+
+Here's the nightmare scenario: Request A acquires the lock, sets `status: executing` in the database, and then **the server crashes**. Power outage. Kernel panic. Docker container killed.
+
+Request B arrives later and sees:
+
+- **Lock in Redis:** Expired (thanks to TTL)
+- **Database record:** `status: executing` (stuck forever)
+
+Without intervention, this key is **permanently poisoned**. All future requests will see "still processing" even though nothing is processing.
+
+### Solution: Background Cleanup Worker
+
+The fix is a **janitor process** a background worker that periodically scans for stuck requests:
+
+```javascript
+// Runs every 5 minutes
+async function cleanupStuckRequests() {
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+  const stuckRequests = await db.query(
+    `
+    SELECT idempotency_key, created_at
+    FROM processed_requests
+    WHERE status = 'executing'
+      AND created_at < $1
+  `,
+    [fiveMinutesAgo],
+  );
+
+  for (const request of stuckRequests.rows) {
+    console.warn("Found stuck request:", request.idempotency_key);
+
+    // Step 1: Mark as failed in the database
+    // This ensures future requests with this key receive a proper error response
+    await db.query(
+      `
+      UPDATE processed_requests
+      SET status = 'failed',
+          response_body = $1
+      WHERE idempotency_key = $2
+    `,
+      [JSON.stringify({ error: "Request timed out" }), request.idempotency_key],
+    );
+
+    // Step 2: Send to dead letter queue for ops team to investigate
+    // This creates an audit trail of failures for manual review
+    await moveToDeadLetterQueue(request);
+  }
+}
+```
+
+**Why both steps?**
+
+- **Marking as failed** ensures the system remains functional. If a client retries with the same idempotency key, they receive a proper error response instead of waiting forever.
+- **Dead letter queue** creates an audit trail. The ops team can investigate whether it was a legitimate timeout, a bug, or a server crash, and potentially retry valid operations.
+
+**Alternative strategies:**
+
+- **For non-critical operations**: Just mark as failed and log it. No DLQ needed.
+- **For critical operations (payments, etc.)**: Mark as "requires_manual_review" and alert the ops team immediately instead of silently moving to DLQ.
+- **For retriable operations**: Attempt automatic retry with exponential backoff before marking as failed.
+
+This ensures:
+
+- **Stale locks don't poison keys forever**
+- **Operations can be retried** or escalated to manual review
+- **Database stays clean** and doesn't fill with orphaned records
+
+## Advanced Protection: Optimistic Locking with Versions
+
+There's one more subtle race condition: what if the janitor tries to mark a request as "failed" **at the exact same moment** the original Request A (which we thought was dead) suddenly completes?
+
+Both try to update the same database row. Without protection, one will overwrite the other. If the janitor wins, we might mark a successful operation as "failed."
+
+### The Solution: Version Numbers
+
+Add a `version` column to the `processed_requests` table. Every update increments it:
+
+```sql
+UPDATE processed_requests
+SET status = 'completed',
+    response_body = $1,
+    version = version + 1
+WHERE idempotency_key = $2
+  AND version = $3  -- Only update if version matches
+RETURNING version;
+```
+
+The sequence:
+
+1. **Request A reads** the record: `version: 1, status: executing`
+2. **Janitor reads** the record at the same time: `version: 1, status: executing`
+3. **Request A tries to update**: `WHERE version = 1` → **Success** → version becomes 2
+4. **Janitor tries to update**: `WHERE version = 1` → **Fails** → no rows affected
+
+The janitor's update silently fails (updates 0 rows). In your code, check the affected row count:
+
+```javascript
+const result = await db.query(
+  "UPDATE processed_requests SET status = $1, version = version + 1 WHERE idempotency_key = $2 AND version = $3",
+  ["failed", key, expectedVersion],
+);
+
+if (result.rowCount === 0) {
+  // Version mismatch - someone else updated this first
+  console.log("Optimistic lock conflict - request already updated");
+}
+```
+
+This is called **optimistic locking** because it optimistically assumes conflicts are rare, but gracefully handles them when they occur.
+
+## The Complete System Architecture
+
+Let's bring everything together. Here's the full flow of a production-grade idempotent API:
+
+```ascii
+┌──────────────┐
+│    Client    │
+│ Generate UUID│
+└──────┬───────┘
+       │ POST /orders
+       │ Idempotency-Key: abc-123
+       ▼
+┌──────────────────────────────────────────────────────────┐
+│ API Server (Node.js)                                     │
+│                                                          │
+│ 1. Extract idempotency key from header                   │
+│ 2. Check Redis cache                                     │
+│    If found: return cached response                      │
+│    + header: Idempotent-Replay: true                     │
+│ 3. Try to acquire distributed lock (Redis)               │
+│    SET lock:abc-123 1 NX EX 30                           │
+│                                                          │
+│ Lock acquired:                                           │
+│   Start DB transaction                                   │
+│   ├─ Check if key exists                                 │
+│   ├─ Insert with version=1                               │
+│   ├─ Execute business logic                              │
+│   ├─ Save response                                       │
+│   ├─ Update status=completed                             │
+│   └─ COMMIT                                              │
+│   ├─ Update Redis cache (TTL: 24h)                       │
+│   └─ Release distributed lock                            │
+│                                                          │
+│ Lock failed:                                             │
+│   Wait & poll (5s max)                                   │
+│   └─ Timeout reached: return 202 Accepted + statusUrl    │
+└──────┬───────────────────────────────────────────────────┘
+       │
+       ▼
+┌──────────────┐              ┌───────────────┐
+│   Redis      │              │  PostgreSQL   │
+│              │              │               │
+│ • Lock keys  │              │ • Source of   │
+│ • Cache layer│              │   truth       │
+│ • TTL: 30s   │              │ • Unique      │
+│   (locks)    │              │   constraint  │
+│ • TTL: 24h   │              │ • Versioning  │
+│   (responses)│              │               │
+└──────────────┘              └───────────────┘
+
+
+┌─────────────────────────────────────────────┐
+│      Background Janitor Process             │
+│       (Runs every 5 minutes)                │
+│                                             │
+│  1. Find requests stuck in "executing"      │
+│  2. Check if created_at > 5 minutes ago     │
+│  3. Attempt to mark as failed (with version)│
+│  4. If conflict → another process handled it│
+│  5. Log to dead letter queue for review     │
+└─────────────────────────────────────────────┘
+```
+
+## Implementation Checklist
+
+Here's your roadmap to building this system step-by-step:
+
+### Phase 1: Core Infrastructure
+
+- [ ] Add `processed_requests` table with unique constraint on `idempotency_key`
+- [ ] Add `version` column for optimistic locking
+- [ ] Set up Redis connection for distributed locks and caching
+- [ ] Create middleware to extract and validate idempotency key from headers
+
+### Phase 2: Basic Idempotency
+
+- [ ] Implement Redis cache check (fast path)
+- [ ] Implement database transaction with unique constraint handling
+- [ ] Store response body in `processed_requests` table
+- [ ] Update Redis cache after successful processing
+
+### Phase 3: Concurrent Request Handling
+
+- [ ] Implement distributed lock with Redis SET NX
+- [ ] Add async polling logic for in-flight requests
+- [ ] Set proper TTLs on lock keys (30s)
+- [ ] Release locks after completion or failure
+
+### Phase 4: Timeout & Degradation
+
+- [ ] Implement 202 Accepted response for slow operations
+- [ ] Create status endpoint: `GET /api/orders/status/:key`
+- [ ] Add frontend polling logic for 202 responses
+- [ ] Set reasonable polling intervals (2-3 seconds)
+
+### Phase 5: Crash Recovery
+
+- [ ] Create janitor background worker
+- [ ] Find requests stuck in "executing" status
+- [ ] Implement optimistic locking for cleanup
+- [ ] Set up dead letter queue for manual review
+- [ ] Schedule janitor to run every 5 minutes
+
+### Phase 6: Observability
+
+- [ ] Log all idempotency key operations
+- [ ] Add metrics: cache hit rate, lock conflicts, stuck requests
+- [ ] Alert on spike in stuck requests
+- [ ] Add `Idempotent-Replay: true` header for cached responses
+
+## Real-World Considerations
+
+### How Long Should Keys Be Stored?
+
+**Short answer:** 24 hours for most use cases.
+
+**Reasoning:** Idempotency keys protect against retries due to network issues, which typically happen within seconds or minutes. Storing them for 24 hours provides a generous buffer for offline mobile clients or batch retry jobs.
+
+For financial operations, consider longer retention (30-90 days) for audit trails, even if the cache TTL is shorter.
+
+### What If the Client Sends the Same Key for Different Requests?
+
+This is a **client bug**, not a server problem. Your API should trust that clients generate unique keys correctly. However, you can add validation:
+
+```javascript
+// Hash the request body and compare it to stored hash
+const requestHash = crypto
+  .createHash("sha256")
+  .update(JSON.stringify(req.body))
+  .digest("hex");
+
+const storedRequest = await getStoredRequest(idempotencyKey);
+if (storedRequest && storedRequest.requestHash !== requestHash) {
+  return res.status(400).json({
+    error: "Idempotency key reused with different request body",
+  });
+}
+```
+
+This catches the error early and provides clear feedback to the client.
+
+### Should Every POST Endpoint Be Idempotent?
+
+Not necessarily. Prioritize:
+
+1. **Payment processing** double charges are catastrophic
+2. **Resource creation** duplicate users, orders, bookings cause data integrity issues
+3. **External API calls** sending SMS, emails, webhooks shouldn't duplicate
+4. **Critical operations** anything with financial or legal implications
+
+For low-stakes operations (like logging analytics events), the complexity might not be worth it.
+
+### How Do You Handle Partial Failures?
+
+If your operation involves multiple steps (charge payment, update inventory, send email), wrap everything in a database transaction. If any step fails, roll back the transaction and save `status: failed` with the error details.
+
+For operations that can't be rolled back (like third-party API calls), use the **idempotent wrapper pattern**:
+
+1. Save intent to database first
+2. Make external API call
+3. Update database with result
+4. If crash happens between steps 2-3, janitor can retry the external call using a transaction ID
+
+Services like Stripe provide their own idempotency keys for this reason.
+
+## Common Pitfalls and How to Avoid Them
+
+**Pitfall #1: Not Setting TTL on Redis Lock Keys**
+Without TTL, a crash leaves the lock permanently acquired. Always use `EX` flag: `SET lock:key 1 NX EX 30`
+
+**Pitfall #2: Releasing Locks Too Early**
+If you release the lock before committing the database transaction, another request can slip through and see incomplete data. Release lock **after** the database commit succeeds.
+
+**Pitfall #3: Storing Sensitive Data in Response Cache**
+If your API returns credit card numbers or passwords (please don't), don't cache them in Redis. Either filter sensitive fields or skip caching entirely for sensitive endpoints.
+
+**Pitfall #4: Not Handling Lock Acquisition Failures**
+If Redis is down and `SET NX` fails, don't crash. Fall back to database-only mode (slower but functional).
+
+**Pitfall #5: Using Blocking Sleep in Node.js**
+Always use `setTimeout` with promises for async delays. Never block the event loop.
+
+## Testing Your Idempotent System
+
+### Test Case 1: Duplicate Request (Happy Path)
+
+```javascript
+const key = generateUUID();
+
+// First request
+const response1 = await makeRequest('/orders', { items: [...] }, { 'Idempotency-Key': key });
+expect(response1.status).toBe(201);
+
+// Duplicate request
+const response2 = await makeRequest('/orders', { items: [...] }, { 'Idempotency-Key': key });
+expect(response2.status).toBe(200);
+expect(response2.body).toEqual(response1.body);
+expect(response2.headers['idempotent-replay']).toBe('true');
+```
+
+### Test Case 2: Race Condition
+
+```javascript
+const key = generateUUID();
+
+// Send two identical requests simultaneously
+const [response1, response2] = await Promise.all([
+  makeRequest('/orders', { items: [...] }, { 'Idempotency-Key': key }),
+  makeRequest('/orders', { items: [...] }, { 'Idempotency-Key': key })
+]);
+
+// Both should succeed with same response
+expect(response1.body.orderId).toBe(response2.body.orderId);
+
+// Verify only ONE order was created in database
+const orders = await db.query('SELECT COUNT(*) FROM orders WHERE ...');
+expect(orders.rows[0].count).toBe(1);
+```
+
+### Test Case 3: Timeout Handling
+
+```javascript
+const key = generateUUID();
+
+// Mock slow processing (10 seconds)
+mockSlowOrder();
+
+const response = await makeRequest('/orders', { items: [...] }, { 'Idempotency-Key': key });
+
+// Should receive 202 Accepted after polling timeout
+expect(response.status).toBe(202);
+expect(response.body.statusUrl).toMatch(/\/orders\/status\//);
+
+// Poll status endpoint
+await sleep(11000);
+const statusResponse = await makeRequest(response.body.statusUrl);
+expect(statusResponse.status).toBe(200);
+expect(statusResponse.body.status).toBe('completed');
+```
+
+### Test Case 4: Janitor Cleanup
+
+```javascript
+// Manually insert a stuck request
+await db.query(
+  `
+  INSERT INTO processed_requests (idempotency_key, status, created_at)
+  VALUES ($1, 'executing', NOW() - INTERVAL '10 minutes')
+`,
+  [testKey],
+);
+
+// Run janitor
+await cleanupStuckRequests();
+
+// Verify it was marked as failed
+const result = await db.query(
+  "SELECT status FROM processed_requests WHERE idempotency_key = $1",
+  [testKey],
+);
+expect(result.rows[0].status).toBe("failed");
+```
+
+## Key Takeaways
+
+Building a production-grade idempotent API system isn't just about checking if a key exists. It's about handling the chaos of distributed systems with defensive layers:
+
+1. **Idempotency keys** let clients safely retry requests without fear of duplicates
+2. **Redis provides speed**, PostgreSQL provides durability use both in a layered architecture
+3. **Database unique constraints** are your atomic defense against race conditions
+4. **Distributed locks** prevent multiple processes from working on the same request simultaneously
+5. **Async polling with timeouts** creates a responsive fallback for slow operations
+6. **The 202 Accepted pattern** gracefully hands off long-running tasks to status-based polling
+7. **Optimistic locking with versions** prevents conflicts during recovery operations
+8. **Background janitor processes** clean up stuck requests and prevent permanent poisoning
+
+The beauty of this architecture is that each layer adds protection without requiring the previous layer to be perfect. Redis can fail Postgres catches it. Locks can timeout status polling handles it. Servers can crash the janitor recovers.
+
+This is how systems like Stripe, AWS, and GitHub handle millions of payment transactions, API calls, and git operations every day without duplicate charges or corrupted data. Now you have the blueprint to build the same into your own APIs.

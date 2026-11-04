@@ -17,7 +17,7 @@ export function GET() {
 
   const posts = getAllPosts().map(
     (p) =>
-      `## ${p.title}\n\nURL: ${baseUrl}/blog/${p.slug}\nPublished: ${p.publishedAt}\n\n${getPostBySlug(p.slug).content.trim()}`,
+      `## ${p.title}\n\nURL: ${baseUrl}/blogs/${p.slug}\nPublished: ${p.publishedAt}\n\n${getPostBySlug(p.slug).content.trim()}`,
   );
 
   const body = `# Atharv Dange

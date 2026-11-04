@@ -1,0 +1,311 @@
+---
+title: "Function Declaration vs Function Expression: What's the Difference?"
+publishedAt: "2026-03-01T20:17:48.895Z"
+featured: false
+description: >-
+  Learn the difference between function declarations and function expressions in
+  JavaScript, including hoisting behavior, syntax comparison, and when to use
+  each.
+summary: >-
+  JavaScript gives you two ways to define functions, and they look almost the
+  same but behave differently in important ways. This post breaks down both
+  syntaxes, explains hoisting in plain English, and helps you decide which one
+  to reach for.
+updatedAt: "2026-03-01T20:17:48.952Z"
+category: JavaScript & Web APIs
+seoTitle: Function Declaration vs Function Expression in JavaScript
+tags:
+  - javascript
+  - functions
+  - hoisting
+  - function-declaration
+  - function-expression
+  - arrow-functions
+  - js-fundamentals
+  - beginners
+seoKeywords:
+  - function declaration vs function expression
+  - javascript hoisting
+  - javascript functions
+  - arrow functions
+  - js beginners
+  - function expression hoisting
+cover: >-
+  https://res.cloudinary.com/dvwajyvot/image/upload/v1772395942/from-scratch/cg9al2nhdwvmbsleyzhg.png
+---
+
+![Function Declaration vs Function Expression: What's the Difference?](https://res.cloudinary.com/dvwajyvot/image/upload/v1772395942/from-scratch/cg9al2nhdwvmbsleyzhg.png)
+
+Think of a function like a recipe card. You write down the steps once, and any time you want to cook that dish, you just pull out the card and follow it. You don't rewrite the recipe every time. That's exactly what a function does in code. It lets you package a set of instructions, give them a name, and reuse them whenever you need.
+
+Without functions, you'd be copy-pasting the same logic all over your codebase. That's a maintenance nightmare. Change one thing and you have to hunt down every copy. Functions solve that.
+
+## What Is a Function, Really?
+
+At its core, a function is a reusable block of code that does something. You define it once and call it as many times as you want. It can take inputs (called parameters) and give back an output (called a return value).
+
+Here's the simplest possible example:
+
+```javascript
+// Adding two numbers
+function add(a, b) {
+  return a + b;
+}
+
+console.log(add(3, 4)); // 7
+console.log(add(10, 20)); // 30
+```
+
+You wrote the logic once. Called it twice. That's the whole point.
+
+Now, JavaScript doesn't just give you one way to write a function. It gives you two main syntaxes, and here's where things get interesting.
+
+## Function Declaration
+
+A function declaration is the classic, traditional way. You use the `function` keyword, give it a name, and define the body. That's it.
+
+```javascript
+function greet(name) {
+  return "Hello, " + name + "!";
+}
+
+console.log(greet("Atharv")); // Hello, Atharv!
+```
+
+The structure looks like this:
+
+```ascii
+┌─────────────────────────────────────────────┐
+│           Function Declaration              │
+│                                             │
+│  function  greet  ( name )  {               │
+│  ────────  ─────  ───────                   │
+│  keyword   name   params                    │
+│                                             │
+│    return "Hello, " + name + "!";           │
+│    ──────────────────────────────           │
+│    body / logic                             │
+│  }                                          │
+└─────────────────────────────────────────────┘
+```
+
+Clean and readable. The name is right there next to the `function` keyword. Nothing fancy going on.
+
+## Function Expression
+
+A function expression is when you define a function and assign it to a variable. The function itself doesn't have to have a name because the variable IS the name now.
+
+```javascript
+const greet = function (name) {
+  return "Hello, " + name + "!";
+};
+
+console.log(greet("Atharv")); // Hello, Atharv!
+```
+
+Same output. Different syntax. Here's the structure:
+
+```ascii
+┌─────────────────────────────────────────────┐
+│           Function Expression               │
+│                                             │
+│  const  greet  =  function ( name )  {      │
+│  ─────  ─────     ────────  ──────          │
+│  var    name      keyword   params          │
+│  decl.                                      │
+│                                             │
+│    return "Hello, " + name + "!";           │
+│  };                                         │
+│   ─                                         │
+│  semicolon (it's an assignment statement)   │
+└─────────────────────────────────────────────┘
+```
+
+Notice the semicolon at the end. That's because this is just a variable assignment, and variable assignments end with `;`.
+
+You'll also see arrow function expressions a lot in modern JavaScript:
+
+```javascript
+const greet = (name) => {
+  return "Hello, " + name + "!";
+};
+
+// Or the short form for single expressions
+const greet = (name) => "Hello, " + name + "!";
+```
+
+Arrow functions are function expressions too. Same rules apply.
+
+## Side-by-Side Comparison
+
+Let's look at both, doing the exact same thing, right next to each other:
+
+```javascript
+// Function Declaration
+function multiply(a, b) {
+  return a * b;
+}
+
+// Function Expression
+const multiply = function (a, b) {
+  return a * b;
+};
+```
+
+Functionally identical. The difference isn't what they do, it's how JavaScript handles them before your code runs. That leads us to hoisting.
+
+## Hoisting: The Part That Trips Everyone Up
+
+Here's the thing about hoisting. JavaScript doesn't just run your code line by line from top to bottom. Before execution starts, the JS engine does a quick pass through your code and "hoists" certain things to the top of their scope.
+
+Function declarations get fully hoisted. What that means is JavaScript knows the entire function before any code runs. So you can call a function declaration before you write it.
+
+```javascript
+// This works perfectly fine
+console.log(add(2, 3)); // 5
+
+function add(a, b) {
+  return a + b;
+}
+```
+
+JavaScript saw the declaration, hoisted it to the top mentally, and when `console.log` runs, the function is already available.
+
+Function expressions do NOT work this way.
+
+```javascript
+// This will throw an error
+console.log(multiply(2, 3)); // ReferenceError or TypeError
+
+const multiply = function (a, b) {
+  return a * b;
+};
+```
+
+Why? Because `multiply` is a variable. The variable declaration gets hoisted, but not the value. At the point where you try to call it, `multiply` hasn't been assigned the function yet.
+
+The mental model is simple:
+
+```ascii
+┌──────────────────────────────────────────────────────────┐
+│                  Hoisting Behavior                       │
+│                                                          │
+│  BEFORE CODE RUNS:                                       │
+│                                                          │
+│  Function Declaration:                                   │
+│  ┌─────────────────────────────────────┐                 │
+│  │ function greet() { ... }            │  <- Fully       │
+│  │ AVAILABLE IMMEDIATELY               │     hoisted     │
+│  └─────────────────────────────────────┘                 │
+│                                                          │
+│  Function Expression:                                    │
+│  ┌─────────────────────────────────────┐                 │
+│  │ const greet = ???                   │  <- Variable    │
+│  │ NOT available yet                   │     hoisted,    │
+│  └─────────────────────────────────────┘     not value   │
+│                                                          │
+│  AFTER THAT LINE RUNS:                                   │
+│  ┌─────────────────────────────────────┐                 │
+│  │ const greet = function() { ... }    │  <- Now it's    │
+│  │ NOW available                       │     ready       │
+│  └─────────────────────────────────────┘                 │
+└──────────────────────────────────────────────────────────┘
+```
+
+You don't need to understand execution contexts or call stacks to use this knowledge. Just remember: declarations can be called early, expressions cannot.
+
+## Key Differences at a Glance
+
+```ascii
+┌──────────────────────┬─────────────────────┬─────────────────────┐
+│ Feature              │ Declaration         │ Expression          │
+├──────────────────────┼─────────────────────┼─────────────────────┤
+│ Syntax               │ function name() {}  │ const x = function  │
+│                      │                     │ () {}               │
+├──────────────────────┼─────────────────────┼─────────────────────┤
+│ Hoisted?             │ Yes, fully          │ No (variable only)  │
+├──────────────────────┼─────────────────────┼─────────────────────┤
+│ Call before define?  │ Yes                 │ No                  │
+├──────────────────────┼─────────────────────┼─────────────────────┤
+│ Named?               │ Always              │ Optional            │
+├──────────────────────┼─────────────────────┼─────────────────────┤
+│ Ends with ;?         │ No                  │ Yes                 │
+├──────────────────────┼─────────────────────┼─────────────────────┤
+│ Stored in variable?  │ No                  │ Yes                 │
+└──────────────────────┴─────────────────────┴─────────────────────┘
+```
+
+## When to Use Each
+
+There's no universal rule here, but there are patterns that make sense in practice.
+
+Use a function declaration when you want a named, reusable utility that should be available throughout the file. Things like helper functions, event handlers you define at the top level, or utilities you want to call from anywhere in that module. The hoisting behavior is a feature here, not a quirk.
+
+```javascript
+// Good use case for declaration
+function formatDate(date) {
+  return new Date(date).toLocaleDateString();
+}
+```
+
+Use a function expression when you're passing a function as an argument, assigning logic to a variable conditionally, or writing callbacks. Function expressions fit naturally into modern JavaScript patterns like array methods and async code.
+
+```javascript
+// Good use case for expression
+const numbers = [1, 2, 3, 4];
+const doubled = numbers.map(function (n) {
+  return n * 2;
+});
+
+// Or with arrow function
+const doubled = numbers.map((n) => n * 2);
+```
+
+Also, if you're using `const` or `let` variables for everything (which is the modern default), function expressions fit that mental model cleanly. The function is a value, assigned to a variable, just like any other data.
+
+One thing worth knowing: if you're writing a function that needs to reference itself (like a recursive function), a named function expression gives you a clean way to do that.
+
+```javascript
+const factorial = function fact(n) {
+  if (n <= 1) return 1;
+  return n * fact(n - 1); // 'fact' is accessible here
+};
+```
+
+The name `fact` is only available inside the function body. It won't pollute the outer scope.
+
+## Assignment: Try It Yourself
+
+The best way to lock this in is to see the behavior yourself, not just read about it.
+
+```javascript
+// 1. Function declaration that multiplies two numbers
+function multiply(a, b) {
+  return a * b;
+}
+
+// 2. Same logic as a function expression
+const multiplyExpr = function (a, b) {
+  return a * b;
+};
+
+// 3. Call both and print results
+console.log(multiply(4, 5)); // 20
+console.log(multiplyExpr(4, 5)); // 20
+
+// 4. Now try calling them BEFORE the definitions
+// Move these lines above the function definitions and see what happens
+
+// multiply(4, 5)      <- Works fine (declaration is hoisted)
+// multiplyExpr(4, 5)  <- Throws an error (expression is not hoisted)
+```
+
+Try moving those calls above the definitions in a browser console or a Node script. The error you see for the expression isn't a bug. It's exactly what's supposed to happen.
+
+## Key Takeaways
+
+Both function declarations and function expressions let you write reusable logic, but they behave differently in one critical way: hoisting. Declarations are available throughout the file, even before they're written. Expressions are only available after that line executes.
+
+For most everyday code, the syntax you're comfortable with works fine. But knowing when each one is the better fit, and why the "call before define" trick only works for declarations, means you'll never be surprised by a `ReferenceError` that looks like it shouldn't exist.
+
+Start with declarations for named utilities. Reach for expressions when passing functions around or assigning them to variables. And arrow functions are just shorthand expressions, so the same rules apply to them too.
