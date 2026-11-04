@@ -443,8 +443,6 @@ Without the hover, `peek` finds nothing, `runLoaders` starts fresh at the moment
 
 **The cache key needs both pathname and search.** Two different searches on the same route pattern are different data. Keying on pathname alone would let one prefetch silently overwrite another's cached result.
 
----
-
 ## References
 
 ### Michi
@@ -462,4 +460,3 @@ Without the hover, `peek` finds nothing, `runLoaders` starts fresh at the moment
 - [TanStack Router - Preloading guide](https://tanstack.com/router/latest/docs/framework/react/guide/preloading) - intent-based preloading, the pattern this slice is modeled on
 - [MDN - Promise.prototype.catch()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch) - confirms `.catch()` returns a new derived promise rather than mutating the original
 - [web.dev - Speculative loading](https://web.dev/articles/predictive-prefetching) - the broader web platform context for prefetch-on-intent patterns
-

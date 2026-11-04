@@ -259,8 +259,6 @@ Worth being precise about what this closes and what it doesn't. Individual match
 
 Closing that fully was discussed directly - a `useRouterSelector` primitive, where each hook picks its own slice of state with a stable selector, so `useSyncExternalStore` can bail out per-hook instead of per-store. The decision was made, and deliberately deferred to its own dedicated slice on the roadmap rather than folded in here as a rushed afterthought. The honest cost of what's still open: no wasted network fetches (that's what `hasChanged` protects), no wasted remounts (React's reconciler handles that independently, since Slice 3), just a wasted re-render - the component function runs again, produces identical JSX, React diffs it, and throws the work away. Cheap enough to never notice in most apps, real enough to be worth naming precisely rather than glossing over.
 
----
-
 ## Slice 8: What If the Folder Structure Already Told You Everything
 
 Every route file until Slice 8 got wired in by hand. Open `main.tsx`, add an import, add an entry to a nested array, get the nesting right, remember the `loader` import if there is one. Twenty routes meant twenty places a mistake could slip in.
@@ -438,8 +436,6 @@ And that's exactly why `routeTree.gen.ts` never gets edited by hand. The write i
 
 **A generated file's value is entirely about staying in lockstep with one real input.** The moment you hand-edit output that's mechanically derived from something else, you've created a lie that the next generation run will silently correct - which reveals it was never really a fix.
 
----
-
 ## References
 
 ### Michi
@@ -461,4 +457,3 @@ And that's exactly why `routeTree.gen.ts` never gets edited by hand. The write i
 - [TypeScript - Compiler API Wiki](https://github.com/microsoft/TypeScript/wiki/Using-the-Compiler-API) - the ts.createSourceFile / ts.forEachChild primitives this slice's AST walk is built on
 - [TanStack Router - File-Based Routing guide](https://tanstack.com/router/latest/docs/framework/react/routing/file-based-routing) - the real filename convention this slice's mapping draws from
 - [tsx - TypeScript Execute](https://tsx.hirok.io) - the loader used to run the CLI without a separate build step
-

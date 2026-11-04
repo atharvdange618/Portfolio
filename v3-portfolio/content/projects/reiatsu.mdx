@@ -16,8 +16,6 @@ description: "Built a zero-dependency HTTP server framework from Node.js core mo
 
 Reiatsu is a zero-dependency, type-safe HTTP server framework for Node.js. It is built on Node.js core modules only: `http`, `zlib`, `crypto`. No Express, no Fastify, no Koa. The routing algorithm, middleware pipeline, request/response context, input validation, and security headers are all implemented from scratch on top of Node's native `http` module.
 
----
-
 ## The Challenge
 
 Node.js's core `http` module gives you raw request and response event listeners. That is it. Everything else is manual work:
@@ -30,10 +28,10 @@ Node.js's core `http` module gives you raw request and response event listeners.
 **My Role:** Sole developer and architect. Framework core, router, middleware composer, npm package, full type safety.
 
 <Callout type="info">
-  **Zero dependencies, zero supply-chain risk.** Every feature, from routing to compression to security headers, is built on Node.js core modules. No `express`, no `fastify`, no `path-to-regexp`. No dependency audit headaches.
+  **Zero dependencies, zero supply-chain risk.** Every feature, from routing to
+  compression to security headers, is built on Node.js core modules. No
+  `express`, no `fastify`, no `path-to-regexp`. No dependency audit headaches.
 </Callout>
-
----
 
 ## The Solution
 
@@ -45,8 +43,6 @@ Reiatsu puts routing, middleware, security, and compression into a single packag
 - **Dynamic route inference**: Compile-time type safety for route parameters. `ctx.params.id` is checked at build time, not runtime.
 - **Async middleware composer**: Onion-model pipeline with async/await support and a global error boundary.
 - **Built-in utilities**: Rate limiter, CORS, CSRF token validation, security headers (HSTS, CSP), HTML escaping, Brotli compression.
-
----
 
 ### Quick Start
 
@@ -100,8 +96,6 @@ graph TD
     class Client,Out highlight;
 ```
 
----
-
 ## Engineering Deep Dives
 
 ### 1. Type-Safe Route Parameter Inference
@@ -139,7 +133,9 @@ type ExtractParamOrWildcardFromSegment<Segment extends string> =
 When you write `/posts/:postId/comments/:commentId` or `/user/:id(\\d+)`, the compiler dissects the string literal, identifies dynamic segments (including regex constraints and wildcards), and compiles them into a type-checked shape.
 
 <Callout type="info">
-  **Compile-time safety, runtime performance.** The route parameter types resolve entirely at build time. Zero runtime overhead. The type inference happens in the TypeScript compiler, not in your application code.
+  **Compile-time safety, runtime performance.** The route parameter types
+  resolve entirely at build time. Zero runtime overhead. The type inference
+  happens in the TypeScript compiler, not in your application code.
 </Callout>
 
 ```typescript
@@ -212,7 +208,10 @@ streamFile(
 File read streams pipe directly into the raw HTTP socket (`this.res`). Data chunks go to the network as they are read from disk. JSON and text responses are buffered first for error safety, then compressed on-the-fly with Brotli or Gzip.
 
 <Callout type="warning">
-  **Stream vs. buffer: the trade-off.** Streaming is memory-efficient but once headers are sent, the HTTP status code cannot change. JSON responses buffer first to allow error handling. Large files stream directly; mid-stream failures close the socket.
+  **Stream vs. buffer: the trade-off.** Streaming is memory-efficient but once
+  headers are sent, the HTTP status code cannot change. JSON responses buffer
+  first to allow error handling. Large files stream directly; mid-stream
+  failures close the socket.
 </Callout>
 
 The compression middleware intercepts `res.write` and `res.end`, captures chunks, and pipes them through a compressor:
@@ -262,8 +261,6 @@ export const createCompressionMiddleware = (
 };
 ```
 
----
-
 ## Technical Challenges & Trade-offs
 
 ### 1. Zero-Dependency Footprint vs. Development Time
@@ -284,12 +281,12 @@ In Node.js HTTP, once headers or body chunks are sent, the status code cannot ch
 
 - **Decision**: A double-phase response buffer. JSON responses accumulate and send atomically, letting middleware intercept errors. Large files bypass the buffer and stream directly. Mid-stream failures close the socket cleanly.
 
----
-
 ## Results & Impact
 
 <Callout type="info">
-  **Under 45KB, fully type-safe.** Reiatsu is a complete HTTP framework in under 45KB, compared to Express's megabyte-scale footprint. Every route parameter is type-checked at compile time.
+  **Under 45KB, fully type-safe.** Reiatsu is a complete HTTP framework in under
+  45KB, compared to Express's megabyte-scale footprint. Every route parameter is
+  type-checked at compile time.
 </Callout>
 
 - **Zero-dependency security**: 100% dependency-free NPM package. No supply-chain vectors.

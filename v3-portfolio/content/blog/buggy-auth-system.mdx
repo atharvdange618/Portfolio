@@ -71,8 +71,6 @@ Security Tokens (verify/reset):
 
 The design is solid in principle. The problems are in the details.
 
----
-
 ## POST /signup
 
 ### Issue 1: bcrypt Silently Truncates at 72 Bytes
@@ -211,8 +209,6 @@ const accessToken = jwt.sign(
 );
 ```
 
----
-
 ## POST /signin
 
 ### Issue 6: Timing Attack via Email Enumeration
@@ -299,8 +295,6 @@ Find user -> check isVerified -> if false, return 403 immediately (no failedAtte
 
 This prevents lock accumulation on unverified accounts entirely.
 
----
-
 ## POST /forgot-password
 
 ### Issue 9: Locked Account Behavior Is an Undocumented Escape Hatch
@@ -357,8 +351,6 @@ if (!claimed) {
 
 // Safe to proceed: slot claimed atomically
 ```
-
----
 
 ## POST /reset-password
 
@@ -436,8 +428,6 @@ if (isSamePassword) {
 }
 ```
 
----
-
 ## GET /verify-email
 
 ### Issue 15: Raw JSON Response on a Browser Link Click
@@ -506,8 +496,6 @@ if (result.rows.length === 0) {
 }
 ```
 
----
-
 ## POST /resend-verification
 
 ### Issue 17: Email Enumeration via Already-Verified Response
@@ -537,8 +525,6 @@ if (!user || user.isVerified) {
   });
 }
 ```
-
----
 
 ## POST /logout
 
@@ -600,8 +586,6 @@ No token                     -> clear cookie -> 200
 ```
 
 All paths succeed. Logout is idempotent.
-
----
 
 ## POST /refresh
 
@@ -750,8 +734,6 @@ The `tokenVersion` check in `/refresh` is effectively dead code for the password
 
 This is documented behavior in most JWT systems. Know this window exists and communicate it - don't assume tokenVersion in the refresh JWT solves it.
 
----
-
 ## The Full Issues Reference
 
 | Endpoint                | Issues                                                                                                                                                                |
@@ -764,8 +746,6 @@ This is documented behavior in most JWT systems. Know this window exists and com
 | **POST /resend-verify** | • Email enumeration via 400 response                                                                                                                                  |
 | **POST /logout**        | • Access token valid post-logout (undocumented)<br />• Expired-but-valid-signature token path missing                                                                 |
 | **POST /refresh**       | • Parallel requests trigger false reuse attack<br />• Non-atomic token rotation<br />• tokenVersion check unreachable (dead code)                                     |
-
----
 
 ## Key Takeaways
 

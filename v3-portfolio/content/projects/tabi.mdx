@@ -33,8 +33,6 @@ Tabi (旅, journey) is a group trip planner. Each trip gets a shared itinerary, 
 
 It is the first thing I built that real people use. My friends and I plan our trips on it now.
 
----
-
 ## The Challenge
 
 Every group trip I've been on went the same way. Someone makes a WhatsApp group. One person builds a Google Sheet that only they update. Flight links get buried under two hundred messages of "wait, who's booking?" After the trip, nobody knows who owes what.
@@ -48,10 +46,10 @@ The goal was to move the whole trip onto one platform:
 **My Role:** Sole developer. Express API, MongoDB schema, permission model, invite flow, Next.js client, deployment.
 
 <Callout type="info">
-  **Built for a problem I had.** I didn't worry that Tabi lacked features. If the plan, the money, and the people live in one place, the trip already feels easier, and that was enough to ship.
+  **Built for a problem I had.** I didn't worry that Tabi lacked features. If
+  the plan, the money, and the people live in one place, the trip already feels
+  easier, and that was enough to ship.
 </Callout>
-
----
 
 ## The Solution
 
@@ -78,8 +76,6 @@ Log an expense and say who paid. Tabi tracks spending against the budget, breaks
 - **Notifications** when someone adds an expense, comments, or changes the plan.
 - **Public trips** you can share as a read-only page, plus a Discover page to browse them.
 
----
-
 ## Technical Architecture
 
 ```ascii
@@ -95,8 +91,6 @@ The client and the API are separate apps in one pnpm workspace, with a `shared/`
 Clerk handles sign-in, Cloudinary stores files, and Resend sends invite emails. Files go client to server to Cloudinary, never straight from the browser, so the server checks the MIME type and the member's role before anything gets stored.
 
 The server keeps strict layers: routes wire middleware, controllers handle the request, and services are the only code that touches Mongoose models.
-
----
 
 ## Engineering Deep Dives
 
@@ -143,14 +137,14 @@ The first version put every invite in a `pending_invites` collection. That left 
 The users collection never fills up with placeholder accounts for people who never sign up.
 
 <Callout type="warning">
-  **Model the edge cases before the happy path.** Same person invited twice, token expired, email belongs to an existing account. Each one changed the data model, and finding them after writing the happy path cost a rewrite.
+  **Model the edge cases before the happy path.** Same person invited twice,
+  token expired, email belongs to an existing account. Each one changed the data
+  model, and finding them after writing the happy path cost a rewrite.
 </Callout>
 
 ### 3. One set of schemas for both sides
 
 The client and server validate with the same Zod schemas from `shared/`. Adding a field like `travelerCount` to the create trip payload is one change in one file, and both the form and the API pick it up. There are no "I updated the server but forgot the client" bugs.
-
----
 
 ## Technical Challenges and Trade-offs
 
@@ -165,8 +159,6 @@ Two people editing the same trip see each other's changes on the next fetch or w
 ### 3. Optimistic updates in two places only
 
 Activity reordering and checklist toggles update the UI before the server answers. Expenses and file uploads still wait for the round trip, and they'd feel faster with the same treatment.
-
----
 
 ## Results
 

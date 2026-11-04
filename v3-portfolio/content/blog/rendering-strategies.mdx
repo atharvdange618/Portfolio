@@ -721,8 +721,6 @@ PPR is the only strategy with entries in both the "static" and "dynamic" columns
 
 **The file-server test separates streaming SSR from PPR:** turn off the origin, and only PPR's static parts still serve.
 
----
-
 ## What I Would Build Next
 
 Hydration, the combination of SSR and CSR, is what Next.js and Nuxt ship in production. The server sends full HTML, then JavaScript in the browser takes over the existing DOM and makes it interactive. Every page in this project is read-only, so that's the obvious gap. The cost of hydration is shipping both the server-rendered HTML and the JavaScript that describes the same UI, and I want to measure how much that costs.

@@ -208,8 +208,6 @@ The old version called `useLoaderData<User>()`, naming the type at the call site
 
 The object-form `navigate({ to: "/user/$id", params: { id } })` API from the design spec wasn't built. The string form catches a typo'd or nonexistent path, but it does zero checking on the shape of a param value substituted into a dynamic segment. By the time you've written `"/user/atharv"`, the "this came from a `$id` slot" information is already gone. The object form is what gets real param-shape checking, and it's additive on top of what exists now, not a breaking change. A follow-up, not a bug.
 
----
-
 ## Slice 10: When Two Patterns Fit the Same URL
 
 `matchTree` walks a route list in array order and returns the first branch that matches. That holds right up until two patterns can match the same URL. `/user/$id` matches `/user/settings` fine, with `id` set to `"settings"`.
@@ -350,8 +348,6 @@ It isn't correct for Michi anymore. `matchTree` scores routes and sorts each gro
 
 **Correcting old advice is part of shipping a slice.** "Order your routes specific-first" was true for eight slices. Slice 10 made it false, and saying so plainly matters more than leaving the old rule standing in three doc pages.
 
----
-
 ## References
 
 ### Michi
@@ -369,4 +365,3 @@ It isn't correct for Michi anymore. `matchTree` scores routes and sorts each gro
 
 - [React Router - `computeRouteMatchScore` (ranking source)](https://github.com/remix-run/react-router/blob/main/packages/react-router/lib/router/utils.ts) - the per-segment scoring these weights are adapted from
 - [TanStack Router - path matching and ranking](https://tanstack.com/router/latest/docs/framework/react/routing/routing-concepts) - how a full-tree flatten resolves ambiguity regardless of definition order
-

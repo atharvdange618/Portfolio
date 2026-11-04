@@ -30,8 +30,6 @@ Telemetry is web analytics I built and run myself. You paste one script tag, and
 
 The site you are reading sends its page views to it.
 
----
-
 ## The Challenge
 
 I wanted to know how analytics works under the hood. Every dashboard I had used was a black box: a number goes up, and I had no idea how a "unique visitor" got counted without a login. The free tiers of the hosted tools also weren't generous enough for a handful of personal sites.
@@ -48,10 +46,11 @@ The hard part of analytics without cookies is accuracy. You need to:
 **My Role:** Sole developer. Tracker script, Fastify ingestion API, Postgres schema, metrics queries, React dashboard, deployment.
 
 <Callout type="info">
-  **Two bursts, a year apart.** I built the core in five days in August 2025. It sat mostly untouched until June 2026, when I moved everything onto my own VPS and wanted my own analytics on this portfolio. That second pass is where most of the security and accuracy work happened.
+  **Two bursts, a year apart.** I built the core in five days in August 2025. It
+  sat mostly untouched until June 2026, when I moved everything onto my own VPS
+  and wanted my own analytics on this portfolio. That second pass is where most
+  of the security and accuracy work happened.
 </Callout>
-
----
 
 ## The Solution
 
@@ -79,8 +78,6 @@ Every number is computed from the raw event rows when you open the dashboard. Th
 - **Share links:** a read-only dashboard for one site, behind a token.
 - **Ingestion alerts:** an hourly check that posts to Discord when a site's last 24 hours fall under 30% of its normal day.
 
----
-
 ## Technical Architecture
 
 ```ascii
@@ -102,8 +99,6 @@ Every number is computed from the raw event rows when you open the dashboard. Th
 ```
 
 The API runs on my Hostinger VPS under pm2. The dashboard is a Vite app on Vercel that signs in with GitHub OAuth and talks to the API with a session cookie. Events of every type (page view, goal, outbound, scroll, performance) land in one `Event` table with nullable columns per type, so a single query can filter any of them by the same visitor, session, device, or location.
-
----
 
 ## Engineering Deep Dives
 
@@ -132,15 +127,22 @@ function getQuarterLabel(date: Date): string {
   return `${year}-Q${quarter}`;
 }
 
-export function getRotatingSalt(baseSecret: string, date: Date = new Date()): string {
-  return createHmac("sha256", baseSecret).update(getQuarterLabel(date)).digest("hex");
+export function getRotatingSalt(
+  baseSecret: string,
+  date: Date = new Date(),
+): string {
+  return createHmac("sha256", baseSecret)
+    .update(getQuarterLabel(date))
+    .digest("hex");
 }
 ```
 
 It is derived from the date, so there is no salt table and no cron job, and every instance of the API agrees on it without talking to each other.
 
 <Callout type="warning">
-  **The trade-off is honest, not perfect.** A visitor keeps the same ID for up to three months, and two people behind one IP with the same browser count as one. That is the price of no cookies, and the README says so.
+  **The trade-off is honest, not perfect.** A visitor keeps the same ID for up
+  to three months, and two people behind one IP with the same browser count as
+  one. That is the price of no cookies, and the README says so.
 </Callout>
 
 ### 2. The six weeks nobody noticed
@@ -175,8 +177,6 @@ I also moved the domain check out of CORS and into the handler. It compares the 
 - **Scroll depth on mobile:** it is sent on `pagehide`, not `beforeunload`, because iOS Safari rarely fires `beforeunload`.
 - **Time zones:** views over time are bucketed in the viewer's time zone, so "today" on the chart means today where you are.
 
----
-
 ## Technical Challenges and Trade-offs
 
 ### 1. Computing on read
@@ -193,14 +193,12 @@ The Core Web Vitals library still loads from jsDelivr, pinned to a version and c
 
 In October 2026 I went through the landing page and docs and replaced every claim I couldn't point to in the code. "No tracking scripts" became a plain list of what the tracker stores. Compliance claims became a note that country and city count as personal data, and that each site owner decides what to disclose.
 
----
-
 ## Results
 
 Telemetry runs at [usetelemetry.vercel.app](https://usetelemetry.vercel.app).
 
 | Users | Sites registered | Sites active in the last 30 days | Events stored |
-| :---: | :---: | :---: | :---: |
-| 7 | 10 | 4 | 3,580 |
+| :---: | :--------------: | :------------------------------: | :-----------: |
+|   7   |        10        |                4                 |     3,580     |
 
 Those sites are this portfolio, a couple of my own projects, and sites my friends run. The numbers are small, and that is fine: it is real traffic from real visitors, and it is enough to have caught the bugs above. It taught me Fastify, and more than that, it taught me where analytics numbers come from and how easy they are to get wrong.

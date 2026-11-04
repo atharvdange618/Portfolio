@@ -23,8 +23,6 @@ description: "Built a production-grade OpenID Connect identity provider from scr
 
 Kleis OIDC is a custom OpenID Connect (OIDC) Identity Provider and Single Sign-On (SSO) engine. No third-party auth frameworks, no abstraction layers over the protocol. Every cryptographic handshake, session verification step, and token lifecycle mechanism is implemented directly. It ships with a Next.js SDK (`@kleis-auth/nextjs`) so client apps can integrate in under 15 lines of code.
 
----
-
 ## The Challenge
 
 Most web apps delegate identity to external providers like Auth0, Firebase, or NextAuth. That works, but it turns authentication into a black box. When something goes wrong, you cannot see why. When you need to audit the token flow, you cannot. And when you need SSO across multiple clients, the integration surface gets complicated fast: CSRF, session hijack, token replay, race conditions.
@@ -38,10 +36,10 @@ The goal was to build a fully compliant OIDC provider from the ground up:
 **My Role:** Sole developer and architect. Backend identity server, database schema, custom SDK, developer portal. All of it.
 
 <Callout type="info">
-  **Why build from scratch?** Third-party auth providers treat identity as a black box. A custom OIDC provider means every cryptographic handshake, token lifecycle, and session verification layer is visible and auditable.
+  **Why build from scratch?** Third-party auth providers treat identity as a
+  black box. A custom OIDC provider means every cryptographic handshake, token
+  lifecycle, and session verification layer is visible and auditable.
 </Callout>
-
----
 
 ## The Solution
 
@@ -54,8 +52,6 @@ Kleis OIDC packages a complete authentication flow inside a Turborepo monorepo. 
 - **SSO**: Stateful cross-client sessions. Log in once, access all registered apps.
 - **Refresh token rotation**: Every refresh token is single-use. If a reused token appears, the system revokes everything and forces a re-login.
 - **Developer tools**: A Next.js SDK with context providers, hooks, and middleware. An in-app portal for client registration.
-
----
 
 ## Technical Architecture
 
@@ -82,8 +78,6 @@ The monorepo uses **pnpm workspaces** and **Turborepo** for build optimization:
 
 The **Identity Server** (`apps/idp/`) manages credentials, developer clients, active consents, and cryptographic configurations. The **Next.js SDK** (`packages/nextjs/`) handles token storage, cookie encryption, network handshakes, and client-side page protection.
 
----
-
 ## Engineering Deep Dives
 
 ### 1. Authorization Code Flow with PKCE (RFC 7636)
@@ -105,7 +99,10 @@ PKCE protects public clients from authorization code interception. The client ge
 The server validates by comparing the computed hash against the stored challenge:
 
 <Callout type="warning">
-  **PKCE is mandatory for public clients.** Without it, authorization codes can be intercepted in transit (e.g., via malicious redirect handlers). The code\_verifier proves the client that started the flow is the same one exchanging the code.
+  **PKCE is mandatory for public clients.** Without it, authorization codes can
+  be intercepted in transit (e.g., via malicious redirect handlers). The
+  code\_verifier proves the client that started the flow is the same one
+  exchanging the code.
 </Callout>
 
 ```typescript
@@ -185,7 +182,9 @@ Access tokens are short-lived. Refresh tokens let users stay logged in without r
 Kleis OIDC uses single-use refresh tokens. Each time one is used, it is invalidated and a new pair is issued. If the server sees a token that was already used, it assumes a breach and revokes everything.
 
 <Callout type="error">
-  **Token reuse = breach.** When a refresh token that was already used appears again, an attacker intercepted it. The only safe response is to revoke every token for that user and force a fresh login.
+  **Token reuse = breach.** When a refresh token that was already used appears
+  again, an attacker intercepted it. The only safe response is to revoke every
+  token for that user and force a fresh login.
 </Callout>
 
 ```ascii
@@ -229,8 +228,6 @@ return prisma.$transaction(async (tx) => {
 });
 ```
 
----
-
 ## Technical Challenges & Trade-offs
 
 ### 1. From-Scratch Protocol Compliance vs. Off-the-Shelf Packages
@@ -238,7 +235,9 @@ return prisma.$transaction(async (tx) => {
 Frameworks like `oidc-provider` abstract the specifications into a black box. Writing standard-compliant OAuth 2.0 and OIDC endpoints meant building custom parsing for `application/x-www-form-urlencoded` payloads, handling strict redirect URI wildcard matching, and structuring error payloads per RFC 6749 with proper `error` and `error_description` fields.
 
 <Callout type="info">
-  **Trade-off: development time vs. visibility.** Building from scratch took longer, but every token signing decision, session state transition, and security check is directly observable and modifiable.
+  **Trade-off: development time vs. visibility.** Building from scratch took
+  longer, but every token signing decision, session state transition, and
+  security check is directly observable and modifiable.
 </Callout>
 
 - **Decision**: Building from scratch gave direct control over the data layers and security states. The trade-off was more initial work, but the result is a lightweight codebase with full visibility into the signing and validation pipeline.
@@ -255,12 +254,12 @@ HS256 is fast and simple to set up. But sharing the secret key with multiple cli
 
 - **Decision**: RS256 asymmetric signing. Slightly more CPU for verification, but clients only get the public key. A compromised client cannot forge tokens.
 
----
-
 ## Results & Impact
 
 <Callout type="info">
-  **From zero to production-grade.** Building a secure identity provider from scratch is not just an exercise. It produces a lightweight, auditable system that gives you more control than third-party solutions.
+  **From zero to production-grade.** Building a secure identity provider from
+  scratch is not just an exercise. It produces a lightweight, auditable system
+  that gives you more control than third-party solutions.
 </Callout>
 
 - **End-to-end compliance**: OAuth 2.0 and OIDC Core 1.0, implemented without abstraction layers.

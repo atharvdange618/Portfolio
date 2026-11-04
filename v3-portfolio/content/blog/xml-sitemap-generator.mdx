@@ -10,8 +10,6 @@ At a startup where I worked, every client project came with the same sitemap pro
 
 So I built one from scratch. The project started in March 2025 as a single JavaScript file. Over the next 15 months, it evolved into a TypeScript monorepo with a BullMQ job queue, a `RecyclableBrowser` abstraction, and a crawler that correctly identifies how a framework renders before deciding whether to use HTTP or Puppeteer. The three self-audits I ran exposed how wrong my initial assumptions were.
 
----
-
 ## Why Existing Tools Break
 
 Most people assume sitemap generation is a solved problem. Install Yoast SEO, click generate, done. But here's what actually happens under the hood.
@@ -28,8 +26,6 @@ Now throw a Next.js app into the mix. It renders full HTML on the server, so the
 </Callout>
 
 The tools that exist today fall into two camps. Pure HTTP crawlers that fail on JavaScript apps. And headless browser crawlers that are unbearably slow. I wanted something in the middle: a system that makes a smart decision per URL, adapting to each page's rendering strategy.
-
----
 
 ## The Core Idea: HTTP-First With a Scoring Heuristic
 
@@ -116,8 +112,6 @@ await Promise.race([
 
 The result: on a typical Next.js site, most pages are resolved via HTTP in under 100ms each. Only the pages that are actually CSR touch Puppeteer.
 
----
-
 ## The Clerk Problem (And Why Auth Middleware Is a Crawling Nightmare)
 
 Then I hit a class of problem I hadn't anticipated. Sites using Clerk for authentication started failing with `Maximum number of redirects exceeded` on every single HTTP request. Not just protected pages. Everything. The homepage. `robots.txt`. The sitemap.
@@ -136,8 +130,6 @@ But the real impact was cascading. If HTTP is blocked, the sitemap probe (`/site
 
 Auth middleware is the new firewall for crawlers. Clerk, NextAuth, Auth.js, Supabase Auth - they all intercept requests at the edge. A modern crawler needs to detect and handle these patterns, adapting to the auth layer rather than retrying blindly.
 
----
-
 ## Redirect Loops Beyond Clerk
 
 Clerk was the most dramatic, but redirect loops are everywhere. `http→https→http`. `www→non-www→www`. The `follow-redirects` library (axios) only detects exact URL duplicates. It doesn't catch hostname+path oscillations.
@@ -153,8 +145,6 @@ seenHostPaths.add(fingerprint);
 ```
 
 This catches the common patterns: protocol flips, www stripping, and trailing slash redirects that bounce forever. Combined with `maxRedirects: 5` (fail fast - legitimate chains are 1-2 hops), the crawler stops before wasting time on broken redirect configurations.
-
----
 
 ## HEAD-Only Requests: Don't Download What You Don't Need
 
@@ -173,8 +163,6 @@ if (headOnly) {
 
 This cuts bandwidth and latency in half for sitemap URL verification. On a 10,000-page sitemap, that's meaningful.
 
----
-
 ## Sitemap `<lastmod>`: Don't Throw Away Free Data
 
 Sitemaps include `<lastmod>` dates for every URL. But HTTP requests often don't return `Last-Modified` headers. The sitemap's own data was being thrown away.
@@ -189,8 +177,6 @@ sitemapData.set(url, { lastmod: lastmod || existingLastmod, ... });
 ```
 
 Small detail. Big impact on sitemap accuracy.
-
----
 
 ## The Concurrency Problem
 
@@ -231,8 +217,6 @@ await Promise.all(
 
 No more head-of-line blocking. Fast pages complete fast, slow pages don't hold up the queue. Simple change, massive throughput gain.
 
----
-
 ## Why BullMQ + Redis
 
 Early on, I realized that running Puppeteer inside a Next.js API route was a terrible idea. Vercel's serverless functions have a 10-60 second timeout. A single CSR page would kill the request. The solution was a decoupled job queue:
@@ -251,8 +235,6 @@ graph TD
 The user submits a URL, the API route returns a `jobId` instantly, and a BullMQ worker picks up the job in the background. Progress streams to the browser via SSE. The worker runs on a VPS with a persistent Chromium process, while the Next.js frontend stays fast and stateless.
 
 Running headless Chrome on a 4GB VPS required careful resource management. I built a `RecyclableBrowser` class that reuses a single Chromium instance across 100 page loads, waits for all open pages to close before launching a new browser instance (so two Chromium processes don't overlap in memory), and sends a graceful shutdown signal to the browser process after close to prevent zombie processes on Linux.
-
----
 
 ## The Three Audits
 
@@ -295,8 +277,6 @@ Module-level cache shared across all jobs. `crawlCache` and `renderCache` were d
 
 And then there was the one that made me laugh. Chromium was being launched to fetch `robots.txt` and XML sitemaps. Both are plain text. Neither needs a browser. But the code passed a `getBrowser` callback into both the robots.txt parser and the sitemap discovery function as a "fallback." The fallback path called `page.goto()` on a text file. Every crawl job was spinning up a 400MB Chromium process before it had touched a single real page.
 
----
-
 ## Every Issue Addressed
 
 Every P0, P1, and P2 issue from all three audits was addressed before the public launch:
@@ -307,15 +287,11 @@ Every P0, P1, and P2 issue from all three audits was addressed before the public
 - **Infrastructure**: Browser recycling with pending-creation tracking, job timeout, async gzip, error caps, crawl logs moved outside web root.
 - **Edge cases**: Redirect loop detection with hostname+path fingerprinting, Clerk auth handshake detection, Puppeteer sitemap fallback, minimum concurrency of 10 for sitemap processing.
 
----
-
 ## The Numbers
 
 On real production crawls against sites like `chaicode.com` (16 pages, 15s) and `freeapi.app` (2 pages, 3s), average crawl time across 9 sites was **5.1 seconds with zero errors**. Before the worker pool and CSR detection fixes, a mixed SSR/SPA site would hit 30-60 seconds on the Puppeteer path for every page.
 
 CSR detection accuracy went from roughly 50% (Next.js misclassified as CSR) to 95%+ with hydration-aware scoring. Puppeteer launches went from unbounded to pooled and recycled every 100 pages. Memory went from unbounded to roughly 400MB, PM2-monitored. XML validity went from broken (URLs with `&` produced invalid XML) to escaped. Sitemap protocol compliance went from roughly 60% to full spec compliance. Security posture went from no guards to SSRF protection, path traversal prevention, queue depth limits, and input validation.
-
----
 
 ## What I'd Do Differently
 
@@ -329,8 +305,6 @@ Build the worker pool first. The `Promise.all` batching pattern was the single b
 
 Consider Playwright for production. Raw Puppeteer on a VPS works, but Playwright's wait API is cleaner, the browser contexts are more isolated, and the interception model is better documented. The recycling complexity and zombie process risk mostly go away.
 
----
-
 ## What's Next
 
 This project started as a problem I kept seeing at work. It became a tool. The next phase is a product.
@@ -338,8 +312,6 @@ This project started as a problem I kept seeing at work. It became a tool. The n
 The job queue and crawling engine are already built. What remains is wrapping them in a product. Auth and billing with Clerk and Lemon Squeezy. A dashboard with PostgreSQL for crawl history, per-site trend graphs, and page depth distribution. An SEO insights layer with broken link finding, redirect chain tracking, image alt checking, and noindex flag reporting. Search Console integration to auto-submit sitemaps to Google and Bing on completion.
 
 The hard parts are done. The rest is product work.
-
----
 
 ## Try It Yourself
 

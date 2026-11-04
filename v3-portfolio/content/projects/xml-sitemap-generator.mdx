@@ -27,8 +27,6 @@ XML Sitemap Generator is a web crawler and sitemap discovery engine that creates
 
 The crawler decides, per page, whether to parse raw HTML or spin up a headless browser. It queues jobs through BullMQ and Redis so long crawls never hit serverless timeouts. It streams progress back to the UI via Server-Sent Events. It also discovers, crawls, validates, and merges existing sitemap data to find pages the fresh crawl alone might miss.
 
----
-
 ## The Challenge
 
 Standard web crawlers fetch HTML and extract links from it. That works fine for server-rendered pages. But client-side frameworks like React, Vue, and Next.js SPAs render their links with JavaScript after the initial HTML loads. The raw HTML often contains nothing useful.
@@ -47,10 +45,10 @@ The problems I needed to solve:
 **My Role:** Sole developer. Hybrid parsing engine, BullMQ queue infrastructure, SSE streaming pipeline, React/Next.js frontend.
 
 <Callout type="info">
-  **Hybrid crawling, not brute force.** Most pages on a modern site are server-rendered. Only a fraction need a headless browser. By detecting this per-URL, we avoid launching Chrome for thousands of static pages.
+  **Hybrid crawling, not brute force.** Most pages on a modern site are
+  server-rendered. Only a fraction need a headless browser. By detecting this
+  per-URL, we avoid launching Chrome for thousands of static pages.
 </Callout>
-
----
 
 ## The Solution
 
@@ -71,8 +69,6 @@ Image extraction pulls from standard `<img>` tags, shadow DOM roots, and `srcset
 When a sitemap exceeds 50,000 URLs, the generator splits it into a `<sitemapindex>` file pointing to chunked `sitemap-N.xml` files, each under the limit. Both XML and gzipped versions are produced.
 
 The crawler respects `robots.txt` rules (RFC 9309, with wildcard and longest-match semantics), assigns priority values based on folder depth (1.0 for the homepage, decreasing by 0.1 per level), and carries forward `<lastmod>` dates from existing sitemaps.
-
----
 
 ## Technical Architecture
 
@@ -148,8 +144,6 @@ The crawler runs as a Redis-backed BullMQ queue with a background worker that pr
 2. A background worker pulls the job and starts the crawl. It reads `robots.txt`, discovers existing sitemaps, and seeds the BFS queue. For each URL, it tries a fast HTTP fetch first. If the CSR heuristic scores the page as client-rendered (score >= 3), it falls back to Puppeteer. The `RecyclableBrowser` class kills and relaunches Chromium every 100 page loads.
 3. URLs from the fresh crawl and from existing sitemaps get merged. `<lastmod>` dates from sitemaps are kept. HEAD-only requests check whether sitemap-discovered URLs are still indexable. Priority is calculated per page based on depth.
 4. Progress goes into Redis. The SSE endpoint polls it and streams updates to the client.
-
----
 
 ## Engineering Deep Dives
 
@@ -285,8 +279,6 @@ When the crawler hits a page with a `<link rel="canonical">` pointing to a diffe
 
 Redirects are caught at two levels. Axios tracks HTTP redirects and flags cross-domain ones. Puppeteer compares the response URL to the requested URL. Cross-domain redirects are noted but not followed for link extraction.
 
----
-
 ## Technical Challenges and Trade-offs
 
 ### 1. Serverless Environments vs. Long-Running Crawls
@@ -313,12 +305,12 @@ The XML sitemap protocol caps each file at 50,000 URLs.
 
 When the generator exceeds that threshold, it produces a `<sitemapindex>` pointing to multiple `sitemap-N.xml` chunk files. Both XML and gzipped versions are generated for each chunk.
 
----
-
 ## Results
 
 <Callout type="info">
-  **Up to 1000 pages per session.** The hybrid approach means static sites crawl at HTTP speed. CSR sites get Puppeteer only when needed. Memory stays under 350MB during maximum concurrency.
+  **Up to 1000 pages per session.** The hybrid approach means static sites crawl
+  at HTTP speed. CSR sites get Puppeteer only when needed. Memory stays under
+  350MB during maximum concurrency.
 </Callout>
 
 The crawler handles up to 1000 pages per session across both CSR and SSR sites. It merges sitemap data with fresh crawl output to reduce indexing gaps. Memory stays under 350MB during maximum concurrency because of the browser recycling and request interception. The output is standards-compliant XML with depth-based priorities, `<lastmod>` dates, image schema entries, and hreflang alternate links.

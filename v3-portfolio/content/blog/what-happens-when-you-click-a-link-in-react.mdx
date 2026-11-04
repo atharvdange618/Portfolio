@@ -352,8 +352,8 @@ This is the same behavior as TanStack Router and React Router. It is not a bug, 
 <Callout type="warning">
   **The route order trap:** If you put `/user/$id` before `/user/settings`, the
   dynamic route will match first and `SettingsPage` will never render. Always
-  declare static routes before dynamic ones. This is the most common routing
-  bug in custom routers.
+  declare static routes before dynamic ones. This is the most common routing bug
+  in custom routers.
 </Callout>
 
 ## The Full Chain, End to End
@@ -429,8 +429,6 @@ This is the foundation. The core loop - History notifies Router, Router matches 
 
 **Accessibility isn't optional.** Always render an `<a>` tag with `href`, even if you `preventDefault` on click. Screen readers, keyboard users, and crawlers all depend on it. A `<div onClick>` is not a link.
 
----
-
 ## References
 
 Everything I learned building slices 1 and 2 came from these, organized by topic.
@@ -469,4 +467,3 @@ Everything I learned building slices 1 and 2 came from these, organized by topic
 - [TanStack Router GitHub](https://github.com/TanStack/router/tree/main/packages/history) - read the actual `@tanstack/history` source to see how they handle the same pushState/popstate problem we solved
 - [TanStack Router - History Types docs](https://tanstack.com/router/v1/docs/framework/react/guide/history-types) - explains how `@tanstack/history` works and why it exists as a separate package
 - [TanStack Router - Route Matching docs](https://tanstack.com/router/latest)
-
