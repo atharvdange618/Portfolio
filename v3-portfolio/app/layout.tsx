@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Geist, Fira_Code } from "next/font/google";
+import localFont from "next/font/local";
 import { Footer } from "@/components/Footer";
 import { CodeCopyButtonInitializer } from "@/components/mdx/CodeCopyButtonInitializer";
 import { MermaidInitializer } from "@/components/mdx/MermaidInitializer";
 import { TelemetryPageviews } from "@/components/TelemetryPageviews";
 import "./globals.css";
 
-const firaCode = Fira_Code({
+// Bundle fonts so builds do not depend on Google Fonts responses.
+const firaCode = localFont({
+  src: "./fonts/FiraCode.ttf",
   variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "300 700",
+  display: "swap",
+  fallback: ["monospace"],
 });
 
-const geist = Geist({
+const geist = localFont({
+  src: "./fonts/Geist.ttf",
   variable: "--font-sans",
-  subsets: ["latin"],
+  weight: "100 900",
+  display: "swap",
+  fallback: ["Arial", "sans-serif"],
 });
 
 export const metadata: Metadata = {
