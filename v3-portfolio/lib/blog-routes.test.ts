@@ -16,6 +16,16 @@ describe("blog content", () => {
       expect(emoji.test(source), post.slug).toBe(false);
     }
   });
+
+  // The /blog/:path* redirect runs before public files are served, so a
+  // /blog/ image 404s and a /blog/ link costs a redirect.
+  it("links and embeds posts and assets under /blogs, not /blog or the old domain", () => {
+    const stale = /\]\((?:https:\/\/www\.atharvdange\.com)?\/blog\/|blog\.atharvdangedev\.in/;
+    for (const post of getAllPosts()) {
+      const source = readFileSync(`content/blog/${post.slug}.mdx`, "utf8");
+      expect(source.match(stale)?.[0], post.slug).toBeUndefined();
+    }
+  });
 });
 
 describe("blog URL migration", () => {

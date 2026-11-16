@@ -438,7 +438,7 @@ One decision I'd recommend for any project like this: every rendered page shows 
 
 That makes each strategy's behavior visible without reading code. SSG's timestamp freezes until you rebuild. SSR's changes on every refresh. ISR's holds for the window, then updates on the request after a stale one. CSR has two: when the shell went out and when the API answered.
 
-![SSG and SSR side by side, refreshed every 1.5 seconds. The SSG timestamp stays frozen while the SSR timestamp changes on every refresh.](/blog/rendering-strategies/ssg-vs-ssr-timestamps.gif)
+![SSG and SSR side by side, refreshed every 1.5 seconds. The SSG timestamp stays frozen while the SSR timestamp changes on every refresh.](/blogs/rendering-strategies/ssg-vs-ssr-timestamps.gif)
 
 You could explain all of that in words. Watching one timestamp change while the other stays frozen teaches it faster.
 
@@ -630,7 +630,7 @@ When a Suspense boundary resolves, React streams the real content in a hidden `<
 
 **What if the dynamic fetch fails?** My first version didn't handle it. A rejected fetch left an unhandled rejection, a skeleton shimmering forever, and a connection that never closed. Now the handler catches the error, fills the hole with a fallback widget, and closes the document as usual. The rest of the page came from the pre-built shell, so it's unaffected. React's equivalent is an error boundary around the Suspense boundary.
 
-![The PPR page while the dynamic hole shows a shimmer skeleton, then two seconds later with the trending widget filled in.](/blog/rendering-strategies/ppr-skeleton-then-filled.gif)
+![The PPR page while the dynamic hole shows a shimmer skeleton, then two seconds later with the trending widget filled in.](/blogs/rendering-strategies/ppr-skeleton-then-filled.gif)
 
 ## Streaming SSR vs PPR: The Question That Wouldn't Go Away
 
