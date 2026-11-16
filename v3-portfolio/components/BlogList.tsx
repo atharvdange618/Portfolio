@@ -19,7 +19,7 @@ export function BlogList({ posts }: Props) {
             <span>
               {post.updatedAt
                 ? `Updated ${formatDate(post.updatedAt)}`
-                : formatDate(post.publishedAt)}
+                : `Published ${formatDate(post.publishedAt)}`}
             </span>
             <span>·</span>
             <span>{post.readingTime} min read</span>
